@@ -160,6 +160,9 @@
 <!-- ═══ MODAL RÉCEPTION ═══ -->
 <div class="modal" id="modalRec">
   <h2>📥 Nouvelle Réception</h2>
+
+  <button class="btn-blue" onclick="openScanner('recProd')" style="background:#0088ff">📷 Scanner le produit</button>
+
   <label>Produit (code)</label>
   <input type="text" id="recProd" placeholder="ex: VR-4-2250x3210" list="prodList">
   <datalist id="prodList"></datalist>
@@ -168,7 +171,10 @@
   <input type="number" id="recNb" value="1" min="1">
 
   <label>N° Contenant</label>
-  <input type="text" id="recNum" placeholder="ex: CAI-2024-001">
+  <div style="display:flex; gap:8px">
+    <input type="text" id="recNum" placeholder="ex: CAI-2024-001" style="flex:1">
+    <button onclick="openScanner('recNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
 
   <label>Emplacement (optionnel)</label>
   <input type="text" id="recEmp" placeholder="ex: A1,3">
@@ -181,13 +187,33 @@
 <div class="modal" id="modalCasse">
   <h2>💥 Déclaration de Casse</h2>
   <label>N° Contenant</label>
-  <input type="text" id="casseNum" placeholder="ex: CAI-2024-001">
+  <div style="display:flex; gap:8px">
+    <input type="text" id="casseNum" placeholder="ex: CAI-2024-001" style="flex:1">
+    <button onclick="openScanner('casseNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
 
   <label>Nombre de feuilles cassées</label>
   <input type="number" id="casseQty" value="1" min="1">
 
   <button class="btn-red" onclick="saveCasse()">💥 Valider</button>
   <button class="btn-blue" onclick="closeModal('modalCasse')">Annuler</button>
+</div>
+
+<!-- ═══ MODAL SCANNER CAMÉRA ═══ -->
+<div class="modal" id="modalScanner" style="background:#000; padding:0">
+  <div style="position:relative; width:100%; height:100vh; display:flex; flex-direction:column">
+    <div style="background:#111; color:#fff; padding:14px; display:flex; justify-content:space-between; align-items:center">
+      <span style="font-weight:bold; font-size:16px">📷 Scanner</span>
+      <button onclick="closeScanner()" style="background:#cc2222; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-weight:bold">✕ Fermer</button>
+    </div>
+    <video id="scanVideo" autoplay playsinline muted style="width:100%; flex:1; object-fit:cover; background:#000"></video>
+    <canvas id="scanCanvas" style="display:none"></canvas>
+    <div id="scanStatusMsg" style="color:#fff; text-align:center; padding:14px; background:#111; font-size:14px"></div>
+    <div style="background:#111; padding:14px">
+      <input type="text" id="scanManualInp" placeholder="Ou tapez le code ici..." style="width:100%; padding:12px; border-radius:8px; border:none; font-size:16px; box-sizing:border-box; margin-bottom:8px">
+      <button onclick="validateManualScan()" style="width:100%; padding:14px; background:#00aa44; color:#fff; border:none; border-radius:8px; font-weight:bold; font-size:15px">✓ Valider ce code</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -461,6 +487,107 @@ function renderStock() {
     }
   });
   document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vide</p>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCANNER CAMÉRA — BarcodeDetector (HTTPS requis)
+// ═══════════════════════════════════════════════════════════
+let scanStream = null;
+let scanDetector = null;
+let scanRunning = false;
+let scanRaf = null;
+let scanTargetField = null;
+
+function openScanner(targetFieldId) {
+  scanTargetField = targetFieldId;
+  document.getElementById('modalScanner').style.display = 'block';
+  document.getElementById('scanManualInp').value = '';
+  document.getElementById('scanStatusMsg').textContent = 'Démarrage de la caméra...';
+  startCamera();
+}
+
+async function startCamera() {
+  const video = document.getElementById('scanVideo');
+  const statusEl = document.getElementById('scanStatusMsg');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    scanStream = stream;
+    video.srcObject = stream;
+    await video.play();
+
+    if ('BarcodeDetector' in window) {
+      scanDetector = new BarcodeDetector({
+        formats: ['ean_13','ean_8','qr_code','code_128','code_39','data_matrix','itf','upc_a','upc_e']
+      });
+      statusEl.textContent = '🔍 Recherche d\\'un code-barres...';
+      scanRunning = true;
+      detectLoop();
+    } else {
+      statusEl.textContent = '⚠️ Scanner automatique non supporté. Tapez le code ci-dessous.';
+    }
+  } catch (err) {
+    let msg = 'Erreur caméra : ' + err.message;
+    if (err.name === 'NotAllowedError') msg = '❌ Permission caméra refusée. Autorisez dans les réglages du navigateur.';
+    statusEl.textContent = msg;
+  }
+}
+
+function detectLoop() {
+  const video = document.getElementById('scanVideo');
+  const canvas = document.getElementById('scanCanvas');
+
+  const tick = async () => {
+    if (!scanRunning) return;
+    if (!video.videoWidth) { scanRaf = requestAnimationFrame(tick); return; }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    try {
+      const codes = await scanDetector.detect(canvas);
+      if (codes.length > 0) {
+        const code = codes[0].rawValue;
+        if (navigator.vibrate) navigator.vibrate([80,40,80]);
+        document.getElementById('scanStatusMsg').textContent = '✓ Code détecté : ' + code;
+        applyScanResult(code);
+        return;
+      }
+    } catch(e) {}
+    scanRaf = requestAnimationFrame(tick);
+  };
+  scanRaf = requestAnimationFrame(tick);
+}
+
+function stopCamera() {
+  scanRunning = false;
+  if (scanRaf) cancelAnimationFrame(scanRaf);
+  if (scanStream) {
+    scanStream.getTracks().forEach(t => t.stop());
+    scanStream = null;
+  }
+  scanDetector = null;
+}
+
+function closeScanner() {
+  stopCamera();
+  document.getElementById('modalScanner').style.display = 'none';
+}
+
+function applyScanResult(code) {
+  if (scanTargetField) {
+    document.getElementById(scanTargetField).value = code;
+  }
+  setTimeout(() => {
+    closeScanner();
+  }, 600);
+}
+
+function validateManualScan() {
+  const val = document.getElementById('scanManualInp').value.trim();
+  if (!val) return;
+  applyScanResult(val);
 }
 
 // ═══════════════════════════════════════════════════════════

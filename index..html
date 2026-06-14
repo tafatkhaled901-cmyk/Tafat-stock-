@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VerreStock Pro</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #000000;
+    margin: 0;
+    padding: 20px;
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+  h1 { text-align: center; color: #0055cc; }
+  h2 { color: #0055cc; border-bottom: 2px solid #0055cc; padding-bottom: 5px; }
+  button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-blue { background-color: #0055cc; color: white; }
+  .btn-green { background-color: #00aa44; color: white; }
+  .btn-red { background-color: #cc2222; color: white; }
+  .btn-user {
+    background-color: #f0f0f0;
+    color: #000;
+    text-align: left;
+    border: 1px solid #ccc;
+  }
+  input {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+  .card {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+  }
+  .kpi {
+    display: inline-block;
+    background-color: #e8f0ff;
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #0055cc;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: white;
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 999;
+  }
+  .bottomnav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background-color: white;
+    border-top: 1px solid #ccc;
+    display: flex;
+    padding: 10px;
+    gap: 5px;
+  }
+  .bottomnav button { margin: 0; padding: 12px 5px; font-size: 13px; }
+  .pindot {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background-color: #ccc;
+    margin: 0 5px;
+  }
+  .pindot.filled { background-color: #0055cc; }
+  .pinkey {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    color: #0055cc;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="page active" id="login">
+  <h1>🪟 VerreStock Pro</h1>
+  <p style="text-align:center; color:#888;">Choisissez votre profil</p>
+
+  <div id="userList"></div>
+
+  <div id="pinScreen" style="display:none; text-align:center;">
+    <h2 id="pinUserName" style="border:none;"></h2>
+    <div id="pinDots" style="margin:20px 0;"></div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:280px; margin:0 auto;" id="pinKeys"></div>
+    <p style="color:#999; font-size:12px; margin-top:20px;">PIN démo: Jean=1234, Sophie=5678, Pierre=0000</p>
+    <button class="btn-red" style="max-width:280px; margin:20px auto;" onclick="backToUsers()">← Retour</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div class="page" id="app" style="padding-bottom:80px;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1 style="margin:10px 0;">🪟 VerreStock</h1>
+    <button class="btn-red" style="width:auto; padding:8px 16px;" onclick="logout()">Quitter</button>
+  </div>
+  <p style="color:#888;" id="userInfo"></p>
+
+  <!-- ENTRÉES -->
+  <div class="page active" id="page-entrees">
+    <h2>📥 Flux Entrées</h2>
+    <button class="btn-blue" onclick="openModal('modalRec')">+ Nouvelle Réception</button>
+    <div id="entreeList"></div>
+  </div>
+
+  <!-- CASSE -->
+  <div class="page" id="page-casse">
+    <h2>💥 Casse</h2>
+    <button class="btn-red" onclick="openModal('modalCasse')">Déclarer une Casse</button>
+    <div id="casseList"></div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="page" id="page-stock">
+    <h2>🪟 Stock Global</h2>
+    <div id="stockKpis"></div>
+    <div id="stockList"></div>
+  </div>
+
+  <!-- NAV -->
+  <div class="bottomnav">
+    <button class="btn-blue" onclick="goto('entrees')">📥 Entrées</button>
+    <button class="btn-blue" onclick="goto('casse')">💥 Casse</button>
+    <button class="btn-blue" onclick="goto('stock')">🪟 Stock</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL RÉCEPTION ═══ -->
+<div class="modal" id="modalRec">
+  <h2>📥 Nouvelle Réception</h2>
+  <label>Produit (code)</label>
+  <input type="text" id="recProd" placeholder="ex: VR-4-2250x3210" list="prodList">
+  <datalist id="prodList"></datalist>
+
+  <label>Nombre de caisses</label>
+  <input type="number" id="recNb" value="1" min="1">
+
+  <label>N° Contenant</label>
+  <input type="text" id="recNum" placeholder="ex: CAI-2024-001">
+
+  <label>Emplacement (optionnel)</label>
+  <input type="text" id="recEmp" placeholder="ex: A1,3">
+
+  <button class="btn-green" onclick="saveRec()">✓ Confirmer</button>
+  <button class="btn-red" onclick="closeModal('modalRec')">Annuler</button>
+</div>
+
+<!-- ═══ MODAL CASSE ═══ -->
+<div class="modal" id="modalCasse">
+  <h2>💥 Déclaration de Casse</h2>
+  <label>N° Contenant</label>
+  <input type="text" id="casseNum" placeholder="ex: CAI-2024-001">
+
+  <label>Nombre de feuilles cassées</label>
+  <input type="number" id="casseQty" value="1" min="1">
+
+  <button class="btn-red" onclick="saveCasse()">💥 Valider</button>
+  <button class="btn-blue" onclick="closeModal('modalCasse')">Annuler</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DONNÉES
+// ═══════════════════════════════════════════════════════════
+const USERS = [
+  {id:'u1', nom:'Jean Dupont', role:'Opérateur', pin:'1234'},
+  {id:'u2', nom:'Sophie Martin', role:'Opérateur', pin:'5678'},
+  {id:'u3', nom:'Pierre Leroy', role:'Gestionnaire', pin:'0000'},
+];
+
+const FPC = {3:40, 4:32, 5:26, 6:21, 8:16, 10:13, 12:11};
+const DIMS = ['2250x3210','3000x2000','3300x2140'];
+const EPS = [3,4,5,6,8,10,12];
+
+const PRODS = [];
+EPS.forEach(ep => DIMS.forEach(d => PRODS.push('VR-'+ep+'-'+d)));
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let DB = {
+  stock: JSON.parse(localStorage.getItem('vs_stock') || '{}'),
+  entrees: JSON.parse(localStorage.getItem('vs_entrees') || '[]'),
+  casses: JSON.parse(localStorage.getItem('vs_casses') || '[]'),
+};
+
+let currentUser = null;
+let selectedPinUser = null;
+let pinValue = '';
+
+function saveDB() {
+  localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
+  localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
+  localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════
+function renderUserList() {
+  let html = '';
+  USERS.forEach(u => {
+    html += '<button class="btn-user" onclick=\'selectUser("' + u.id + '")\'>' +
+            '<strong>' + u.nom + '</strong><br>' +
+            '<span style="color:#888; font-size:12px;">' + u.role + '</span>' +
+            '</button>';
+  });
+  document.getElementById('userList').innerHTML = html;
+}
+
+function selectUser(id) {
+  selectedPinUser = USERS.find(u => u.id === id);
+  pinValue = '';
+  document.getElementById('userList').style.display = 'none';
+  document.getElementById('pinScreen').style.display = 'block';
+  document.getElementById('pinUserName').textContent = selectedPinUser.nom;
+  renderPinDots();
+  renderPinKeys();
+}
+
+function backToUsers() {
+  document.getElementById('userList').style.display = 'block';
+  document.getElementById('pinScreen').style.display = 'none';
+  selectedPinUser = null;
+  pinValue = '';
+}
+
+function renderPinDots() {
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    html += '<span class="pindot ' + (pinValue.length > i ? 'filled' : '') + '"></span>';
+  }
+  document.getElementById('pinDots').innerHTML = html;
+}
+
+function renderPinKeys() {
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  let html = '';
+  keys.forEach(k => {
+    if (k === '') {
+      html += '<div></div>';
+    } else if (k === '⌫') {
+      html += '<button class="pinkey" style="color:#cc2222;" onclick="pinDelete()">⌫</button>';
+    } else {
+      html += '<button class="pinkey" onclick=\'pinPress("' + k + '")\'>' + k + '</button>';
+    }
+  });
+  document.getElementById('pinKeys').innerHTML = html;
+}
+
+function pinPress(k) {
+  if (pinValue.length >= 4) return;
+  pinValue += k;
+  renderPinDots();
+  if (pinValue.length === 4) {
+    if (selectedPinUser.pin === pinValue) {
+      loginSuccess(selectedPinUser);
+    } else {
+      setTimeout(() => {
+        alert('PIN incorrect');
+        pinValue = '';
+        renderPinDots();
+      }, 100);
+    }
+  }
+}
+
+function pinDelete() {
+  pinValue = pinValue.slice(0, -1);
+  renderPinDots();
+}
+
+function loginSuccess(user) {
+  currentUser = user;
+  document.getElementById('login').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
+  goto('entrees');
+}
+
+function logout() {
+  currentUser = null;
+  selectedPinUser = null;
+  pinValue = '';
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('login').classList.add('active');
+  document.getElementById('userList').style.display = 'block';
+  document.getElementById('pinScreen').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function goto(page) {
+  document.querySelectorAll('#app .page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'entrees') renderEntrees();
+  else if (page === 'casse') renderCasse();
+  else if (page === 'stock') renderStock();
+}
+
+function openModal(id) {
+  document.getElementById(id).style.display = 'block';
+  if (id === 'modalRec') {
+    let opts = '';
+    PRODS.forEach(p => opts += '<option value="' + p + '">');
+    document.getElementById('prodList').innerHTML = opts;
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ENTRÉES
+// ═══════════════════════════════════════════════════════════
+function renderEntrees() {
+  if (DB.entrees.length === 0) {
+    document.getElementById('entreeList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucune réception enregistrée</p>';
+    return;
+  }
+  let html = '';
+  DB.entrees.slice().reverse().forEach(e => {
+    html += '<div class="card">' +
+            '<strong>' + e.prod + '</strong><br>' +
+            'N° ' + e.num + ' · ' + e.nb + ' caisse(s) · ' + e.feuilles + ' feuilles<br>';
+    if (e.emp) html += '<span style="color:#0055cc;">📍 ' + e.emp + '</span>';
+    html += '</div>';
+  });
+  document.getElementById('entreeList').innerHTML = html;
+}
+
+function saveRec() {
+  const prod = document.getElementById('recProd').value.trim();
+  const nb = parseInt(document.getElementById('recNb').value) || 1;
+  const num = document.getElementById('recNum').value.trim();
+  const emp = document.getElementById('recEmp').value.trim();
+
+  if (!prod || !num) {
+    alert('Veuillez remplir le produit et le N° contenant');
+    return;
+  }
+
+  // Trouver épaisseur pour calcul feuilles
+  const match = prod.match(/VR-(\\d+)-/);
+  const ep = match ? parseInt(match[1]) : 4;
+  const fpc = FPC[ep] || 20;
+  const feuilles = fpc * nb;
+
+  DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
+
+  if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
+  DB.stock[prod].f += feuilles;
+  DB.stock[prod].c += nb;
+
+  saveDB();
+  closeModal('modalRec');
+
+  document.getElementById('recProd').value = '';
+  document.getElementById('recNb').value = '1';
+  document.getElementById('recNum').value = '';
+  document.getElementById('recEmp').value = '';
+
+  renderEntrees();
+  alert('✓ Réception enregistrée : ' + feuilles + ' feuilles');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CASSE
+// ═══════════════════════════════════════════════════════════
+function renderCasse() {
+  if (DB.casses.length === 0) {
+    document.getElementById('casseList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucune casse déclarée</p>';
+    return;
+  }
+  let html = '';
+  DB.casses.slice().reverse().forEach(c => {
+    html += '<div class="card">' +
+            '<strong style="color:#cc2222;">N° ' + c.num + '</strong><br>' +
+            '-' + c.qty + ' feuilles cassées<br>' +
+            '<span style="color:#888; font-size:12px;">' + new Date(c.date).toLocaleString('fr-FR') + '</span>' +
+            '</div>';
+  });
+  document.getElementById('casseList').innerHTML = html;
+}
+
+function saveCasse() {
+  const num = document.getElementById('casseNum').value.trim();
+  const qty = parseInt(document.getElementById('casseQty').value) || 1;
+
+  if (!num) {
+    alert('Veuillez entrer le N° contenant');
+    return;
+  }
+
+  DB.casses.push({ num, qty, date: new Date().toISOString() });
+  saveDB();
+  closeModal('modalCasse');
+
+  document.getElementById('casseNum').value = '';
+  document.getElementById('casseQty').value = '1';
+
+  renderCasse();
+  alert('💥 Casse déclarée : -' + qty + ' feuilles');
+}
+
+// ═══════════════════════════════════════════════════════════
+// STOCK
+// ═══════════════════════════════════════════════════════════
+function renderStock() {
+  let totF = 0, totC = 0;
+  Object.values(DB.stock).forEach(v => { totF += v.f; totC += v.c; });
+
+  document.getElementById('stockKpis').innerHTML =
+    '<div class="kpi">' + totF + ' feuilles</div>' +
+    '<div class="kpi">' + totC + ' caisses</div>';
+
+  if (Object.keys(DB.stock).length === 0) {
+    document.getElementById('stockList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucun stock</p>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(DB.stock).forEach(([prod, v]) => {
+    if (v.f > 0) {
+      html += '<div class="card"><strong>' + prod + '</strong><br>' +
+              v.f + ' feuilles · ' + v.c + ' caisses</div>';
+    }
+  });
+  document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vide</p>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+renderUserList();
+</script>
+
+</body>
+</html>

@@ -185,7 +185,7 @@
 <div class="modal" id="modalRec">
   <h2>📥 Nouvelle Réception</h2>
 
-  <button class="btn-blue" onclick="openScanner('recProd')" style="background:#0088ff">📷 Scanner le produit</button>
+  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Scanner l'étiquette (produit + contenant)</button>
 
   <label>Produit (code)</label>
   <input type="text" id="recProd" placeholder="ex: FLT8-321/214" list="prodList">
@@ -196,7 +196,7 @@
 
   <label>N° Contenant</label>
   <div style="display:flex; gap:8px">
-    <input type="text" id="recNum" placeholder="ex: CAI-2024-001" style="flex:1">
+    <input type="text" id="recNum" placeholder="ex: 22325100518C" style="flex:1">
     <button onclick="openScanner('recNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
   </div>
 
@@ -586,13 +586,21 @@ let scanStream = null;
 let scanDetector = null;
 let scanRunning = false;
 let scanRaf = null;
-let scanTargetField = null;
+let scanTargetQueue = [];
+
+const FIELD_LABELS = {
+  recProd: 'le PRODUIT (1er code-barres)',
+  recNum: 'le N° CONTENANT (2ème code-barres)',
+  casseNum: 'le N° contenant',
+  sortieNum: 'le N° contenant'
+};
 
 function openScanner(targetFieldId) {
-  scanTargetField = targetFieldId;
+  scanTargetQueue = Array.isArray(targetFieldId) ? targetFieldId.slice() : [targetFieldId];
   document.getElementById('modalScanner').style.display = 'block';
   document.getElementById('scanManualInp').value = '';
-  document.getElementById('scanStatusMsg').textContent = 'Démarrage de la caméra...';
+  const first = scanTargetQueue[0];
+  document.getElementById('scanStatusMsg').textContent = 'Démarrage de la caméra... Scannez ' + (FIELD_LABELS[first] || 'le code');
   startCamera();
 }
 
@@ -612,7 +620,8 @@ async function startCamera() {
       scanDetector = new BarcodeDetector({
         formats: ['ean_13','ean_8','qr_code','code_128','code_39','data_matrix','itf','upc_a','upc_e']
       });
-      statusEl.textContent = "🔍 Recherche d'un code-barres...";
+      const first = scanTargetQueue[0];
+      statusEl.textContent = '🔍 Scannez ' + (FIELD_LABELS[first] || 'le code') + '...';
       scanRunning = true;
       detectLoop();
     } else {
@@ -640,7 +649,7 @@ function detectLoop() {
       if (codes.length > 0) {
         const code = codes[0].rawValue;
         if (navigator.vibrate) navigator.vibrate([80,40,80]);
-        document.getElementById('scanStatusMsg').textContent = '✓ Code détecté : ' + code;
+        scanRunning = false;
         applyScanResult(code);
         return;
       }
@@ -666,12 +675,25 @@ function closeScanner() {
 }
 
 function applyScanResult(code) {
-  if (scanTargetField) {
-    document.getElementById(scanTargetField).value = code;
+  const field = scanTargetQueue.shift();
+  if (field) {
+    document.getElementById(field).value = code;
   }
-  setTimeout(() => {
-    closeScanner();
-  }, 600);
+  const statusEl = document.getElementById('scanStatusMsg');
+
+  if (scanTargetQueue.length > 0) {
+    const next = scanTargetQueue[0];
+    statusEl.textContent = '✓ ' + code + ' enregistré. Scannez maintenant ' + (FIELD_LABELS[next] || 'le code suivant') + '...';
+    setTimeout(() => {
+      scanRunning = true;
+      detectLoop();
+    }, 1200);
+  } else {
+    statusEl.textContent = '✓ Terminé : ' + code;
+    setTimeout(() => {
+      closeScanner();
+    }, 600);
+  }
 }
 
 function validateManualScan() {
@@ -679,6 +701,7 @@ function validateManualScan() {
   if (!val) return;
   applyScanResult(val);
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // INIT

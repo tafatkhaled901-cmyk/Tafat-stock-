@@ -401,7 +401,7 @@ function saveRec() {
   }
 
   // Trouver épaisseur pour calcul feuilles
-  const match = prod.match(/VR-(\\d+)-/);
+  const match = prod.match(/VR-(\d+)-/);
   const ep = match ? parseInt(match[1]) : 4;
   const fpc = FPC[ep] || 20;
   const feuilles = fpc * nb;
@@ -522,7 +522,7 @@ async function startCamera() {
       scanDetector = new BarcodeDetector({
         formats: ['ean_13','ean_8','qr_code','code_128','code_39','data_matrix','itf','upc_a','upc_e']
       });
-      statusEl.textContent = '🔍 Recherche d\\'un code-barres...';
+      statusEl.textContent = "🔍 Recherche d'un code-barres...";
       scanRunning = true;
       detectLoop();
     } else {

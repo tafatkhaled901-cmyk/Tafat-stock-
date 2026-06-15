@@ -188,7 +188,7 @@
   <button class="btn-blue" onclick="openScanner('recProd')" style="background:#0088ff">📷 Scanner le produit</button>
 
   <label>Produit (code)</label>
-  <input type="text" id="recProd" placeholder="ex: VR-4-2250x3210" list="prodList">
+  <input type="text" id="recProd" placeholder="ex: FLT8-321/214" list="prodList">
   <datalist id="prodList"></datalist>
 
   <label>Nombre de caisses</label>
@@ -251,11 +251,12 @@ const USERS = [
 ];
 
 const FPC = {3:40, 4:32, 5:26, 6:21, 8:16, 10:13, 12:11};
-const DIMS = ['2250x3210','3000x2000','3300x2140'];
+// Dimensions réelles (hauteur/largeur en cm, format des étiquettes)
+const DIMS = ['225/321','300/200','330/214','321/214'];
 const EPS = [3,4,5,6,8,10,12];
 
 const PRODS = [];
-EPS.forEach(ep => DIMS.forEach(d => PRODS.push('VR-'+ep+'-'+d)));
+EPS.forEach(ep => DIMS.forEach(d => PRODS.push('FLT'+ep+'-'+d)));
 
 // ═══════════════════════════════════════════════════════════
 // STATE
@@ -428,7 +429,7 @@ function saveRec() {
   }
 
   // Trouver épaisseur pour calcul feuilles
-  const match = prod.match(/VR-(\d+)-/);
+  const match = prod.match(/(\d+)/);
   const ep = match ? parseInt(match[1]) : 4;
   const fpc = FPC[ep] || 20;
   const feuilles = fpc * nb;

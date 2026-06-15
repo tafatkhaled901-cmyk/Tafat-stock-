@@ -81,7 +81,7 @@
     padding: 10px;
     gap: 5px;
   }
-  .bottomnav button { margin: 0; padding: 12px 5px; font-size: 13px; }
+  .bottomnav button { margin: 0; padding: 10px 2px; font-size: 11px; }
   .pindot {
     display: inline-block;
     width: 14px; height: 14px;
@@ -142,6 +142,13 @@
     <div id="casseList"></div>
   </div>
 
+  <!-- SORTIES -->
+  <div class="page" id="page-sorties">
+    <h2>📤 Sorties</h2>
+    <button class="btn-blue" style="background:#cc6600" onclick="openModal('modalSortie')">+ Nouvelle Sortie</button>
+    <div id="sortieList"></div>
+  </div>
+
   <!-- STOCK -->
   <div class="page" id="page-stock">
     <h2>🪟 Stock Global</h2>
@@ -153,8 +160,25 @@
   <div class="bottomnav">
     <button class="btn-blue" onclick="goto('entrees')">📥 Entrées</button>
     <button class="btn-blue" onclick="goto('casse')">💥 Casse</button>
+    <button class="btn-blue" style="background:#cc6600" onclick="goto('sorties')">📤 Sorties</button>
     <button class="btn-blue" onclick="goto('stock')">🪟 Stock</button>
   </div>
+</div>
+
+<!-- ═══ MODAL SORTIE ═══ -->
+<div class="modal" id="modalSortie">
+  <h2>📤 Nouvelle Sortie</h2>
+  <label>N° Contenant</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="sortieNum" placeholder="ex: CAI-2024-001" style="flex:1">
+    <button onclick="openScanner('sortieNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+
+  <label>Client (optionnel)</label>
+  <input type="text" id="sortieClient" placeholder="ex: Société Dupont">
+
+  <button class="btn-green" onclick="saveSortie()">✓ Confirmer la sortie</button>
+  <button class="btn-red" onclick="closeModal('modalSortie')">Annuler</button>
 </div>
 
 <!-- ═══ MODAL RÉCEPTION ═══ -->
@@ -240,6 +264,7 @@ let DB = {
   stock: JSON.parse(localStorage.getItem('vs_stock') || '{}'),
   entrees: JSON.parse(localStorage.getItem('vs_entrees') || '[]'),
   casses: JSON.parse(localStorage.getItem('vs_casses') || '[]'),
+  sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
 };
 
 let currentUser = null;
@@ -250,6 +275,7 @@ function saveDB() {
   localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
   localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
   localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
+  localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -354,6 +380,7 @@ function goto(page) {
   document.getElementById('page-' + page).classList.add('active');
   if (page === 'entrees') renderEntrees();
   else if (page === 'casse') renderCasse();
+  else if (page === 'sorties') renderSorties();
   else if (page === 'stock') renderStock();
 }
 
@@ -461,6 +488,68 @@ function saveCasse() {
 
   renderCasse();
   alert('💥 Casse déclarée : -' + qty + ' feuilles');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SORTIES
+// ═══════════════════════════════════════════════════════════
+function renderSorties() {
+  if (DB.sorties.length === 0) {
+    document.getElementById('sortieList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucune sortie enregistrée</p>';
+    return;
+  }
+  let html = '';
+  DB.sorties.slice().reverse().forEach(s => {
+    html += '<div class="card">' +
+            '<strong>' + s.prod + '</strong><br>' +
+            'N° ' + s.num + ' · -' + s.feuilles + ' feuilles<br>';
+    if (s.client) html += '<span style="color:#cc6600;">👤 ' + s.client + '</span><br>';
+    html += '<span style="color:#888; font-size:12px;">' + new Date(s.date).toLocaleString('fr-FR') + '</span>' +
+            '</div>';
+  });
+  document.getElementById('sortieList').innerHTML = html;
+}
+
+function saveSortie() {
+  const num = document.getElementById('sortieNum').value.trim();
+  const client = document.getElementById('sortieClient').value.trim();
+
+  if (!num) {
+    alert('Veuillez scanner ou entrer le N° contenant');
+    return;
+  }
+
+  // Chercher l'entrée correspondante par N° contenant (la plus récente non encore sortie)
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+
+  if (!entry) {
+    alert('⚠️ Aucune réception trouvée pour le contenant : ' + num);
+    return;
+  }
+
+  const prod = entry.prod;
+  const feuilles = entry.feuilles;
+  const nb = entry.nb;
+
+  if (!DB.stock[prod] || DB.stock[prod].f < feuilles) {
+    alert('⚠️ Stock insuffisant pour ce produit (' + prod + ')');
+    return;
+  }
+
+  // Décrémenter le stock
+  DB.stock[prod].f -= feuilles;
+  DB.stock[prod].c -= nb;
+
+  DB.sorties.push({ prod, num, feuilles, nb, client, date: new Date().toISOString() });
+
+  saveDB();
+  closeModal('modalSortie');
+
+  document.getElementById('sortieNum').value = '';
+  document.getElementById('sortieClient').value = '';
+
+  renderSorties();
+  alert('✓ Sortie enregistrée : -' + feuilles + ' feuilles (' + prod + ')');
 }
 
 // ═══════════════════════════════════════════════════════════

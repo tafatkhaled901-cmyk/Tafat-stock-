@@ -642,14 +642,39 @@ function renderStock() {
     return;
   }
 
+  const isGestionnaire = currentUser && currentUser.role === 'Gestionnaire';
+
   let html = '';
   Object.entries(DB.stock).forEach(([prod, v]) => {
     if (v.f > 0) {
       html += '<div class="card"><strong>' + prod + '</strong><br>' +
-              v.f + ' feuilles · ' + v.c + ' caisses</div>';
+              v.f + ' feuilles · ' + v.c + ' caisses';
+      if (isGestionnaire) {
+        html += '<button class="btn-red" style="margin-top:8px; padding:8px; font-size:13px;" onclick="removeProductFromStock(\'' + prod.replace(/'/g, "\\'") + '\')">🗑️ Retirer du stock</button>';
+      }
+      html += '</div>';
     }
   });
   document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vide</p>';
+}
+
+// Réservé au Gestionnaire : supprime totalement un produit du stock (sans création de sortie/vente).
+function removeProductFromStock(prod) {
+  if (!currentUser || currentUser.role !== 'Gestionnaire') {
+    alert('⛔ Action réservée au Gestionnaire.');
+    return;
+  }
+  if (!DB.stock[prod]) return;
+
+  const confirmMsg = '⚠️ Retirer DÉFINITIVEMENT "' + prod + '" du stock ?\n' +
+    DB.stock[prod].f + ' feuilles / ' + DB.stock[prod].c + ' caisses seront supprimées.\n' +
+    'Cette action est irréversible.';
+  if (!confirm(confirmMsg)) return;
+
+  delete DB.stock[prod];
+  saveDB();
+  renderStock();
+  alert('✓ "' + prod + '" a été retiré du stock.');
 }
 
 // ═══════════════════════════════════════════════════════════

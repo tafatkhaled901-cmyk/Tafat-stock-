@@ -257,8 +257,15 @@ const USERS = [
 // Clé = "épaisseur-dimensions" tel qu'extrait du code produit (ex: "8-321/214")
 // Complétée automatiquement quand l'utilisateur saisit une quantité pour une nouvelle référence.
 const FPC_TABLE_DEFAULT = {
+  '4-366/214': 34,
+  '4-321/214': 32,
   '8-321/214': 16,
-  '4-366/214': 34
+  '10-300/200': 13,
+  '10-321/214': 13,
+  '10-225/214': 13,
+  '12-300/200': 11,
+  '12-321/214': 11,
+  '12-225/214': 11
 };
 let FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, JSON.parse(localStorage.getItem('vs_fpc_table') || '{}'));
 
@@ -274,7 +281,7 @@ function parseProductCode(prod) {
 }
 
 // Dimensions réelles connues (hauteur/largeur en cm, format des étiquettes)
-const DIMS = ['225/321','300/200','330/214','321/214','366/214'];
+const DIMS = ['225/214','300/200','321/214','330/214','366/214'];
 const EPS = [3,4,5,6,8,10,12];
 
 const PRODS = [];

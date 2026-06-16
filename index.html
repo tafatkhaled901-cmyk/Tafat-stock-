@@ -428,6 +428,14 @@ function saveRec() {
     return;
   }
 
+  // ANTI-DOUBLON : vérifier si ce N° contenant est déjà en stock (reçu et pas encore sorti/cassé en totalité)
+  const dejaRecu = DB.entrees.some(e => e.num === num);
+  const dejaSorti = DB.sorties.some(s => s.num === num);
+  if (dejaRecu && !dejaSorti) {
+    alert('⛔ Ce N° de contenant (' + num + ') est déjà enregistré en stock.\nImpossible de le scanner deux fois.');
+    return;
+  }
+
   // Trouver épaisseur pour calcul feuilles
   const match = prod.match(/(\d+)/);
   const ep = match ? parseInt(match[1]) : 4;
@@ -587,23 +595,44 @@ let scanDetector = null;
 let scanRunning = false;
 let scanRaf = null;
 let scanTargetQueue = [];
-let scanLastCode = null;
+let scanFoundCodes = {}; // codes déjà capturés dans cette session { code: true }
+let scanCooldownUntil = 0;
+let scanRejectUntil = 0;
 
 const FIELD_LABELS = {
-  recProd: 'le PRODUIT (1er code-barres)',
-  recNum: 'le N° CONTENANT (2ème code-barres)',
-  casseNum: 'le N° contenant',
-  sortieNum: 'le N° contenant'
+  recProd: 'PRODUIT',
+  recNum: 'N° CONTENANT',
+  casseNum: 'N° contenant',
+  sortieNum: 'N° contenant'
+};
+
+// Règles strictes de validation selon le champ ciblé
+// Produit ex: FL8-321/214  → lettres + chiffres + tiret + slash
+// Contenant ex: 22325100518C → exactement 11 chiffres + 1 lettre majuscule
+const FIELD_VALIDATORS = {
+  recProd:   { regex: /^[A-Z]{1,4}\d{1,3}-\d{2,4}\/\d{2,4}$/, msg: 'Format produit attendu : FL8-321/214' },
+  recNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
+  casseNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
+  sortieNum: { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' }
 };
 
 function openScanner(targetFieldId) {
   scanTargetQueue = Array.isArray(targetFieldId) ? targetFieldId.slice() : [targetFieldId];
-  scanLastCode = null;
+  scanFoundCodes = {};
+  scanCooldownUntil = 0;
+  scanRejectUntil = 0;
   document.getElementById('modalScanner').style.display = 'block';
   document.getElementById('scanManualInp').value = '';
-  const first = scanTargetQueue[0];
-  document.getElementById('scanStatusMsg').textContent = 'Démarrage de la caméra... Scannez ' + (FIELD_LABELS[first] || 'le code');
+  updateScanStatus();
   startCamera();
+}
+
+function updateScanStatus(extra) {
+  const statusEl = document.getElementById('scanStatusMsg');
+  const next = scanTargetQueue[0];
+  let html = '📷 Visez le code-barres <strong>' + (FIELD_LABELS[next] || 'demandé') + '</strong>';
+  if (extra) html = extra + '<br>' + html;
+  statusEl.innerHTML = html;
 }
 
 async function startCamera() {
@@ -612,22 +641,23 @@ async function startCamera() {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, focusMode: 'continuous' }
     });
     scanStream = stream;
     video.srcObject = stream;
     await video.play();
 
     if ('BarcodeDetector' in window) {
+      // Uniquement Code 128 et Code 39 (formats réellement utilisés sur ces étiquettes).
+      // EAN-13, QR, Data Matrix, etc. sont volontairement exclus pour éviter les faux positifs.
       scanDetector = new BarcodeDetector({
-        formats: ['ean_13','ean_8','qr_code','code_128','code_39','data_matrix','itf','upc_a','upc_e']
+        formats: ['code_128', 'code_39']
       });
-      const first = scanTargetQueue[0];
-      statusEl.textContent = '🔍 Scannez ' + (FIELD_LABELS[first] || 'le code') + '...';
+      updateScanStatus();
       scanRunning = true;
       detectLoop();
     } else {
-      statusEl.textContent = '⚠️ Scanner automatique non supporté. Tapez le code ci-dessous.';
+      statusEl.textContent = '⚠️ Scanner automatique non supporté sur ce navigateur. Tapez le code ci-dessous.';
     }
   } catch (err) {
     let msg = 'Erreur caméra : ' + err.message;
@@ -643,28 +673,72 @@ function detectLoop() {
   const tick = async () => {
     if (!scanRunning) return;
     if (!video.videoWidth) { scanRaf = requestAnimationFrame(tick); return; }
+
+    // Cooldown après une capture réussie (laisse le temps de viser le 2e code)
+    if (Date.now() < scanCooldownUntil) {
+      scanRaf = requestAnimationFrame(tick);
+      return;
+    }
+    // Petite pause après un rejet (laisse le message d'erreur visible un instant)
+    if (Date.now() < scanRejectUntil) {
+      scanRaf = requestAnimationFrame(tick);
+      return;
+    }
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
     try {
       const codes = await scanDetector.detect(canvas);
       if (codes.length > 0) {
-        const code = codes[0].rawValue;
-        // Si on attend un 2e code et que c'est le même que le précédent, on ignore (caméra pas encore déplacée)
-        if (code === scanLastCode && scanTargetQueue.length > 1) {
+        // On essaie de trouver un code pas déjà capturé dans cette session
+        let codeObj = codes.find(c => !scanFoundCodes[c.rawValue]);
+        if (!codeObj) {
           scanRaf = requestAnimationFrame(tick);
           return;
         }
-        if (navigator.vibrate) navigator.vibrate([80,40,80]);
-        scanLastCode = code;
-        scanRunning = false;
-        applyScanResult(code);
+        const code = codeObj.rawValue.trim();
+        handleCodeFound(code);
         return;
       }
     } catch(e) {}
     scanRaf = requestAnimationFrame(tick);
   };
   scanRaf = requestAnimationFrame(tick);
+}
+
+function handleCodeFound(code) {
+  const field = scanTargetQueue[0];
+  const validator = FIELD_VALIDATORS[field];
+
+  // VALIDATION STRICTE : si le code ne respecte pas le format attendu pour ce champ,
+  // on rejette sans rien enregistrer et on continue le scan.
+  if (validator && !validator.regex.test(code)) {
+    if (navigator.vibrate) navigator.vibrate(250); // vibration longue = erreur
+    document.getElementById('scanStatusMsg').innerHTML =
+      '⛔ <strong>Code rejeté</strong> : "' + code + '"<br>' + validator.msg;
+    scanFoundCodes[code] = true; // évite de re-tester en boucle le même code invalide
+    scanRejectUntil = Date.now() + 1500;
+    scanRunning = true;
+    detectLoop();
+    return;
+  }
+
+  // Code valide
+  scanFoundCodes[code] = true;
+  if (navigator.vibrate) navigator.vibrate([100,50,100]);
+  scanTargetQueue.shift();
+  document.getElementById(field).value = code;
+
+  if (scanTargetQueue.length > 0) {
+    scanCooldownUntil = Date.now() + 1800;
+    updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);
+    scanRunning = true;
+    detectLoop();
+  } else {
+    document.getElementById('scanStatusMsg').innerHTML = '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminé !';
+    setTimeout(() => { closeScanner(); }, 700);
+  }
 }
 
 function stopCamera() {
@@ -682,34 +756,11 @@ function closeScanner() {
   document.getElementById('modalScanner').style.display = 'none';
 }
 
-function applyScanResult(code) {
-  const field = scanTargetQueue.shift();
-  if (field) {
-    document.getElementById(field).value = code;
-  }
-  const statusEl = document.getElementById('scanStatusMsg');
-
-  if (scanTargetQueue.length > 0) {
-    const next = scanTargetQueue[0];
-    statusEl.innerHTML = '✅ <strong>' + code + '</strong> enregistré !<br><br>📷 Maintenant scannez ' + (FIELD_LABELS[next] || 'le code suivant') + '...';
-    // Délai de 2 secondes pour déplacer la caméra vers le 2e code-barres
-    setTimeout(() => {
-      scanLastCode = null; // reset pour accepter tout code
-      scanRunning = true;
-      detectLoop();
-    }, 2000);
-  } else {
-    statusEl.innerHTML = '✅ <strong>' + code + '</strong> enregistré !<br>Fermeture...';
-    setTimeout(() => {
-      closeScanner();
-    }, 800);
-  }
-}
-
 function validateManualScan() {
   const val = document.getElementById('scanManualInp').value.trim();
   if (!val) return;
-  applyScanResult(val);
+  scanRunning = false;
+  handleCodeFound(val);
 }
 
 

@@ -424,9 +424,12 @@ function closeModal(id) {
 
 // Quand le code produit change (saisie ou scan), on regarde si la référence est connue
 function onProdChange() {
-  const prod = document.getElementById('recProd').value.trim();
   const fpcInput = document.getElementById('recFpc');
   const statusEl = document.getElementById('fpcStatus');
+  if (!fpcInput || !statusEl) return; // sécurité : éléments pas présents (mauvais contexte)
+
+  const prodEl = document.getElementById('recProd');
+  const prod = prodEl ? prodEl.value.trim() : '';
   const parsed = parseProductCode(prod);
 
   if (!parsed) {
@@ -743,17 +746,25 @@ function detectLoop() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
+
+    let detectedCode = null;
     try {
       const codes = await scanDetector.detect(canvas);
       if (codes.length > 0) {
-        // On essaie de trouver un code pas déjà capturé dans cette session
         let codeObj = codes.find(c => !scanFoundCodes[c.rawValue]);
-        if (codeObj) {
-          const code = codeObj.rawValue.trim();
-          handleCodeFound(code);
-        }
+        if (codeObj) detectedCode = codeObj.rawValue.trim();
       }
-    } catch(e) {}
+    } catch(e) { /* erreur de détection caméra : on ignore, on continue la boucle */ }
+
+    if (detectedCode !== null) {
+      try {
+        handleCodeFound(detectedCode);
+      } catch(e) {
+        // Sécurité absolue : même si handleCodeFound plante, la boucle ne doit jamais se figer.
+        console.error('Erreur handleCodeFound:', e);
+        document.getElementById('scanStatusMsg').textContent = 'Erreur interne, nouvelle tentative...';
+      }
+    }
     // La boucle continue toujours tant que scanRunning est vrai — un seul tick actif à la fois.
     scanRaf = requestAnimationFrame(tick);
   };

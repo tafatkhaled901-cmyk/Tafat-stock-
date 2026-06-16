@@ -748,15 +748,13 @@ function detectLoop() {
       if (codes.length > 0) {
         // On essaie de trouver un code pas déjà capturé dans cette session
         let codeObj = codes.find(c => !scanFoundCodes[c.rawValue]);
-        if (!codeObj) {
-          scanRaf = requestAnimationFrame(tick);
-          return;
+        if (codeObj) {
+          const code = codeObj.rawValue.trim();
+          handleCodeFound(code);
         }
-        const code = codeObj.rawValue.trim();
-        handleCodeFound(code);
-        return;
       }
     } catch(e) {}
+    // La boucle continue toujours tant que scanRunning est vrai — un seul tick actif à la fois.
     scanRaf = requestAnimationFrame(tick);
   };
   scanRaf = requestAnimationFrame(tick);
@@ -767,15 +765,13 @@ function handleCodeFound(code) {
   const validator = FIELD_VALIDATORS[field];
 
   // VALIDATION STRICTE : si le code ne respecte pas le format attendu pour ce champ,
-  // on rejette sans rien enregistrer et on continue le scan.
+  // on rejette sans rien enregistrer ; la boucle de détection continue (pas de redémarrage).
   if (validator && !validator.regex.test(code)) {
     if (navigator.vibrate) navigator.vibrate(250); // vibration longue = erreur
     document.getElementById('scanStatusMsg').innerHTML =
       '⛔ <strong>Code rejeté</strong> : "' + code + '"<br>' + validator.msg;
     scanFoundCodes[code] = true; // évite de re-tester en boucle le même code invalide
     scanRejectUntil = Date.now() + 1500;
-    scanRunning = true;
-    detectLoop();
     return;
   }
 
@@ -789,10 +785,10 @@ function handleCodeFound(code) {
   if (scanTargetQueue.length > 0) {
     scanCooldownUntil = Date.now() + 1800;
     updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);
-    scanRunning = true;
-    detectLoop();
+    // Pas besoin de relancer detectLoop : la boucle existante continue, le cooldown la met juste en pause.
   } else {
     document.getElementById('scanStatusMsg').innerHTML = '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminé !';
+    scanRunning = false;
     setTimeout(() => { closeScanner(); }, 700);
   }
 }

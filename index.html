@@ -188,8 +188,11 @@
   <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Scanner l'étiquette (produit + contenant)</button>
 
   <label>Produit (code)</label>
-  <input type="text" id="recProd" placeholder="ex: FLT8-321/214" list="prodList">
+  <input type="text" id="recProd" placeholder="ex: FLT8-321/214" list="prodList" oninput="onProdChange()">
   <datalist id="prodList"></datalist>
+
+  <label>Feuilles par caisse <span id="fpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
+  <input type="number" id="recFpc" min="1" placeholder="ex: 16">
 
   <label>Nombre de caisses</label>
   <input type="number" id="recNb" value="1" min="1">
@@ -250,9 +253,28 @@ const USERS = [
   {id:'u3', nom:'Pierre Leroy', role:'Gestionnaire', pin:'0000'},
 ];
 
-const FPC = {3:40, 4:32, 5:26, 6:21, 8:16, 10:13, 12:11};
-// Dimensions réelles (hauteur/largeur en cm, format des étiquettes)
-const DIMS = ['225/321','300/200','330/214','321/214'];
+// Table précise : feuilles par caisse selon la référence EXACTE (épaisseur + dimensions)
+// Clé = "épaisseur-dimensions" tel qu'extrait du code produit (ex: "8-321/214")
+// Complétée automatiquement quand l'utilisateur saisit une quantité pour une nouvelle référence.
+const FPC_TABLE_DEFAULT = {
+  '8-321/214': 16,
+  '4-366/214': 34
+};
+let FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, JSON.parse(localStorage.getItem('vs_fpc_table') || '{}'));
+
+function saveFpcTable() {
+  localStorage.setItem('vs_fpc_table', JSON.stringify(FPC_TABLE));
+}
+
+// Extrait {ep, dims, key} d'un code produit type FL8-321/214 ou FLT4-366/214
+function parseProductCode(prod) {
+  const m = prod.match(/(\d+)-(\d+\/\d+)/);
+  if (!m) return null;
+  return { ep: parseInt(m[1]), dims: m[2], key: m[1] + '-' + m[2] };
+}
+
+// Dimensions réelles connues (hauteur/largeur en cm, format des étiquettes)
+const DIMS = ['225/321','300/200','330/214','321/214','366/214'];
 const EPS = [3,4,5,6,8,10,12];
 
 const PRODS = [];
@@ -391,11 +413,34 @@ function openModal(id) {
     let opts = '';
     PRODS.forEach(p => opts += '<option value="' + p + '">');
     document.getElementById('prodList').innerHTML = opts;
+    document.getElementById('recFpc').value = '';
+    document.getElementById('fpcStatus').textContent = '';
   }
 }
 
 function closeModal(id) {
   document.getElementById(id).style.display = 'none';
+}
+
+// Quand le code produit change (saisie ou scan), on regarde si la référence est connue
+function onProdChange() {
+  const prod = document.getElementById('recProd').value.trim();
+  const fpcInput = document.getElementById('recFpc');
+  const statusEl = document.getElementById('fpcStatus');
+  const parsed = parseProductCode(prod);
+
+  if (!parsed) {
+    statusEl.textContent = '';
+    return;
+  }
+
+  if (FPC_TABLE[parsed.key] !== undefined) {
+    fpcInput.value = FPC_TABLE[parsed.key];
+    statusEl.innerHTML = '<span style="color:#00aa44;">✓ Référence connue</span>';
+  } else {
+    fpcInput.value = '';
+    statusEl.innerHTML = '<span style="color:#cc6600;">⚠️ Nouvelle référence — indiquez la quantité (CANTIDAD) de l\'étiquette</span>';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -422,9 +467,15 @@ function saveRec() {
   const nb = parseInt(document.getElementById('recNb').value) || 1;
   const num = document.getElementById('recNum').value.trim();
   const emp = document.getElementById('recEmp').value.trim();
+  const fpcSaisi = parseInt(document.getElementById('recFpc').value);
 
   if (!prod || !num) {
     alert('Veuillez remplir le produit et le N° contenant');
+    return;
+  }
+
+  if (!fpcSaisi || fpcSaisi <= 0) {
+    alert('⚠️ Veuillez indiquer le nombre de feuilles par caisse (visible sur l\'étiquette : CANTIDAD)');
     return;
   }
 
@@ -436,11 +487,14 @@ function saveRec() {
     return;
   }
 
-  // Trouver épaisseur pour calcul feuilles
-  const match = prod.match(/(\d+)/);
-  const ep = match ? parseInt(match[1]) : 4;
-  const fpc = FPC[ep] || 20;
-  const feuilles = fpc * nb;
+  // Mémoriser cette référence (épaisseur+dimensions) pour la prochaine fois
+  const parsed = parseProductCode(prod);
+  if (parsed && FPC_TABLE[parsed.key] !== fpcSaisi) {
+    FPC_TABLE[parsed.key] = fpcSaisi;
+    saveFpcTable();
+  }
+
+  const feuilles = fpcSaisi * nb;
 
   DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
 
@@ -452,6 +506,7 @@ function saveRec() {
   closeModal('modalRec');
 
   document.getElementById('recProd').value = '';
+  document.getElementById('recFpc').value = '';
   document.getElementById('recNb').value = '1';
   document.getElementById('recNum').value = '';
   document.getElementById('recEmp').value = '';
@@ -729,6 +784,7 @@ function handleCodeFound(code) {
   if (navigator.vibrate) navigator.vibrate([100,50,100]);
   scanTargetQueue.shift();
   document.getElementById(field).value = code;
+  if (field === 'recProd') onProdChange();
 
   if (scanTargetQueue.length > 0) {
     scanCooldownUntil = Date.now() + 1800;

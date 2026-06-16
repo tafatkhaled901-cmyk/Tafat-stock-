@@ -587,6 +587,7 @@ let scanDetector = null;
 let scanRunning = false;
 let scanRaf = null;
 let scanTargetQueue = [];
+let scanLastCode = null;
 
 const FIELD_LABELS = {
   recProd: 'le PRODUIT (1er code-barres)',
@@ -597,6 +598,7 @@ const FIELD_LABELS = {
 
 function openScanner(targetFieldId) {
   scanTargetQueue = Array.isArray(targetFieldId) ? targetFieldId.slice() : [targetFieldId];
+  scanLastCode = null;
   document.getElementById('modalScanner').style.display = 'block';
   document.getElementById('scanManualInp').value = '';
   const first = scanTargetQueue[0];
@@ -648,7 +650,13 @@ function detectLoop() {
       const codes = await scanDetector.detect(canvas);
       if (codes.length > 0) {
         const code = codes[0].rawValue;
+        // Si on attend un 2e code et que c'est le même que le précédent, on ignore (caméra pas encore déplacée)
+        if (code === scanLastCode && scanTargetQueue.length > 1) {
+          scanRaf = requestAnimationFrame(tick);
+          return;
+        }
         if (navigator.vibrate) navigator.vibrate([80,40,80]);
+        scanLastCode = code;
         scanRunning = false;
         applyScanResult(code);
         return;
@@ -683,16 +691,18 @@ function applyScanResult(code) {
 
   if (scanTargetQueue.length > 0) {
     const next = scanTargetQueue[0];
-    statusEl.textContent = '✓ ' + code + ' enregistré. Scannez maintenant ' + (FIELD_LABELS[next] || 'le code suivant') + '...';
+    statusEl.innerHTML = '✅ <strong>' + code + '</strong> enregistré !<br><br>📷 Maintenant scannez ' + (FIELD_LABELS[next] || 'le code suivant') + '...';
+    // Délai de 2 secondes pour déplacer la caméra vers le 2e code-barres
     setTimeout(() => {
+      scanLastCode = null; // reset pour accepter tout code
       scanRunning = true;
       detectLoop();
-    }, 1200);
+    }, 2000);
   } else {
-    statusEl.textContent = '✓ Terminé : ' + code;
+    statusEl.innerHTML = '✅ <strong>' + code + '</strong> enregistré !<br>Fermeture...';
     setTimeout(() => {
       closeScanner();
-    }, 600);
+    }, 800);
   }
 }
 

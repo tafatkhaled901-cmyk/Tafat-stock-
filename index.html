@@ -755,12 +755,6 @@ function detectLoop() {
     if (!scanRunning) return;
     if (!video.videoWidth) { scanRaf = requestAnimationFrame(tick); return; }
 
-    // Cooldown après une capture réussie (laisse le temps de viser le 2e code)
-    if (Date.now() < scanCooldownUntil) {
-      scanRaf = requestAnimationFrame(tick);
-      return;
-    }
-    // Petite pause après un rejet (laisse le message d'erreur visible un instant)
     if (Date.now() < scanRejectUntil) {
       scanRaf = requestAnimationFrame(tick);
       return;
@@ -770,46 +764,61 @@ function detectLoop() {
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
 
-    let detectedCode = null;
+    let detectedCodes = [];
     try {
       const codes = await scanDetector.detect(canvas);
-      if (codes.length > 0) {
-        let codeObj = codes.find(c => !scanFoundCodes[c.rawValue]);
-        if (codeObj) detectedCode = codeObj.rawValue.trim();
-      }
+      detectedCodes = codes.map(c => c.rawValue.trim());
     } catch(e) { /* erreur de détection caméra : on ignore, on continue la boucle */ }
 
-    if (detectedCode !== null) {
+    if (detectedCodes.length > 0) {
       try {
-        handleCodeFound(detectedCode);
+        handleCodesFound(detectedCodes);
       } catch(e) {
-        // Sécurité absolue : même si handleCodeFound plante, la boucle ne doit jamais se figer.
-        console.error('Erreur handleCodeFound:', e);
-        document.getElementById('scanStatusMsg').textContent = 'Erreur interne, nouvelle tentative...';
+        console.error('Erreur handleCodesFound:', e);
       }
     }
-    // La boucle continue toujours tant que scanRunning est vrai — un seul tick actif à la fois.
     scanRaf = requestAnimationFrame(tick);
   };
   scanRaf = requestAnimationFrame(tick);
 }
 
-function handleCodeFound(code) {
-  const field = scanTargetQueue[0];
-  const validator = FIELD_VALIDATORS[field];
+// Traite TOUS les codes visibles dans la frame en une fois (pas seulement un par un).
+// Cela évite le problème où 2 codes sont visibles simultanément à l'écran mais le
+// detector ne "voit" toujours que le même, bloquant la progression vers le 2e champ.
+function handleCodesFound(codes) {
+  // Essaie d'assigner chaque champ encore en attente à un code qui correspond à sa regex
+  // et qui n'a pas déjà été utilisé dans cette session.
+  for (let i = scanTargetQueue.length - 1; i >= 0; i--) {
+    const field = scanTargetQueue[i];
+    if (field !== scanTargetQueue[0]) continue; // on ne traite que le champ courant en tête de file, dans l'ordre
+    const validator = FIELD_VALIDATORS[field];
 
-  // VALIDATION STRICTE : si le code ne respecte pas le format attendu pour ce champ,
-  // on rejette sans rien enregistrer ; la boucle de détection continue (pas de redémarrage).
-  if (validator && !validator.regex.test(code)) {
-    if (navigator.vibrate) navigator.vibrate(250); // vibration longue = erreur
-    document.getElementById('scanStatusMsg').innerHTML =
-      '⛔ <strong>Code rejeté</strong> : "' + code + '"<br>' + validator.msg;
-    scanFoundCodes[code] = true; // évite de re-tester en boucle le même code invalide
-    scanRejectUntil = Date.now() + 1500;
-    return;
+    // Cherche parmi les codes visibles celui qui correspond à ce champ et n'a pas déjà été pris
+    const match = codes.find(code => !scanFoundCodes[code] && (!validator || validator.regex.test(code)));
+
+    if (match) {
+      acceptCode(field, match);
+      return; // on retraite à la prochaine frame pour le champ suivant
+    }
   }
 
-  // Code valide
+  // Aucun code valide trouvé pour le champ courant : si un code a été vu mais ne correspond
+  // à aucune règle attendue, on peut signaler un rejet (seulement si un seul nouveau code visible)
+  const field = scanTargetQueue[0];
+  const validator = FIELD_VALIDATORS[field];
+  const unseenCodes = codes.filter(c => !scanFoundCodes[c]);
+  if (unseenCodes.length > 0 && validator) {
+    const rejectedCode = unseenCodes[0];
+    if (Date.now() >= scanRejectUntil) {
+      if (navigator.vibrate) navigator.vibrate(150);
+      document.getElementById('scanStatusMsg').innerHTML =
+        '⛔ Code non reconnu pour ce champ : "' + rejectedCode + '"<br>' + validator.msg;
+      scanRejectUntil = Date.now() + 1200;
+    }
+  }
+}
+
+function acceptCode(field, code) {
   scanFoundCodes[code] = true;
   if (navigator.vibrate) navigator.vibrate([100,50,100]);
   scanTargetQueue.shift();
@@ -817,9 +826,7 @@ function handleCodeFound(code) {
   if (field === 'recProd') onProdChange();
 
   if (scanTargetQueue.length > 0) {
-    scanCooldownUntil = Date.now() + 1800;
     updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);
-    // Pas besoin de relancer detectLoop : la boucle existante continue, le cooldown la met juste en pause.
   } else {
     document.getElementById('scanStatusMsg').innerHTML = '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminé !';
     scanRunning = false;

@@ -656,6 +656,8 @@ let scanTargetQueue = [];
 let scanFoundCodes = {}; // codes déjà capturés dans cette session { code: true }
 let scanCooldownUntil = 0;
 let scanRejectUntil = 0;
+let scanWatchdogTimer = null;
+let scanLastTickAt = 0;
 
 const FIELD_LABELS = {
   recProd: 'PRODUIT',
@@ -683,6 +685,26 @@ function openScanner(targetFieldId) {
   document.getElementById('scanManualInp').value = '';
   updateScanStatus();
   startCamera();
+  startWatchdog();
+}
+
+// Garde-fou : si la boucle de détection ne "tique" plus depuis 3s alors qu'elle devrait,
+// on la relance de force. Filet de sécurité ultime contre tout blocage imprévu.
+function startWatchdog() {
+  stopWatchdog();
+  scanLastTickAt = Date.now();
+  scanWatchdogTimer = setInterval(() => {
+    const modalVisible = document.getElementById('modalScanner').style.display === 'block';
+    if (!modalVisible) { stopWatchdog(); return; }
+    if (scanRunning && Date.now() - scanLastTickAt > 3000) {
+      console.warn('Watchdog: boucle figée, relance forcée');
+      detectLoop();
+    }
+  }, 1000);
+}
+
+function stopWatchdog() {
+  if (scanWatchdogTimer) { clearInterval(scanWatchdogTimer); scanWatchdogTimer = null; }
 }
 
 function updateScanStatus(extra) {
@@ -729,6 +751,7 @@ function detectLoop() {
   const canvas = document.getElementById('scanCanvas');
 
   const tick = async () => {
+    scanLastTickAt = Date.now();
     if (!scanRunning) return;
     if (!video.videoWidth) { scanRaf = requestAnimationFrame(tick); return; }
 
@@ -816,6 +839,7 @@ function stopCamera() {
 
 function closeScanner() {
   stopCamera();
+  stopWatchdog();
   document.getElementById('modalScanner').style.display = 'none';
 }
 

@@ -81,7 +81,7 @@
     padding: 10px;
     gap: 5px;
   }
-  .bottomnav button { margin: 0; padding: 10px 2px; font-size: 11px; }
+  .bottomnav button { margin: 0; padding: 8px 1px; font-size: 9px; }
   .pindot {
     display: inline-block;
     width: 14px; height: 14px;
@@ -152,8 +152,20 @@
   <!-- STOCK -->
   <div class="page" id="page-stock">
     <h2>🪟 Stock Global</h2>
+    <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Voir l'historique d'un contenant</button>
     <div id="stockKpis"></div>
     <div id="stockList"></div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="page" id="page-historique">
+    <h2>🕓 Historique des Mouvements</h2>
+    <label>N° Contenant</label>
+    <div style="display:flex; gap:8px">
+      <input type="text" id="histNum" placeholder="ex: 22325100518C" style="flex:1" oninput="renderHistorique()">
+      <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+    </div>
+    <div id="histList"></div>
   </div>
 
   <!-- NAV -->
@@ -162,6 +174,7 @@
     <button class="btn-blue" onclick="goto('casse')">💥 Casse</button>
     <button class="btn-blue" style="background:#cc6600" onclick="goto('sorties')">📤 Sorties</button>
     <button class="btn-blue" onclick="goto('stock')">🪟 Stock</button>
+    <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Historique</button>
   </div>
 </div>
 
@@ -295,6 +308,7 @@ let DB = {
   entrees: JSON.parse(localStorage.getItem('vs_entrees') || '[]'),
   casses: JSON.parse(localStorage.getItem('vs_casses') || '[]'),
   sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
+  mouvements: JSON.parse(localStorage.getItem('vs_mouvements') || '[]'),
 };
 
 let currentUser = null;
@@ -306,6 +320,17 @@ function saveDB() {
   localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
   localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
+  localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+}
+
+// Journal centralisé : enregistre TOUTE opération liée à un contenant.
+// type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)
+function logMouvement(type, num, detail) {
+  DB.mouvements.push({
+    type, num, detail,
+    operateur: currentUser ? currentUser.nom : '—',
+    date: new Date().toISOString()
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -412,6 +437,7 @@ function goto(page) {
   else if (page === 'casse') renderCasse();
   else if (page === 'sorties') renderSorties();
   else if (page === 'stock') renderStock();
+  else if (page === 'historique') renderHistorique();
 }
 
 function openModal(id) {
@@ -507,6 +533,7 @@ function saveRec() {
   const feuilles = fpcSaisi * nb;
 
   DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
+  logMouvement('Entrée', num, prod + ' · ' + nb + ' caisse(s) · ' + feuilles + ' feuilles' + (emp ? ' · 📍' + emp : ''));
 
   if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
   DB.stock[prod].f += feuilles;
@@ -554,6 +581,7 @@ function saveCasse() {
   }
 
   DB.casses.push({ num, qty, date: new Date().toISOString() });
+  logMouvement('Casse', num, '-' + qty + ' feuilles cassées');
   saveDB();
   closeModal('modalCasse');
 
@@ -615,6 +643,7 @@ function saveSortie() {
   DB.stock[prod].c -= nb;
 
   DB.sorties.push({ prod, num, feuilles, nb, client, date: new Date().toISOString() });
+  logMouvement('Sortie', num, prod + ' · -' + feuilles + ' feuilles' + (client ? ' · 👤' + client : ''));
 
   saveDB();
   closeModal('modalSortie');
@@ -672,9 +701,64 @@ function removeProductFromStock(prod) {
   if (!confirm(confirmMsg)) return;
 
   delete DB.stock[prod];
+
+  // On loggue la suppression pour chaque contenant encore actif lié à ce produit,
+  // pour que l'historique par N° contenant reste cohérent.
+  const contenantsActifs = DB.entrees
+    .filter(e => e.prod === prod)
+    .map(e => e.num)
+    .filter(num => !DB.sorties.some(s => s.num === num));
+  contenantsActifs.forEach(num => {
+    logMouvement('Suppression', num, prod + ' · retiré du stock par le Gestionnaire');
+  });
+
   saveDB();
   renderStock();
   alert('✓ "' + prod + '" a été retiré du stock.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORIQUE DES MOUVEMENTS
+// ═══════════════════════════════════════════════════════════
+const MOUVEMENT_COLORS = {
+  'Entrée': '#0055cc',
+  'Casse': '#cc2222',
+  'Sortie': '#cc6600',
+  'Suppression': '#660000',
+  'Transfert': '#6633aa'
+};
+
+function renderHistorique() {
+  const num = document.getElementById('histNum').value.trim();
+  const listEl = document.getElementById('histList');
+
+  if (!num) {
+    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Entrez ou scannez un N° de contenant pour voir son historique</p>';
+    return;
+  }
+
+  const mouvements = DB.mouvements
+    .filter(m => m.num === num)
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date)); // ordre chronologique
+
+  if (mouvements.length === 0) {
+    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucun mouvement trouvé pour ce N° de contenant</p>';
+    return;
+  }
+
+  let html = '<p style="color:#888; font-size:13px;">' + mouvements.length + ' mouvement(s) trouvé(s) pour <strong>' + num + '</strong></p>';
+  mouvements.forEach(m => {
+    const color = MOUVEMENT_COLORS[m.type] || '#555';
+    const d = new Date(m.date);
+    const dateStr = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    html += '<div class="card" style="border-left:4px solid ' + color + ';">' +
+            '<strong style="color:' + color + ';">' + m.type + '</strong><br>' +
+            m.detail + '<br>' +
+            '<span style="color:#888; font-size:12px;">👤 ' + m.operateur + ' · ' + dateStr + '</span>' +
+            '</div>';
+  });
+  listEl.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -695,7 +779,8 @@ const FIELD_LABELS = {
   recProd: 'PRODUIT',
   recNum: 'N° CONTENANT',
   casseNum: 'N° contenant',
-  sortieNum: 'N° contenant'
+  sortieNum: 'N° contenant',
+  histNum: 'N° contenant'
 };
 
 // Règles strictes de validation selon le champ ciblé
@@ -705,7 +790,8 @@ const FIELD_VALIDATORS = {
   recProd:   { regex: /^[A-Z]{1,4}\d{1,3}-\d{2,4}\/\d{2,4}$/, msg: 'Format produit attendu : FL8-321/214' },
   recNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
   casseNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
-  sortieNum: { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' }
+  sortieNum: { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
+  histNum:   { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' }
 };
 
 function openScanner(targetFieldId) {
@@ -856,6 +942,7 @@ function acceptCode(field, code) {
   scanTargetQueue.shift();
   document.getElementById(field).value = code;
   if (field === 'recProd') onProdChange();
+  if (field === 'histNum') renderHistorique();
 
   if (scanTargetQueue.length > 0) {
     updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);

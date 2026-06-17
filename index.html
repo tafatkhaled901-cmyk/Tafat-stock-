@@ -658,6 +658,13 @@ function saveSortie() {
 // ═══════════════════════════════════════════════════════════
 // STOCK
 // ═══════════════════════════════════════════════════════════
+// Retourne la liste des contenants encore actifs (reçus, pas sortis, pas cassés en totalité) pour un produit donné
+function getContenantsActifs(prod) {
+  return DB.entrees
+    .filter(e => e.prod === prod)
+    .filter(e => !DB.sorties.some(s => s.num === e.num)); // exclut ceux déjà sortis
+}
+
 function renderStock() {
   let totF = 0, totC = 0;
   Object.values(DB.stock).forEach(v => { totF += v.f; totC += v.c; });
@@ -676,15 +683,54 @@ function renderStock() {
   let html = '';
   Object.entries(DB.stock).forEach(([prod, v]) => {
     if (v.f > 0) {
+      const contenants = getContenantsActifs(prod);
       html += '<div class="card"><strong>' + prod + '</strong><br>' +
               v.f + ' feuilles · ' + v.c + ' caisses';
+
+      if (contenants.length > 0) {
+        html += '<div style="margin-top:8px; padding-top:8px; border-top:1px solid #ddd;">';
+        contenants.forEach(c => {
+          html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:13px;">' +
+                  '<span>📦 <strong>' + c.num + '</strong> · ' + c.feuilles + ' feuilles' +
+                  (c.emp ? ' · 📍' + c.emp : '') + '</span>';
+          if (isGestionnaire) {
+            html += '<button onclick="removeContenantFromStock(\'' + prod.replace(/'/g, "\\'") + '\',\'' + c.num.replace(/'/g, "\\'") + '\')" ' +
+                    'style="background:#cc2222; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:16px; margin:0;">🗑️</button>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
       if (isGestionnaire) {
-        html += '<button class="btn-red" style="margin-top:8px; padding:8px; font-size:13px;" onclick="removeProductFromStock(\'' + prod.replace(/'/g, "\\'") + '\')">🗑️ Retirer du stock</button>';
+        html += '<button class="btn-red" style="margin-top:8px; padding:8px; font-size:13px;" onclick="removeProductFromStock(\'' + prod.replace(/'/g, "\\'") + '\')">🗑️ Retirer TOUT le produit du stock</button>';
       }
       html += '</div>';
     }
   });
   document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vide</p>';
+}
+
+// Réservé au Gestionnaire : retire UN contenant précis du stock (plus ciblé que removeProductFromStock)
+function removeContenantFromStock(prod, num) {
+  if (!currentUser || currentUser.role !== 'Gestionnaire') {
+    alert('⛔ Action réservée au Gestionnaire.');
+    return;
+  }
+  const entry = DB.entrees.find(e => e.prod === prod && e.num === num);
+  if (!entry || !DB.stock[prod]) return;
+
+  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.feuilles + ' feuilles) du stock ?\nCette action est irréversible.')) return;
+
+  DB.stock[prod].f -= entry.feuilles;
+  DB.stock[prod].c -= entry.nb;
+  if (DB.stock[prod].f <= 0) delete DB.stock[prod];
+
+  logMouvement('Suppression', num, prod + ' · retiré du stock par le Gestionnaire');
+
+  saveDB();
+  renderStock();
+  alert('✓ Contenant ' + num + ' retiré du stock.');
 }
 
 // Réservé au Gestionnaire : supprime totalement un produit du stock (sans création de sortie/vente).
@@ -704,12 +750,8 @@ function removeProductFromStock(prod) {
 
   // On loggue la suppression pour chaque contenant encore actif lié à ce produit,
   // pour que l'historique par N° contenant reste cohérent.
-  const contenantsActifs = DB.entrees
-    .filter(e => e.prod === prod)
-    .map(e => e.num)
-    .filter(num => !DB.sorties.some(s => s.num === num));
-  contenantsActifs.forEach(num => {
-    logMouvement('Suppression', num, prod + ' · retiré du stock par le Gestionnaire');
+  getContenantsActifs(prod).forEach(c => {
+    logMouvement('Suppression', c.num, prod + ' · retiré du stock par le Gestionnaire');
   });
 
   saveDB();

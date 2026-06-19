@@ -154,7 +154,17 @@
     <h2>🪟 Stock Global</h2>
     <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Voir l'historique d'un contenant</button>
     <div id="stockKpis"></div>
+
+    <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
+
     <div id="stockList"></div>
+  </div>
+
+  <!-- MODAL DÉTAIL RÉFÉRENCE -->
+  <div class="modal" id="modalProdDetail">
+    <h2 id="prodDetailTitle">📦 Détail</h2>
+    <div id="prodDetailList"></div>
+    <button class="btn-blue" onclick="closeModal('modalProdDetail')">Fermer</button>
   </div>
 
   <!-- HISTORIQUE -->
@@ -270,25 +280,30 @@ const USERS = [
 // Clé = "épaisseur-dimensions" tel qu'extrait du code produit (ex: "8-321/214")
 // Complétée automatiquement quand l'utilisateur saisit une quantité pour une nouvelle référence.
 const FPC_TABLE_DEFAULT = {
-  // FLOAT incolore (FL, FLT, FLM)
+  // FLOAT incolore (FL, FLT)
   '4-366/214': 34,
   '4-321/214': 32,
   '8-321/214': 16,
-  '8-321/200': 16,
   '10-300/200': 13,
   '10-321/214': 13,
   '10-225/214': 13,
   '12-300/200': 11,
   '12-321/214': 11,
   '12-225/214': 11,
-  // PARSOL GRIS (FLGR)
-  '4-330/225': 29,
-  '5-330/225': 23,
-  // PARSOL BRONCE (FLBR)
-  '4-321/225': 29,
-  '6-321/225': 19,
-  // CARGLASS (CG)
+  // FLOAT SuperClear (M)
+  '8M-321/200': 16,
+  '4M-321/255': 28,
+  // PARSOL GRIS (GR)
+  '4GR-330/225': 29,
+  '5GR-330/225': 23,
+  // PARSOL BRONCE (BR)
+  '4BR-321/225': 29,
+  '6BR-321/225': 19,
+  // CARGLASS (CG, sans suffixe)
   '4-250/200': 43,
+  // FLOAT TREMPÉ avec trous (TR + nb trous + T)
+  '12TR6T-299/199': 18,
+  '12TR8T-299/199': 18,
 };
 let FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, JSON.parse(localStorage.getItem('vs_fpc_table') || '{}'));
 
@@ -297,17 +312,22 @@ function saveFpcTable() {
 }
 
 // Extrait {ep, dims, key} d'un code produit de tout format :
-// FL8-321/214, FLT4-366/214, FL4GR-330/225, FL6BR-321/225, FL8M-321/200, CG4-250/200...
-// La clé est toujours "épaisseur-dimensions" pour retrouver dans FPC_TABLE.
+// FL8-321/214, FLT4-366/214, FL4GR-330/225, FL6BR-321/225, FL8M-321/200,
+// CG4-250/200, FL12TR6T-299/199, FL4M-321/255...
+// La clé inclut tout suffixe après les chiffres d'épaisseur (TR6T, M, GR, BR...)
+// pour distinguer des variantes qui ont la même épaisseur/dimensions mais des
+// caractéristiques différentes (ex: nombre de trous de perçage, type de verre).
 function parseProductCode(prod) {
-  // On cherche le premier groupe de chiffres (épaisseur) suivi du tiret et des dimensions
-  const m = prod.match(/[A-Z]+?(\d+)[A-Z]*-(\d+\/\d+)/i);
+  const m = prod.match(/^([A-Z]+)(\d+)([A-Z0-9]*)-(\d+\/\d+)$/i);
   if (!m) return null;
-  return { ep: parseInt(m[1]), dims: m[2], key: m[1] + '-' + m[2] };
+  const ep = parseInt(m[2]);
+  const suffix = m[3] || '';
+  const dims = m[4];
+  return { ep, dims, key: m[2] + suffix + '-' + dims };
 }
 
 // Dimensions réelles connues (hauteur/largeur, format des étiquettes)
-const DIMS = ['225/214','250/200','300/200','321/200','321/214','321/225','330/214','330/225','366/214'];
+const DIMS = ['199/299','225/214','250/200','255/321','300/200','321/200','321/214','321/225','330/214','330/225','366/214'];
 const EPS = [3,4,5,6,8,10,12];
 
 const PRODS = [];
@@ -877,7 +897,7 @@ const FIELD_LABELS = {
 // Produit ex: FL8-321/214  → lettres + chiffres + tiret + slash
 // Contenant ex: 22325100518C → exactement 11 chiffres + 1 lettre majuscule
 const FIELD_VALIDATORS = {
-  recProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z]{0,4}-\d{2,4}\/\d{2,4}$/, msg: 'Format produit attendu : FL8-321/214 ou FL4GR-330/225 ou CG4-250/200' },
+  recProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Format produit attendu : FL8-321/214 ou FL4GR-330/225 ou CG4-250/200' },
   recNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
   casseNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
   sortieNum: { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },

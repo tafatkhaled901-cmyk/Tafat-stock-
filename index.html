@@ -505,8 +505,9 @@ function renderEntrees() {
     html += '<div class="card">' +
             '<strong>' + e.prod + '</strong><br>' +
             'N° ' + e.num + ' · ' + e.nb + ' caisse(s) · ' + e.feuilles + ' feuilles<br>';
-    if (e.emp) html += '<span style="color:#0055cc;">📍 ' + e.emp + '</span>';
-    html += '</div>';
+    if (e.emp) html += '<span style="color:#0055cc;">📍 ' + e.emp + '</span><br>';
+    html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(e.date).toLocaleString('fr-FR') + '</span>' +
+            '</div>';
   });
   document.getElementById('entreeList').innerHTML = html;
 }
@@ -598,11 +599,39 @@ function saveCasse() {
   saveDB();
   closeModal('modalCasse');
 
+  // Retrouve le produit associé à ce contenant (si connu) pour l'email
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  const prodLabel = entry ? entry.prod : '(produit inconnu)';
+  envoyerEmailCasse(prodLabel, num, qty);
+
   document.getElementById('casseNum').value = '';
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
   alert('💥 Casse déclarée : -' + qty + ' feuilles');
+}
+
+// Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
+const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
+function envoyerEmailCasse(produit, contenant, feuilles) {
+  const dateStr = new Date().toLocaleString('fr-FR');
+  const operateur = currentUser ? currentUser.nom : '—';
+
+  const subject = 'Declaration de Casse - ' + produit;
+  const body =
+    'Declaration de Casse - VerreStock Pro\n\n' +
+    'Produit : ' + produit + '\n' +
+    'N. Contenant : ' + contenant + '\n' +
+    'Feuilles cassees : ' + feuilles + '\n' +
+    'Operateur : ' + operateur + '\n' +
+    'Date/Heure : ' + dateStr;
+
+  const url = 'mailto:' + EMAIL_RESPONSABLE +
+    '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
+
+  // Ouvre l'app email par défaut du téléphone, message déjà rempli.
+  window.open(url, '_blank');
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -599,16 +599,21 @@ function saveCasse() {
   saveDB();
   closeModal('modalCasse');
 
-  // Retrouve le produit associé à ce contenant (si connu) pour l'email
-  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
-  const prodLabel = entry ? entry.prod : '(produit inconnu)';
-  envoyerEmailCasse(prodLabel, num, qty);
-
   document.getElementById('casseNum').value = '';
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
-  alert('💥 Casse déclarée : -' + qty + ' feuilles');
+
+  // Retrouve le produit associé à ce contenant (si connu) pour l'email
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  const prodLabel = entry ? entry.prod : '(produit inconnu)';
+
+  alert('💥 Casse déclarée : -' + qty + ' feuilles.\nOuverture de votre app email pour notifier le responsable...');
+
+  // Léger délai pour laisser l'alert se fermer avant la redirection mailto:
+  setTimeout(() => {
+    envoyerEmailCasse(prodLabel, num, qty);
+  }, 300);
 }
 
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
@@ -630,8 +635,9 @@ function envoyerEmailCasse(produit, contenant, feuilles) {
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
 
-  // Ouvre l'app email par défaut du téléphone, message déjà rempli.
-  window.open(url, '_blank');
+  // window.location.href est la méthode fiable pour ouvrir mailto: sur mobile
+  // (window.open est souvent bloqué comme une popup par les navigateurs mobiles).
+  window.location.href = url;
 }
 
 // ═══════════════════════════════════════════════════════════

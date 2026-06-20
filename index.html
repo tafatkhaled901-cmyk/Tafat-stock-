@@ -266,28 +266,6 @@
   </div>
 </div>
 
-<!-- ═══ FIREBASE (synchronisation des données entre appareils) ═══ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCy2PJpDI2g5aDPAJH8GapDtfBpstXpgR0",
-    authDomain: "verrestock-ff0e5.firebaseapp.com",
-    projectId: "verrestock-ff0e5",
-    storageBucket: "verrestock-ff0e5.firebasestorage.app",
-    messagingSenderId: "1056318883833",
-    appId: "1:1056318883833:web:baf512468197382ba49f28"
-  };
-
-  const fbApp = initializeApp(firebaseConfig);
-  const fbDb = getFirestore(fbApp);
-  const fbDocRef = doc(fbDb, 'verrestock', 'data');
-
-  // Expose ces outils Firestore au script principal (non-module) via window.
-  window.firestoreAPI = { fbDb, fbDocRef, setDoc, getDoc, onSnapshot };
-</script>
-
 <script>
 // ═══════════════════════════════════════════════════════════
 // DONNÉES
@@ -370,84 +348,13 @@ let currentUser = null;
 let selectedPinUser = null;
 let pinValue = '';
 
-// Sauvegarde locale immédiate (rapide, fonctionne hors-ligne) + synchronisation Firestore (partagée entre appareils).
 function saveDB() {
   localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
   localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
   localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
-  syncToFirestore();
 }
-
-let fbSyncTimer = null;
-let fbApplyingRemote = false; // évite de se ré-écrire soi-même en boucle quand on reçoit une mise à jour distante
-
-function syncToFirestore() {
-  if (fbApplyingRemote) return; // ne pas renvoyer ce qu'on vient de recevoir
-  if (!window.firestoreAPI) return;
-  // Petit debounce pour éviter trop d'écritures rapprochées
-  clearTimeout(fbSyncTimer);
-  fbSyncTimer = setTimeout(async () => {
-    try {
-      const { fbDocRef, setDoc } = window.firestoreAPI;
-      await setDoc(fbDocRef, {
-        stock: DB.stock,
-        entrees: DB.entrees,
-        casses: DB.casses,
-        sorties: DB.sorties,
-        mouvements: DB.mouvements,
-        fpcTable: FPC_TABLE,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (e) {
-      console.error('Erreur sync Firestore:', e);
-    }
-  }, 400);
-}
-
-// Écoute en temps réel : si une autre personne/appareil modifie les données,
-// l'app se met à jour automatiquement ici aussi.
-function startFirestoreListener() {
-  if (!window.firestoreAPI) { setTimeout(startFirestoreListener, 300); return; }
-  const { fbDocRef, onSnapshot } = window.firestoreAPI;
-  onSnapshot(fbDocRef, (snap) => {
-    if (!snap.exists()) return;
-    const data = snap.data();
-    fbApplyingRemote = true;
-    DB.stock = data.stock || {};
-    DB.entrees = data.entrees || [];
-    DB.casses = data.casses || [];
-    DB.sorties = data.sorties || [];
-    DB.mouvements = data.mouvements || [];
-    if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
-
-    // Sauvegarde locale aussi (cache hors-ligne)
-    localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
-    localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
-    localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
-    localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
-    localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
-    saveFpcTable();
-
-    // Rafraîchit l'affichage si on est sur une page concernée et connecté
-    if (currentUser) {
-      const activePage = document.querySelector('#app .page.active');
-      if (activePage) {
-        const id = activePage.id.replace('page-', '');
-        if (id === 'entrees') renderEntrees();
-        else if (id === 'casse') renderCasse();
-        else if (id === 'sorties') renderSorties();
-        else if (id === 'stock') renderStock();
-        else if (id === 'historique') renderHistorique();
-      }
-    }
-    fbApplyingRemote = false;
-  }, (err) => {
-    console.error('Erreur écoute Firestore:', err);
-  });
-}
-startFirestoreListener();
 
 // Journal centralisé : enregistre TOUTE opération liée à un contenant.
 // type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)

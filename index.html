@@ -549,11 +549,20 @@ function saveRec() {
     return;
   }
 
-  // ANTI-DOUBLON : vérifier si ce N° contenant est déjà en stock (reçu et pas encore sorti/cassé en totalité)
+  // ANTI-DOUBLON : vérifier si ce N° contenant est déjà en stock (reçu et pas encore sorti)
   const dejaRecu = DB.entrees.some(e => e.num === num);
   const dejaSorti = DB.sorties.some(s => s.num === num);
+  const isGestionnaire = currentUser && currentUser.role === 'Gestionnaire';
+
   if (dejaRecu && !dejaSorti) {
     alert('⛔ Ce N° de contenant (' + num + ') est déjà enregistré en stock.\nImpossible de le scanner deux fois.');
+    return;
+  }
+
+  if (dejaSorti && !isGestionnaire) {
+    alert('⛔ Ce N° de contenant (' + num + ') a déjà été SORTI du stock.\n' +
+          'Une nouvelle réception avec ce numéro est impossible.\n' +
+          'Seul le Gestionnaire peut autoriser cette opération.');
     return;
   }
 
@@ -614,6 +623,14 @@ function saveCasse() {
     return;
   }
 
+  // Retrouve le produit associé à ce contenant pour décrémenter le stock global
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  const prodLabel = entry ? entry.prod : '(produit inconnu)';
+
+  if (entry && DB.stock[entry.prod]) {
+    DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
+  }
+
   DB.casses.push({ num, qty, date: new Date().toISOString() });
   logMouvement('Casse', num, '-' + qty + ' feuilles cassées');
   saveDB();
@@ -623,10 +640,6 @@ function saveCasse() {
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
-
-  // Retrouve le produit associé à ce contenant (si connu) pour l'email
-  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
-  const prodLabel = entry ? entry.prod : '(produit inconnu)';
 
   alert('💥 Casse déclarée : -' + qty + ' feuilles.\nOuverture de votre app email pour notifier le responsable...');
 
@@ -727,10 +740,18 @@ function saveSortie() {
 // STOCK
 // ═══════════════════════════════════════════════════════════
 // Retourne la liste des contenants encore actifs (reçus, pas sortis, pas cassés en totalité) pour un produit donné
+// Retourne les contenants actifs (reçus, pas sortis) pour un produit, avec leur
+// quantité de feuilles RESTANTE (= reçu - cassé), pas la quantité initiale.
 function getContenantsActifs(prod) {
   return DB.entrees
     .filter(e => e.prod === prod)
-    .filter(e => !DB.sorties.some(s => s.num === e.num)); // exclut ceux déjà sortis
+    .filter(e => !DB.sorties.some(s => s.num === e.num)) // exclut ceux déjà sortis
+    .map(e => {
+      const casseTotal = DB.casses
+        .filter(c => c.num === e.num)
+        .reduce((sum, c) => sum + c.qty, 0);
+      return Object.assign({}, e, { feuilles: Math.max(0, e.feuilles - casseTotal) });
+    });
 }
 
 function renderStock() {

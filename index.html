@@ -348,13 +348,74 @@ let currentUser = null;
 let selectedPinUser = null;
 let pinValue = '';
 
+// URL du Google Apps Script de synchronisation
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwva6-Ugbh9icmKJOZVg5Dyj3NPgC0-Px-m0VO9lOW1E9Kd3r6p_CyZ77JY6pUUJmyJ/exec';
+
 function saveDB() {
   localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
   localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
   localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+  syncToSheets();
 }
+
+let syncTimer = null;
+function syncToSheets() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    const payload = {
+      stock: DB.stock,
+      entrees: DB.entrees,
+      casses: DB.casses,
+      sorties: DB.sorties,
+      mouvements: DB.mouvements,
+      fpcTable: FPC_TABLE,
+      updatedAt: new Date().toISOString()
+    };
+    fetch(SYNC_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).catch(e => console.warn('Sync Sheets echouee:', e));
+  }, 500);
+}
+
+function loadFromSheets() {
+  fetch(SYNC_URL + '?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.entrees) return;
+      DB.stock = data.stock || {};
+      DB.entrees = data.entrees || [];
+      DB.casses = data.casses || [];
+      DB.sorties = data.sorties || [];
+      DB.mouvements = data.mouvements || [];
+      if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
+      localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
+      localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
+      localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
+      localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
+      localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+      if (currentUser) {
+        const activePage = document.querySelector('#app .page.active');
+        if (activePage) {
+          const id = activePage.id.replace('page-', '');
+          if (id === 'entrees') renderEntrees();
+          else if (id === 'casse') renderCasse();
+          else if (id === 'sorties') renderSorties();
+          else if (id === 'stock') renderStock();
+          else if (id === 'historique') renderHistorique();
+        }
+      }
+    })
+    .catch(e => console.warn('Chargement Sheets echoue:', e));
+}
+
+// Charge les données au démarrage puis toutes les 30 secondes
+loadFromSheets();
+setInterval(loadFromSheets, 30000);
 
 // Journal centralisé : enregistre TOUTE opération liée à un contenant.
 // type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)

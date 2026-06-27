@@ -688,12 +688,17 @@ function saveCasse() {
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
   const prodLabel = entry ? entry.prod : '(produit inconnu)';
 
+  // Calcule les feuilles restantes AVANT de décrémenter
+  const casseAvant = DB.casses.filter(c => c.num === num).reduce((s, c) => s + c.qty, 0);
+  const feuillesInit = entry ? entry.feuilles : 0;
+  const feuillesRestantes = Math.max(0, feuillesInit - casseAvant - qty);
+
   if (entry && DB.stock[entry.prod]) {
     DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
   }
 
   DB.casses.push({ num, qty, date: new Date().toISOString() });
-  logMouvement('Casse', num, '-' + qty + ' feuilles cassées');
+  logMouvement('Casse', num, '-' + qty + ' feuilles cassées · reste ' + feuillesRestantes);
   saveDB();
   closeModal('modalCasse');
 
@@ -702,17 +707,17 @@ function saveCasse() {
 
   renderCasse();
 
-  alert('💥 Casse déclarée : -' + qty + ' feuilles.\nOuverture de votre app email pour notifier le responsable...');
+  alert('💥 Casse déclarée : -' + qty + ' feuilles.\nFeuilles restantes : ' + feuillesRestantes + '\nOuverture de votre app email...');
 
-  // Léger délai pour laisser l'alert se fermer avant la redirection mailto:
   setTimeout(() => {
-    envoyerEmailCasse(prodLabel, num, qty);
+    envoyerEmailCasse(prodLabel, num, qty, feuillesRestantes);
   }, 300);
 }
 
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
 const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
-function envoyerEmailCasse(produit, contenant, feuilles) {
+
+function envoyerEmailCasse(produit, contenant, feuillesCassees, feuillesRestantes) {
   const dateStr = new Date().toLocaleString('fr-FR');
   const operateur = currentUser ? currentUser.nom : '—';
 
@@ -721,17 +726,33 @@ function envoyerEmailCasse(produit, contenant, feuilles) {
     'Declaration de Casse - VerreStock Pro\n\n' +
     'Produit : ' + produit + '\n' +
     'N. Contenant : ' + contenant + '\n' +
-    'Feuilles cassees : ' + feuilles + '\n' +
+    'Feuilles cassees : ' + feuillesCassees + '\n' +
+    'Feuilles restantes : ' + feuillesRestantes + '\n' +
     'Operateur : ' + operateur + '\n' +
     'Date/Heure : ' + dateStr;
 
-  const url = 'mailto:' + EMAIL_RESPONSABLE +
+  window.location.href = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
+}
 
-  // window.location.href est la méthode fiable pour ouvrir mailto: sur mobile
-  // (window.open est souvent bloqué comme une popup par les navigateurs mobiles).
-  window.location.href = url;
+function envoyerEmailSortie(produit, contenant, feuilles, client) {
+  const dateStr = new Date().toLocaleString('fr-FR');
+  const operateur = currentUser ? currentUser.nom : '—';
+
+  const subject = 'Sortie de Stock - ' + produit;
+  const body =
+    'Sortie de Stock - VerreStock Pro\n\n' +
+    'Produit : ' + produit + '\n' +
+    'N. Contenant : ' + contenant + '\n' +
+    'Feuilles sorties : ' + feuilles + '\n' +
+    (client ? 'Client : ' + client + '\n' : '') +
+    'Operateur : ' + operateur + '\n' +
+    'Date/Heure : ' + dateStr;
+
+  window.location.href = 'mailto:' + EMAIL_RESPONSABLE +
+    '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -763,7 +784,6 @@ function saveSortie() {
     return;
   }
 
-  // Chercher l'entrée correspondante par N° contenant (la plus récente non encore sortie)
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
 
   if (!entry) {
@@ -794,7 +814,11 @@ function saveSortie() {
   document.getElementById('sortieClient').value = '';
 
   renderSorties();
-  alert('✓ Sortie enregistrée : -' + feuilles + ' feuilles (' + prod + ')');
+  alert('✓ Sortie enregistrée : -' + feuilles + ' feuilles (' + prod + ')\nOuverture de votre app email...');
+
+  setTimeout(() => {
+    envoyerEmailSortie(prod, num, feuilles, client);
+  }, 300);
 }
 
 // ═══════════════════════════════════════════════════════════

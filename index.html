@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,11 +10,11 @@
     background-color: #ffffff;
     color: #000000;
     margin: 0;
-    padding: 20px;
+    padding: 0;
   }
   .page { display: none; }
   .page.active { display: block; }
-  h1 { text-align: center; color: #0055cc; }
+  h1 { text-align: center; color: #0055cc; margin:0; }
   h2 { color: #0055cc; border-bottom: 2px solid #0055cc; padding-bottom: 5px; }
   button {
     display: block;
@@ -30,6 +30,7 @@
   .btn-blue { background-color: #0055cc; color: white; }
   .btn-green { background-color: #00aa44; color: white; }
   .btn-red { background-color: #cc2222; color: white; }
+  .btn-orange { background-color: #cc6600; color: white; }
   .btn-user {
     background-color: #f0f0f0;
     color: #000;
@@ -72,16 +73,50 @@
     overflow-y: auto;
     z-index: 999;
   }
-  .bottomnav {
+  /* BARRE DE NAVIGATION EN HAUT */
+  .topnav {
     position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background-color: white;
-    border-top: 1px solid #ccc;
+    top: 0; left: 0; right: 0;
+    background-color: #0055cc;
     display: flex;
-    padding: 10px;
-    gap: 5px;
+    align-items: center;
+    padding: 6px 8px;
+    gap: 4px;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
-  .bottomnav button { margin: 0; padding: 8px 1px; font-size: 9px; }
+  .topnav .nav-left {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+  .topnav .nav-right {
+    margin-left: 10px;
+    border-left: 2px solid rgba(255,255,255,0.3);
+    padding-left: 10px;
+  }
+  .topnav button {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 11px;
+    width: auto;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .topnav button:active { background: rgba(255,255,255,0.3); }
+  .topnav .btn-nueva {
+    background-color: #00aa44;
+    border-color: #00aa44;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  /* Contenu principal avec marge pour la topnav */
+  .app-content {
+    padding: 70px 16px 20px 16px;
+  }
   .pindot {
     display: inline-block;
     width: 14px; height: 14px;
@@ -105,9 +140,9 @@
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div class="page active" id="login">
-  <h1>🪟 VerreStock Pro</h1>
-  <p style="text-align:center; color:#888;">Choisissez votre profil</p>
+<div class="page active" id="login" style="padding:20px;">
+  <h1 style="margin-top:40px;">🪟 VerreStock Pro</h1>
+  <p style="text-align:center; color:#888;">Seleccione su perfil</p>
 
   <div id="userList"></div>
 
@@ -115,153 +150,160 @@
     <h2 id="pinUserName" style="border:none;"></h2>
     <div id="pinDots" style="margin:20px 0;"></div>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:280px; margin:0 auto;" id="pinKeys"></div>
-    <p style="color:#999; font-size:12px; margin-top:20px;">PIN démo: Jean=1234, Sophie=5678, Pierre=0000</p>
-    <button class="btn-red" style="max-width:280px; margin:20px auto;" onclick="backToUsers()">← Retour</button>
+    <p style="color:#999; font-size:12px; margin-top:20px;">PIN: HAMZA=1234, TAFAT=5678, LUIS=0000</p>
+    <button class="btn-red" style="max-width:280px; margin:20px auto;" onclick="backToUsers()">← Volver</button>
   </div>
 </div>
 
 <!-- ═══ APP ═══ -->
-<div class="page" id="app" style="padding-bottom:80px;">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h1 style="margin:10px 0;">🪟 VerreStock</h1>
-    <button class="btn-red" style="width:auto; padding:8px 16px;" onclick="logout()">Quitter</button>
-  </div>
-  <p style="color:#888;" id="userInfo"></p>
+<div class="page" id="app">
 
-  <!-- ENTRÉES -->
-  <div class="page active" id="page-entrees">
-    <h2>📥 Flux Entrées</h2>
-    <button class="btn-blue" onclick="openModal('modalRec')">+ Nouvelle Réception</button>
-    <div id="entreeList"></div>
-  </div>
-
-  <!-- CASSE -->
-  <div class="page" id="page-casse">
-    <h2>💥 Casse</h2>
-    <button class="btn-red" onclick="openModal('modalCasse')">Déclarer une Casse</button>
-    <div id="casseList"></div>
-  </div>
-
-  <!-- SORTIES -->
-  <div class="page" id="page-sorties">
-    <h2>📤 Sorties</h2>
-    <button class="btn-blue" style="background:#cc6600" onclick="openModal('modalSortie')">+ Nouvelle Sortie</button>
-    <div id="sortieList"></div>
-  </div>
-
-  <!-- STOCK -->
-  <div class="page" id="page-stock">
-    <h2>🪟 Stock Global</h2>
-    <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Voir l'historique d'un contenant</button>
-    <div id="stockKpis"></div>
-
-    <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
-
-    <div id="stockList"></div>
-  </div>
-
-  <!-- MODAL DÉTAIL RÉFÉRENCE -->
-  <div class="modal" id="modalProdDetail">
-    <h2 id="prodDetailTitle">📦 Détail</h2>
-    <div id="prodDetailList"></div>
-    <button class="btn-blue" onclick="closeModal('modalProdDetail')">Fermer</button>
-  </div>
-
-  <!-- HISTORIQUE -->
-  <div class="page" id="page-historique">
-    <h2>🕓 Historique des Mouvements</h2>
-    <label>N° Contenant</label>
-    <div style="display:flex; gap:8px">
-      <input type="text" id="histNum" placeholder="ex: 22325100518C" style="flex:1" oninput="renderHistorique()">
-      <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  <!-- BARRE DE NAVIGATION EN HAUT -->
+  <div class="topnav">
+    <div class="nav-left">
+      <button onclick="goto('entrees')">📥 Entradas</button>
+      <button onclick="goto('sorties')">📤 Salidas</button>
+      <button onclick="goto('casse')" style="background:#cc2222; border-color:#cc2222;">💥 Roturas</button>
+      <button onclick="goto('stock')">🪟 Stock</button>
+      <button onclick="goto('historique')" style="background:#6633aa; border-color:#6633aa;">🕓 Historial</button>
     </div>
-    <div id="histList"></div>
+    <div class="nav-right">
+      <button class="btn-nueva" onclick="openModal('modalRec')">+ Nueva Recepción</button>
+    </div>
   </div>
 
-  <!-- NAV -->
-  <div class="bottomnav">
-    <button class="btn-blue" onclick="goto('entrees')">📥 Entrées</button>
-    <button class="btn-blue" onclick="goto('casse')">💥 Casse</button>
-    <button class="btn-blue" style="background:#cc6600" onclick="goto('sorties')">📤 Sorties</button>
-    <button class="btn-blue" onclick="goto('stock')">🪟 Stock</button>
-    <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Historique</button>
-  </div>
-</div>
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="app-content">
+    <!-- INFO USUARIO -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <p style="color:#888; margin:0;" id="userInfo"></p>
+      <button class="btn-red" style="width:auto; padding:6px 14px; font-size:13px;" onclick="logout()">Salir</button>
+    </div>
+
+    <!-- ENTRADAS -->
+    <div class="page active" id="page-entrees">
+      <h2>📥 Flux de Entradas</h2>
+      <div id="entreeList"></div>
+    </div>
+
+    <!-- ROTURAS -->
+    <div class="page" id="page-casse">
+      <h2>💥 Roturas</h2>
+      <button class="btn-red" onclick="openModal('modalCasse')">Declarar una Rotura</button>
+      <div id="casseList"></div>
+    </div>
+
+    <!-- SALIDAS -->
+    <div class="page" id="page-sorties">
+      <h2>📤 Salidas</h2>
+      <button class="btn-orange" onclick="openModal('modalSortie')">+ Nueva Salida</button>
+      <div id="sortieList"></div>
+    </div>
+
+    <!-- STOCK -->
+    <div class="page" id="page-stock">
+      <h2>🪟 Stock Global</h2>
+      <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Ver historial de un contenedor</button>
+      <div id="stockKpis"></div>
+      <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
+      <div id="stockList"></div>
+    </div>
+
+    <!-- MODAL DÉTAIL RÉFÉRENCE -->
+    <div class="modal" id="modalProdDetail">
+      <h2 id="prodDetailTitle">📦 Detalle</h2>
+      <div id="prodDetailList"></div>
+      <button class="btn-blue" onclick="closeModal('modalProdDetail')">Cerrar</button>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="page" id="page-historique">
+      <h2>🕓 Historial de Movimientos</h2>
+      <label>N° Contenedor</label>
+      <div style="display:flex; gap:8px">
+        <input type="text" id="histNum" placeholder="ej: 22325100518C" style="flex:1" oninput="renderHistorique()">
+        <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+      </div>
+      <div id="histList"></div>
+    </div>
+
+  </div><!-- fin app-content -->
+</div><!-- fin app -->
 
 <!-- ═══ MODAL SORTIE ═══ -->
 <div class="modal" id="modalSortie">
-  <h2>📤 Nouvelle Sortie</h2>
-  <label>N° Contenant</label>
+  <h2>📤 Nueva Salida</h2>
+  <label>N° Contenedor</label>
   <div style="display:flex; gap:8px">
-    <input type="text" id="sortieNum" placeholder="ex: CAI-2024-001" style="flex:1">
+    <input type="text" id="sortieNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('sortieNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
   </div>
 
-  <label>Client (optionnel)</label>
-  <input type="text" id="sortieClient" placeholder="ex: Société Dupont">
+  <label>Clientee (opcional)</label>
+  <input type="text" id="sortieCliente" placeholder="ej: Empresa ABC">
 
-  <button class="btn-green" onclick="saveSortie()">✓ Confirmer la sortie</button>
-  <button class="btn-red" onclick="closeModal('modalSortie')">Annuler</button>
+  <button class="btn-green" onclick="saveSortie()">✓ Confirmar salida</button>
+  <button class="btn-red" onclick="closeModal('modalSortie')">Cancelar</button>
 </div>
 
-<!-- ═══ MODAL RÉCEPTION ═══ -->
+<!-- ═══ MODAL RECEPCIÓN ═══ -->
 <div class="modal" id="modalRec">
-  <h2>📥 Nouvelle Réception</h2>
+  <h2>📥 Nueva Recepción</h2>
 
-  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Scanner l'étiquette (produit + contenant)</button>
+  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Escanear etiqueta (producto + contenedor)</button>
 
-  <label>Produit (code)</label>
-  <input type="text" id="recProd" placeholder="ex: FLT8-321/214" list="prodList" oninput="onProdChange()">
+  <label>Producto (código)</label>
+  <input type="text" id="recProd" placeholder="ej: FLT8-321/214" list="prodList" oninput="onProdChange()">
   <datalist id="prodList"></datalist>
 
-  <label>Feuilles par caisse <span id="fpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
-  <input type="number" id="recFpc" min="1" placeholder="ex: 16">
+  <label>Hojas por caja <span id="fpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
+  <input type="number" id="recFpc" min="1" placeholder="ej: 16">
 
-  <label>Nombre de caisses</label>
+  <label>Número de cajas</label>
   <input type="number" id="recNb" value="1" min="1">
 
-  <label>N° Contenant</label>
+  <label>N° Contenedor</label>
   <div style="display:flex; gap:8px">
-    <input type="text" id="recNum" placeholder="ex: 22325100518C" style="flex:1">
+    <input type="text" id="recNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('recNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
   </div>
 
-  <label>Emplacement (optionnel)</label>
-  <input type="text" id="recEmp" placeholder="ex: A1,3">
+  <label>Ubicación (opcional)</label>
+  <input type="text" id="recEmp" placeholder="ej: A1,3">
 
-  <button class="btn-green" onclick="saveRec()">✓ Confirmer</button>
-  <button class="btn-red" onclick="closeModal('modalRec')">Annuler</button>
+  <button class="btn-green" onclick="saveRec()">✓ Confirmar</button>
+  <button class="btn-red" onclick="closeModal('modalRec')">Cancelar</button>
 </div>
 
-<!-- ═══ MODAL CASSE ═══ -->
+<!-- ═══ MODAL ROTURA ═══ -->
 <div class="modal" id="modalCasse">
-  <h2>💥 Déclaration de Casse</h2>
-  <label>N° Contenant</label>
+  <h2>💥 Declaración de Rotura</h2>
+  <label>N° Contenedor</label>
   <div style="display:flex; gap:8px">
-    <input type="text" id="casseNum" placeholder="ex: CAI-2024-001" style="flex:1">
+    <input type="text" id="casseNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('casseNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
   </div>
 
-  <label>Nombre de feuilles cassées</label>
+  <label>Número de hojas rotas</label>
   <input type="number" id="casseQty" value="1" min="1">
 
-  <button class="btn-red" onclick="saveCasse()">💥 Valider</button>
-  <button class="btn-blue" onclick="closeModal('modalCasse')">Annuler</button>
+  <button class="btn-red" onclick="saveCasse()">💥 Validar</button>
+  <button class="btn-blue" onclick="closeModal('modalCasse')">Cancelar</button>
 </div>
 
-<!-- ═══ MODAL SCANNER CAMÉRA ═══ -->
+<!-- ═══ MODAL ESCÁNER ═══ -->
 <div class="modal" id="modalScanner" style="background:#000; padding:0">
   <div style="position:relative; width:100%; height:100vh; display:flex; flex-direction:column">
     <div style="background:#111; color:#fff; padding:14px; display:flex; justify-content:space-between; align-items:center">
-      <span style="font-weight:bold; font-size:16px">📷 Scanner</span>
-      <button onclick="closeScanner()" style="background:#cc2222; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-weight:bold">✕ Fermer</button>
+      <span style="font-weight:bold; font-size:16px">📷 Escáner</span>
+      <button onclick="closeScanner()" style="background:#cc2222; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-weight:bold">✕ Cerrar</button>
     </div>
     <video id="scanVideo" autoplay playsinline muted style="width:100%; flex:1; object-fit:cover; background:#000"></video>
     <canvas id="scanCanvas" style="display:none"></canvas>
     <div id="scanStatusMsg" style="color:#fff; text-align:center; padding:14px; background:#111; font-size:14px"></div>
     <div style="background:#111; padding:14px">
-      <input type="text" id="scanManualInp" placeholder="Ou tapez le code ici..." style="width:100%; padding:12px; border-radius:8px; border:none; font-size:16px; box-sizing:border-box; margin-bottom:8px">
-      <button onclick="validateManualScan()" style="width:100%; padding:14px; background:#00aa44; color:#fff; border:none; border-radius:8px; font-weight:bold; font-size:15px">✓ Valider ce code</button>
+      <input type="text" id="scanManualInp" placeholder="O escriba el código aquí..." style="width:100%; padding:12px; border-radius:8px; border:none; font-size:16px; box-sizing:border-box; margin-bottom:8px">
+      <button onclick="validateManualScan()" style="width:100%; padding:14px; background:#00aa44; color:#fff; border:none; border-radius:8px; font-weight:bold; font-size:15px">✓ Validar este código</button>
     </div>
   </div>
 </div>
@@ -271,12 +313,12 @@
 // DONNÉES
 // ═══════════════════════════════════════════════════════════
 const USERS = [
-  {id:'u1', nom:'Jean Dupont', role:'Opérateur', pin:'1234'},
-  {id:'u2', nom:'Sophie Martin', role:'Opérateur', pin:'5678'},
-  {id:'u3', nom:'Pierre Leroy', role:'Gestionnaire', pin:'0000'},
+  {id:'u1', nom:'HAMZA MAROC', role:'Operador', pin:'1234'},
+  {id:'u2', nom:'TAFAT KHALED', role:'Operador', pin:'5678'},
+  {id:'u3', nom:'LUIS MIGUEL SOLERA', role:'Magasinero', pin:'0000'},
 ];
 
-// Table précise : feuilles par caisse selon la référence EXACTE (épaisseur + dimensions)
+// Table précise : hojas par caja selon la référence EXACTE (épaisseur + dimensions)
 // Clé = "épaisseur-dimensions" tel qu'extrait du code produit (ex: "8-321/214")
 // Complétée automatiquement quand l'utilisateur saisit une quantité pour une nouvelle référence.
 const FPC_TABLE_DEFAULT = {
@@ -417,7 +459,7 @@ function loadFromSheets() {
 loadFromSheets();
 setInterval(loadFromSheets, 30000);
 
-// Journal centralisé : enregistre TOUTE opération liée à un contenant.
+// Journal centralisé : enregistre TOUTE opération liée a un contenant.
 // type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)
 function logMouvement(type, num, detail) {
   DB.mouvements.push({
@@ -566,10 +608,10 @@ function onProdChange() {
 
   if (FPC_TABLE[parsed.key] !== undefined) {
     fpcInput.value = FPC_TABLE[parsed.key];
-    statusEl.innerHTML = '<span style="color:#00aa44;">✓ Référence connue</span>';
+    statusEl.innerHTML = '<span style="color:#00aa44;">✓ ✓ Referencia conocida</span>';
   } else {
     fpcInput.value = '';
-    statusEl.innerHTML = '<span style="color:#cc6600;">⚠️ Nouvelle référence — indiquez la quantité (CANTIDAD) de l\'étiquette</span>';
+    statusEl.innerHTML = '<span style="color:#cc6600;">⚠️ Nueva referencia — indique la cantidad (CANTIDAD) de la etiqueta</span>';
   }
 }
 
@@ -578,14 +620,14 @@ function onProdChange() {
 // ═══════════════════════════════════════════════════════════
 function renderEntrees() {
   if (DB.entrees.length === 0) {
-    document.getElementById('entreeList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucune réception enregistrée</p>';
+    document.getElementById('entreeList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay recepciones registradas</p>';
     return;
   }
   let html = '';
   DB.entrees.slice().reverse().forEach(e => {
     html += '<div class="card">' +
             '<strong>' + e.prod + '</strong><br>' +
-            'N° ' + e.num + ' · ' + e.nb + ' caisse(s) · ' + e.feuilles + ' feuilles<br>';
+            'N° ' + e.num + ' · ' + e.nb + ' caja(s) · ' + e.hojas + ' hojas<br>';
     if (e.emp) html += '<span style="color:#0055cc;">📍 ' + e.emp + '</span><br>';
     html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(e.date).toLocaleString('fr-FR') + '</span>' +
             '</div>';
@@ -601,29 +643,29 @@ function saveRec() {
   const fpcSaisi = parseInt(document.getElementById('recFpc').value);
 
   if (!prod || !num) {
-    alert('Veuillez remplir le produit et le N° contenant');
+    alert('Por favor complete el producto y el N° de contenedor');
     return;
   }
 
   if (!fpcSaisi || fpcSaisi <= 0) {
-    alert('⚠️ Veuillez indiquer le nombre de feuilles par caisse (visible sur l\'étiquette : CANTIDAD)');
+    alert('⚠️ Por favor indique el número de hojas por caja (visible en la etiqueta: CANTIDAD)');
     return;
   }
 
-  // ANTI-DOUBLON : vérifier si ce N° contenant est déjà en stock (reçu et pas encore sorti)
+  // ANTI-DOUBLON : vérifier si ce N° contenant est déja en stock (reçu et pas encore sorti)
   const dejaRecu = DB.entrees.some(e => e.num === num);
   const dejaSorti = DB.sorties.some(s => s.num === num);
-  const isGestionnaire = currentUser && currentUser.role === 'Gestionnaire';
+  const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
 
   if (dejaRecu && !dejaSorti) {
-    alert('⛔ Ce N° de contenant (' + num + ') est déjà enregistré en stock.\nImpossible de le scanner deux fois.');
+    alert('⛔ El N° de contenedor (' + num + ') ya está registrado en stock.\nNo se puede escanear dos veces.');
     return;
   }
 
   if (dejaSorti && !isGestionnaire) {
-    alert('⛔ Ce N° de contenant (' + num + ') a déjà été SORTI du stock.\n' +
-          'Une nouvelle réception avec ce numéro est impossible.\n' +
-          'Seul le Gestionnaire peut autoriser cette opération.');
+    alert('⛔ El N° de contenedor (' + num + ') ya fue RETIRADO del stock.\n' +
+          'Una nueva recepción con este número es imposible.\n' +
+          'Solo el Magasinero puede autorizar esta operación.');
     return;
   }
 
@@ -634,13 +676,13 @@ function saveRec() {
     saveFpcTable();
   }
 
-  const feuilles = fpcSaisi * nb;
+  const hojas = fpcSaisi * nb;
 
-  DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
-  logMouvement('Entrée', num, prod + ' · ' + nb + ' caisse(s) · ' + feuilles + ' feuilles' + (emp ? ' · 📍' + emp : ''));
+  DB.entrees.push({ prod, nb, num, emp, hojas, date: new Date().toISOString() });
+  logMouvement('Entrée', num, prod + ' · ' + nb + ' caja(s) · ' + hojas + ' hojas' + (emp ? ' · 📍' + emp : ''));
 
   if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
-  DB.stock[prod].f += feuilles;
+  DB.stock[prod].f += hojas;
   DB.stock[prod].c += nb;
 
   saveDB();
@@ -653,7 +695,7 @@ function saveRec() {
   document.getElementById('recEmp').value = '';
 
   renderEntrees();
-  alert('✓ Réception enregistrée : ' + feuilles + ' feuilles');
+  alert('✓ Recepción registrada : ' + hojas + ' hojas');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -661,14 +703,14 @@ function saveRec() {
 // ═══════════════════════════════════════════════════════════
 function renderCasse() {
   if (DB.casses.length === 0) {
-    document.getElementById('casseList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucune casse déclarée</p>';
+    document.getElementById('casseList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay roturas declaradas</p>';
     return;
   }
   let html = '';
   DB.casses.slice().reverse().forEach(c => {
     html += '<div class="card">' +
             '<strong style="color:#cc2222;">N° ' + c.num + '</strong><br>' +
-            '-' + c.qty + ' feuilles cassées<br>' +
+            '-' + c.qty + ' hojas rotas<br>' +
             '<span style="color:#888; font-size:12px;">' + new Date(c.date).toLocaleString('fr-FR') + '</span>' +
             '</div>';
   });
@@ -680,25 +722,25 @@ function saveCasse() {
   const qty = parseInt(document.getElementById('casseQty').value) || 1;
 
   if (!num) {
-    alert('Veuillez entrer le N° contenant');
+    alert('Por favor ingrese el N° de contenedor');
     return;
   }
 
-  // Retrouve le produit associé à ce contenant pour décrémenter le stock global
+  // Retrouve le produit associé a ce contenant pour décrémenter le stock global
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
   const prodLabel = entry ? entry.prod : '(produit inconnu)';
 
-  // Calcule les feuilles restantes AVANT de décrémenter
+  // Calcule les hojas restantes AVANT de décrémenter
   const casseAvant = DB.casses.filter(c => c.num === num).reduce((s, c) => s + c.qty, 0);
-  const feuillesInit = entry ? entry.feuilles : 0;
-  const feuillesRestantes = Math.max(0, feuillesInit - casseAvant - qty);
+  const hojasInit = entry ? entry.hojas : 0;
+  const hojasRestantes = Math.max(0, hojasInit - casseAvant - qty);
 
   if (entry && DB.stock[entry.prod]) {
     DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
   }
 
   DB.casses.push({ num, qty, date: new Date().toISOString() });
-  logMouvement('Casse', num, '-' + qty + ' feuilles cassées · reste ' + feuillesRestantes);
+  logMouvement('Casse', num, '-' + qty + ' hojas rotas · reste ' + hojasRestantes);
   saveDB();
   closeModal('modalCasse');
 
@@ -707,48 +749,48 @@ function saveCasse() {
 
   renderCasse();
 
-  alert('💥 Casse déclarée : -' + qty + ' feuilles.\nFeuilles restantes : ' + feuillesRestantes + '\nOuverture de votre app email...');
+  alert('💥 Rotura declarada : -' + qty + ' hojas.\nHojas restantes : ' + hojasRestantes + '\nAbriendo su app de correo...');
 
   setTimeout(() => {
-    envoyerEmailCasse(prodLabel, num, qty, feuillesRestantes);
+    envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
   }, 300);
 }
 
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
 const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
 
-function envoyerEmailCasse(produit, contenant, feuillesCassees, feuillesRestantes) {
+function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
   const dateStr = new Date().toLocaleString('fr-FR');
   const operateur = currentUser ? currentUser.nom : '—';
 
   const subject = 'Declaration de Casse - ' + produit;
   const body =
     'Declaration de Casse - VerreStock Pro\n\n' +
-    'Produit : ' + produit + '\n' +
-    'N. Contenant : ' + contenant + '\n' +
-    'Feuilles cassees : ' + feuillesCassees + '\n' +
-    'Feuilles restantes : ' + feuillesRestantes + '\n' +
-    'Operateur : ' + operateur + '\n' +
-    'Date/Heure : ' + dateStr;
+    'Producto : ' + produit + '\n' +
+    'N. Contenedor : ' + contenant + '\n' +
+    'Hojas rotas : ' + hojasCassees + '\n' +
+    'Hojas restantes : ' + hojasRestantes + '\n' +
+    'Operador : ' + operateur + '\n' +
+    'Fecha/Hora : ' + dateStr;
 
   window.location.href = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
 }
 
-function envoyerEmailSortie(produit, contenant, feuilles, client) {
+function envoyerEmailSortie(produit, contenant, hojas, client) {
   const dateStr = new Date().toLocaleString('fr-FR');
   const operateur = currentUser ? currentUser.nom : '—';
 
-  const subject = 'Sortie de Stock - ' + produit;
+  const subject = 'Salida de Stock - ' + produit;
   const body =
-    'Sortie de Stock - VerreStock Pro\n\n' +
-    'Produit : ' + produit + '\n' +
-    'N. Contenant : ' + contenant + '\n' +
-    'Feuilles sorties : ' + feuilles + '\n' +
-    (client ? 'Client : ' + client + '\n' : '') +
-    'Operateur : ' + operateur + '\n' +
-    'Date/Heure : ' + dateStr;
+    'Salida de Stock - VerreStock Pro\n\n' +
+    'Producto : ' + produit + '\n' +
+    'N. Contenedor : ' + contenant + '\n' +
+    'Hojas salidas : ' + hojas + '\n' +
+    (client ? 'Cliente : ' + client + '\n' : '') +
+    'Operador : ' + operateur + '\n' +
+    'Fecha/Hora : ' + dateStr;
 
   window.location.href = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
@@ -760,14 +802,14 @@ function envoyerEmailSortie(produit, contenant, feuilles, client) {
 // ═══════════════════════════════════════════════════════════
 function renderSorties() {
   if (DB.sorties.length === 0) {
-    document.getElementById('sortieList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucune sortie enregistrée</p>';
+    document.getElementById('sortieList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay salidas registradas</p>';
     return;
   }
   let html = '';
   DB.sorties.slice().reverse().forEach(s => {
     html += '<div class="card">' +
             '<strong>' + s.prod + '</strong><br>' +
-            'N° ' + s.num + ' · -' + s.feuilles + ' feuilles<br>';
+            'N° ' + s.num + ' · -' + s.hojas + ' hojas<br>';
     if (s.client) html += '<span style="color:#cc6600;">👤 ' + s.client + '</span><br>';
     html += '<span style="color:#888; font-size:12px;">' + new Date(s.date).toLocaleString('fr-FR') + '</span>' +
             '</div>';
@@ -777,47 +819,47 @@ function renderSorties() {
 
 function saveSortie() {
   const num = document.getElementById('sortieNum').value.trim();
-  const client = document.getElementById('sortieClient').value.trim();
+  const client = document.getElementById('sortieCliente').value.trim();
 
   if (!num) {
-    alert('Veuillez scanner ou entrer le N° contenant');
+    alert('Por favor escanee o ingrese el N° de contenedor');
     return;
   }
 
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
 
   if (!entry) {
-    alert('⚠️ Aucune réception trouvée pour le contenant : ' + num);
+    alert('⚠️ No se encontró ninguna recepción para el contenedor: ' + num);
     return;
   }
 
   const prod = entry.prod;
-  const feuilles = entry.feuilles;
+  const hojas = entry.hojas;
   const nb = entry.nb;
 
-  if (!DB.stock[prod] || DB.stock[prod].f < feuilles) {
-    alert('⚠️ Stock insuffisant pour ce produit (' + prod + ')');
+  if (!DB.stock[prod] || DB.stock[prod].f < hojas) {
+    alert('⚠️ Stock insuficiente para este producto (' + prod + ')');
     return;
   }
 
   // Décrémenter le stock
-  DB.stock[prod].f -= feuilles;
+  DB.stock[prod].f -= hojas;
   DB.stock[prod].c -= nb;
 
-  DB.sorties.push({ prod, num, feuilles, nb, client, date: new Date().toISOString() });
-  logMouvement('Sortie', num, prod + ' · -' + feuilles + ' feuilles' + (client ? ' · 👤' + client : ''));
+  DB.sorties.push({ prod, num, hojas, nb, client, date: new Date().toISOString() });
+  logMouvement('Sortie', num, prod + ' · -' + hojas + ' hojas' + (client ? ' · 👤' + client : ''));
 
   saveDB();
   closeModal('modalSortie');
 
   document.getElementById('sortieNum').value = '';
-  document.getElementById('sortieClient').value = '';
+  document.getElementById('sortieCliente').value = '';
 
   renderSorties();
-  alert('✓ Sortie enregistrée : -' + feuilles + ' feuilles (' + prod + ')\nOuverture de votre app email...');
+  alert('✓ Salida registrada : -' + hojas + ' hojas (' + prod + ')\nAbriendo su app de correo...');
 
   setTimeout(() => {
-    envoyerEmailSortie(prod, num, feuilles, client);
+    envoyerEmailSortie(prod, num, hojas, client);
   }, 300);
 }
 
@@ -826,16 +868,16 @@ function saveSortie() {
 // ═══════════════════════════════════════════════════════════
 // Retourne la liste des contenants encore actifs (reçus, pas sortis, pas cassés en totalité) pour un produit donné
 // Retourne les contenants actifs (reçus, pas sortis) pour un produit, avec leur
-// quantité de feuilles RESTANTE (= reçu - cassé), pas la quantité initiale.
+// quantité de hojas RESTANTE (= reçu - cassé), pas la quantité initiale.
 function getContenantsActifs(prod) {
   return DB.entrees
     .filter(e => e.prod === prod)
-    .filter(e => !DB.sorties.some(s => s.num === e.num)) // exclut ceux déjà sortis
+    .filter(e => !DB.sorties.some(s => s.num === e.num)) // exclut ceux déja sortis
     .map(e => {
       const casseTotal = DB.casses
         .filter(c => c.num === e.num)
         .reduce((sum, c) => sum + c.qty, 0);
-      return Object.assign({}, e, { feuilles: Math.max(0, e.feuilles - casseTotal) });
+      return Object.assign({}, e, { hojas: Math.max(0, e.hojas - casseTotal) });
     });
 }
 
@@ -844,12 +886,12 @@ function renderStock() {
   Object.values(DB.stock).forEach(v => { totF += v.f; totC += v.c; });
 
   document.getElementById('stockKpis').innerHTML =
-    '<div class="kpi">' + totF + ' feuilles</div>' +
-    '<div class="kpi">' + totC + ' caisses</div>';
+    '<div class="kpi">' + totF + ' hojas</div>' +
+    '<div class="kpi">' + totC + ' cajas</div>';
 
   if (Object.keys(DB.stock).length === 0) {
     document.getElementById('stockTableWrap').innerHTML = '';
-    document.getElementById('stockList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucun stock</p>';
+    document.getElementById('stockList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Sin stock</p>';
     return;
   }
 
@@ -873,20 +915,20 @@ function renderStock() {
   tableHtml += '</table>';
   document.getElementById('stockTableWrap').innerHTML = tableHtml;
 
-  const isGestionnaire = currentUser && currentUser.role === 'Gestionnaire';
+  const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
 
   let html = '';
   Object.entries(DB.stock).forEach(([prod, v]) => {
     if (v.f > 0) {
       const contenants = getContenantsActifs(prod);
       html += '<div class="card"><strong>' + prod + '</strong><br>' +
-              v.f + ' feuilles · ' + v.c + ' caisses';
+              v.f + ' hojas · ' + v.c + ' cajas';
 
       if (contenants.length > 0) {
         html += '<div style="margin-top:8px; padding-top:8px; border-top:1px solid #ddd;">';
         contenants.forEach(c => {
           html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:13px;">' +
-                  '<span>📦 <strong>' + c.num + '</strong> · ' + c.feuilles + ' feuilles' +
+                  '<span>📦 <strong>' + c.num + '</strong> · ' + c.hojas + ' hojas' +
                   (c.emp ? ' · 📍' + c.emp : '') + '</span>';
           if (isGestionnaire) {
             html += '<button onclick="removeContenantFromStock(\'' + prod.replace(/'/g, "\\'") + '\',\'' + c.num.replace(/'/g, "\\'") + '\')" ' +
@@ -898,22 +940,22 @@ function renderStock() {
       }
 
       if (isGestionnaire) {
-        html += '<button class="btn-red" style="margin-top:8px; padding:8px; font-size:13px;" onclick="removeProductFromStock(\'' + prod.replace(/'/g, "\\'") + '\')">🗑️ Retirer TOUT le produit du stock</button>';
+        html += '<button class="btn-red" style="margin-top:8px; padding:8px; font-size:13px;" onclick="removeProductFromStock(\'' + prod.replace(/'/g, "\\'") + '\')">🗑️ Retirar TODO el producto del stock</button>';
       }
       html += '</div>';
     }
   });
-  document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vide</p>';
+  document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vacío</p>';
 }
 
 // Ouvre la fenêtre flottante de détail pour une référence produit :
-// liste des contenants actifs avec N°, feuilles, et emplacement.
+// liste des contenants actifs avec N°, hojas, et emplacement.
 function openProdDetail(prod) {
   const contenants = getContenantsActifs(prod);
   document.getElementById('prodDetailTitle').textContent = '📦 ' + prod;
 
   if (contenants.length === 0) {
-    document.getElementById('prodDetailList').innerHTML = '<p style="color:#999;">Aucun contenant actif pour cette référence</p>';
+    document.getElementById('prodDetailList').innerHTML = '<p style="color:#999;">No hay contenedores activos para esta referencia</p>';
   } else {
     let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">' +
       '<tr style="background:#f0f0f0;">' +
@@ -924,7 +966,7 @@ function openProdDetail(prod) {
     contenants.forEach(c => {
       html += '<tr style="border-bottom:1px solid #eee;">' +
         '<td style="padding:6px;">' + c.num + '</td>' +
-        '<td style="padding:6px; text-align:right;">' + c.feuilles + '</td>' +
+        '<td style="padding:6px; text-align:right;">' + c.hojas + '</td>' +
         '<td style="padding:6px;">' + (c.emp || '—') + '</td>' +
         '</tr>';
     });
@@ -937,20 +979,20 @@ function openProdDetail(prod) {
 
 // Réservé au Gestionnaire : retire UN contenant précis du stock (plus ciblé que removeProductFromStock)
 function removeContenantFromStock(prod, num) {
-  if (!currentUser || currentUser.role !== 'Gestionnaire') {
-    alert('⛔ Action réservée au Gestionnaire.');
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Acción reservada al Magasinero.');
     return;
   }
   const entry = DB.entrees.find(e => e.prod === prod && e.num === num);
   if (!entry || !DB.stock[prod]) return;
 
-  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.feuilles + ' feuilles) du stock ?\nCette action est irréversible.')) return;
+  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.hojas + ' hojas) du stock ?\nCette action est irreversible.')) return;
 
-  DB.stock[prod].f -= entry.feuilles;
+  DB.stock[prod].f -= entry.hojas;
   DB.stock[prod].c -= entry.nb;
   if (DB.stock[prod].f <= 0) delete DB.stock[prod];
 
-  logMouvement('Suppression', num, prod + ' · retiré du stock par le Gestionnaire');
+  logMouvement('Suppression', num, prod + ' · retirado del stock por el Magasinero');
 
   saveDB();
   renderStock();
@@ -959,28 +1001,28 @@ function removeContenantFromStock(prod, num) {
 
 // Réservé au Gestionnaire : supprime totalement un produit du stock (sans création de sortie/vente).
 function removeProductFromStock(prod) {
-  if (!currentUser || currentUser.role !== 'Gestionnaire') {
-    alert('⛔ Action réservée au Gestionnaire.');
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Acción reservada al Magasinero.');
     return;
   }
   if (!DB.stock[prod]) return;
 
   const confirmMsg = '⚠️ Retirer DÉFINITIVEMENT "' + prod + '" du stock ?\n' +
-    DB.stock[prod].f + ' feuilles / ' + DB.stock[prod].c + ' caisses seront supprimées.\n' +
-    'Cette action est irréversible.';
+    DB.stock[prod].f + ' hojas / ' + DB.stock[prod].c + ' cajas seront supprimées.\n' +
+    'Cette action est irreversible.';
   if (!confirm(confirmMsg)) return;
 
   delete DB.stock[prod];
 
-  // On loggue la suppression pour chaque contenant encore actif lié à ce produit,
+  // On loggue la suppression pour chaque contenant encore actif lié a ce produit,
   // pour que l'historique par N° contenant reste cohérent.
   getContenantsActifs(prod).forEach(c => {
-    logMouvement('Suppression', c.num, prod + ' · retiré du stock par le Gestionnaire');
+    logMouvement('Suppression', c.num, prod + ' · retirado del stock por el Magasinero');
   });
 
   saveDB();
   renderStock();
-  alert('✓ "' + prod + '" a été retiré du stock.');
+  alert('✓ "' + prod + '" ha sido retirado del stock.');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -999,7 +1041,7 @@ function renderHistorique() {
   const listEl = document.getElementById('histList');
 
   if (!num) {
-    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Entrez ou scannez un N° de contenant pour voir son historique</p>';
+    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Ingrese o escanee un N° de contenedor para ver su historial</p>';
     return;
   }
 
@@ -1009,15 +1051,15 @@ function renderHistorique() {
     .sort((a, b) => new Date(a.date) - new Date(b.date)); // ordre chronologique
 
   if (mouvements.length === 0) {
-    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Aucun mouvement trouvé pour ce N° de contenant</p>';
+    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No se encontraron movimientos para este N° de contenedor</p>';
     return;
   }
 
-  let html = '<p style="color:#888; font-size:13px;">' + mouvements.length + ' mouvement(s) trouvé(s) pour <strong>' + num + '</strong></p>';
+  let html = '<p style="color:#888; font-size:13px;">' + mouvements.length + ' movimiento(s) encontrado(s) pour <strong>' + num + '</strong></p>';
   mouvements.forEach(m => {
     const color = MOUVEMENT_COLORS[m.type] || '#555';
     const d = new Date(m.date);
-    const dateStr = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    const dateStr = d.toLocaleDateString('fr-FR') + ' a ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
     html += '<div class="card" style="border-left:4px solid ' + color + ';">' +
             '<strong style="color:' + color + ';">' + m.type + '</strong><br>' +
             m.detail + '<br>' +
@@ -1035,7 +1077,7 @@ let scanDetector = null;
 let scanRunning = false;
 let scanRaf = null;
 let scanTargetQueue = [];
-let scanFoundCodes = {}; // codes déjà capturés dans cette session { code: true }
+let scanFoundCodes = {}; // codes déja capturés dans cette session { code: true }
 let scanCooldownUntil = 0;
 let scanRejectUntil = 0;
 let scanWatchdogTimer = null;
@@ -1044,20 +1086,20 @@ let scanLastTickAt = 0;
 const FIELD_LABELS = {
   recProd: 'PRODUIT',
   recNum: 'N° CONTENANT',
-  casseNum: 'N° contenant',
-  sortieNum: 'N° contenant',
-  histNum: 'N° contenant'
+  casseNum: 'N° contenedor',
+  sortieNum: 'N° contenedor',
+  histNum: 'N° contenedor'
 };
 
 // Règles strictes de validation selon le champ ciblé
-// Produit ex: FL8-321/214  → lettres + chiffres + tiret + slash
+// Producto ex: FL8-321/214  → lettres + chiffres + tiret + slash
 // Contenant ex: 22325100518C → exactement 11 chiffres + 1 lettre majuscule
 const FIELD_VALIDATORS = {
-  recProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Format produit attendu : FL8-321/214 ou FL4GR-330/225 ou CG4-250/200' },
-  recNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
-  casseNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
-  sortieNum: { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' },
-  histNum:   { regex: /^\d{11}[A-Z]$/, msg: 'Format contenant attendu : 11 chiffres + 1 lettre (ex: 22325100518C)' }
+  recProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato de producto esperado : FL8-321/214 ou FL4GR-330/225 ou CG4-250/200' },
+  recNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato de contenedor esperado : 11 chiffres + 1 lettre (ex: 22325100518C)' },
+  casseNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Formato de contenedor esperado : 11 chiffres + 1 lettre (ex: 22325100518C)' },
+  sortieNum: { regex: /^\d{11}[A-Z]$/, msg: 'Formato de contenedor esperado : 11 chiffres + 1 lettre (ex: 22325100518C)' },
+  histNum:   { regex: /^\d{11}[A-Z]$/, msg: 'Formato de contenedor esperado : 11 chiffres + 1 lettre (ex: 22325100518C)' }
 };
 
 function openScanner(targetFieldId) {
@@ -1094,7 +1136,7 @@ function stopWatchdog() {
 function updateScanStatus(extra) {
   const statusEl = document.getElementById('scanStatusMsg');
   const next = scanTargetQueue[0];
-  let html = '📷 Visez le code-barres <strong>' + (FIELD_LABELS[next] || 'demandé') + '</strong>';
+  let html = '📷 Apunte al código de barras <strong>' + (FIELD_LABELS[next] || 'demandé') + '</strong>';
   if (extra) html = extra + '<br>' + html;
   statusEl.innerHTML = html;
 }
@@ -1121,11 +1163,11 @@ async function startCamera() {
       scanRunning = true;
       detectLoop();
     } else {
-      statusEl.textContent = '⚠️ Scanner automatique non supporté sur ce navigateur. Tapez le code ci-dessous.';
+      statusEl.textContent = '⚠️ Escáner automático no compatible con este navegador. Escriba el código abajo.';
     }
   } catch (err) {
     let msg = 'Erreur caméra : ' + err.message;
-    if (err.name === 'NotAllowedError') msg = '❌ Permission caméra refusée. Autorisez dans les réglages du navigateur.';
+    if (err.name === 'NotAllowedError') msg = '❌ Permiso de cámara denegado. Autorice en la configuración du navigateur.';
     statusEl.textContent = msg;
   }
 }
@@ -1167,27 +1209,27 @@ function detectLoop() {
 }
 
 // Traite TOUS les codes visibles dans la frame en une fois (pas seulement un par un).
-// Cela évite le problème où 2 codes sont visibles simultanément à l'écran mais le
+// Cela évite le problème où 2 codes sont visibles simultanément a l'écran mais le
 // detector ne "voit" toujours que le même, bloquant la progression vers le 2e champ.
 function handleCodesFound(codes) {
-  // Essaie d'assigner chaque champ encore en attente à un code qui correspond à sa regex
-  // et qui n'a pas déjà été utilisé dans cette session.
+  // Essaie d'assigner chaque champ encore en attente a un code qui correspond a sa regex
+  // et qui n'a pas déja été utilisé dans cette session.
   for (let i = scanTargetQueue.length - 1; i >= 0; i--) {
     const field = scanTargetQueue[i];
     if (field !== scanTargetQueue[0]) continue; // on ne traite que le champ courant en tête de file, dans l'ordre
     const validator = FIELD_VALIDATORS[field];
 
-    // Cherche parmi les codes visibles celui qui correspond à ce champ et n'a pas déjà été pris
+    // Cherche parmi les codes visibles celui qui correspond a ce champ et n'a pas déja été pris
     const match = codes.find(code => !scanFoundCodes[code] && (!validator || validator.regex.test(code)));
 
     if (match) {
       acceptCode(field, match);
-      return; // on retraite à la prochaine frame pour le champ suivant
+      return; // on retraite a la prochaine frame pour le champ suivant
     }
   }
 
   // Aucun code valide trouvé pour le champ courant : si un code a été vu mais ne correspond
-  // à aucune règle attendue, on peut signaler un rejet (seulement si un seul nouveau code visible)
+  // a aucune règle attendue, on peut signaler un rejet (seulement si un seul nouveau code visible)
   const field = scanTargetQueue[0];
   const validator = FIELD_VALIDATORS[field];
   const unseenCodes = codes.filter(c => !scanFoundCodes[c]);
@@ -1196,7 +1238,7 @@ function handleCodesFound(codes) {
     if (Date.now() >= scanRejectUntil) {
       if (navigator.vibrate) navigator.vibrate(150);
       document.getElementById('scanStatusMsg').innerHTML =
-        '⛔ Code non reconnu pour ce champ : "' + rejectedCode + '"<br>' + validator.msg;
+        '⛔ Código no reconocido pour ce champ : "' + rejectedCode + '"<br>' + validator.msg;
       scanRejectUntil = Date.now() + 1200;
     }
   }
@@ -1213,7 +1255,7 @@ function acceptCode(field, code) {
   if (scanTargetQueue.length > 0) {
     updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);
   } else {
-    document.getElementById('scanStatusMsg').innerHTML = '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminé !';
+    document.getElementById('scanStatusMsg').innerHTML = '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminado !';
     scanRunning = false;
     setTimeout(() => { closeScanner(); }, 700);
   }

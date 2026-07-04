@@ -192,77 +192,121 @@
 <!-- ═══ APP ═══ -->
 <div class="page" id="app">
 
-  <!-- BARRE DE NAVIGATION EN HAUT -->
-  <div class="topnav">
-    <div class="nav-left">
-      <button onclick="goto('entrees')">📥 Entradas</button>
-      <button onclick="goto('sorties')">📤 Salidas</button>
-      <button onclick="goto('casse')" style="background:#cc2222; border-color:#cc2222;">💥 Roturas</button>
-      <button onclick="goto('stock')">🪟 Stock</button>
-      <button onclick="goto('historique')" style="background:#6633aa; border-color:#6633aa;">🕓 Historial</button>
+  <!-- BARRE TOP -->
+  <div class="topnav" style="justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button onclick="toggleSidebar()" style="background:none; border:none; color:white; font-size:22px; width:auto; padding:4px 8px;">☰</button>
+      <span style="color:white; font-weight:bold; font-size:16px;">🪟 VerreStock Pro</span>
     </div>
-    <div class="nav-right">
-      <button class="btn-nueva" onclick="openModal('modalRec')">+ Nueva Recepción</button>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span id="userInfo" style="color:rgba(255,255,255,0.8); font-size:12px;"></span>
+      <button onclick="logout()" style="background:#cc2222; border:none; color:white; border-radius:6px; padding:6px 12px; font-size:12px; width:auto;">Salir</button>
     </div>
   </div>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <div class="app-content">
-    <!-- INFO USUARIO -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <p style="color:#888; margin:0;" id="userInfo"></p>
-      <button class="btn-red" style="width:auto; padding:6px 14px; font-size:13px;" onclick="logout()">Salir</button>
+  <!-- LAYOUT PRINCIPAL -->
+  <div style="display:flex; padding-top:52px; min-height:100vh;">
+
+    <!-- MENÚ LATERAL -->
+    <div id="sidebar" style="width:200px; background:#1e293b; min-height:calc(100vh - 52px); padding:16px 0; flex-shrink:0; transition:width 0.2s;">
+      <div style="padding:0 12px; margin-bottom:8px; color:rgba(255,255,255,0.4); font-size:11px; text-transform:uppercase;">Operaciones</div>
+      <button onclick="goto('entrees')" class="sidebar-btn" id="sb-entrees">📥 Entradas</button>
+      <button onclick="goto('sorties')" class="sidebar-btn" id="sb-sorties">📤 Salidas</button>
+      <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse">💥 Roturas</button>
+      <div style="padding:0 12px; margin:12px 0 8px; color:rgba(255,255,255,0.4); font-size:11px; text-transform:uppercase;">Consultas</div>
+      <button onclick="goto('stock')" class="sidebar-btn" id="sb-stock">🪟 Stock Global</button>
+      <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">🕓 Historial</button>
+      <div style="padding:0 12px; margin:12px 0 8px; color:rgba(255,255,255,0.4); font-size:11px; text-transform:uppercase;">Nueva Entrada</div>
+      <button onclick="showEntradaOptions()" class="sidebar-btn" style="background:#00aa44; color:white;">+ Nueva Recepción</button>
     </div>
 
-    <!-- ENTRADAS -->
-    <div class="page active" id="page-entrees">
-      <h2>📥 Flux de Entradas</h2>
-      <div id="entreeList"></div>
-    </div>
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="app-content" style="flex:1; padding:20px; overflow-y:auto;">
 
-    <!-- ROTURAS -->
-    <div class="page" id="page-casse">
-      <h2>💥 Roturas</h2>
-      <button class="btn-red" onclick="openModal('modalCasse')">Declarar una Rotura</button>
-      <div id="casseList"></div>
-    </div>
-
-    <!-- SALIDAS -->
-    <div class="page" id="page-sorties">
-      <h2>📤 Salidas</h2>
-      <button class="btn-orange" onclick="openModal('modalSortie')">+ Nueva Salida</button>
-      <div id="sortieList"></div>
-    </div>
-
-    <!-- STOCK -->
-    <div class="page" id="page-stock">
-      <h2>🪟 Stock Global</h2>
-      <button class="btn-blue" style="background:#6633aa" onclick="goto('historique')">🕓 Ver historial de un contenedor</button>
-      <div id="stockKpis"></div>
-      <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
-      <div id="stockList"></div>
-    </div>
-
-    <!-- MODAL DÉTAIL RÉFÉRENCE -->
-    <div class="modal" id="modalProdDetail">
-      <h2 id="prodDetailTitle">📦 Detalle</h2>
-      <div id="prodDetailList"></div>
-      <button class="btn-blue" onclick="closeModal('modalProdDetail')">Cerrar</button>
-    </div>
-
-    <!-- HISTORIAL -->
-    <div class="page" id="page-historique">
-      <h2>🕓 Historial de Movimientos</h2>
-      <label>N° Contenedor</label>
-      <div style="display:flex; gap:8px">
-        <input type="text" id="histNum" placeholder="ej: 22325100518C" style="flex:1" oninput="renderHistorique()">
-        <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+      <!-- PÁGINA INICIO / KPI -->
+      <div class="page active" id="page-dashboard">
+        <h2>📊 Panel de Control</h2>
+        <div id="kpiDashboard" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:20px;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="card">
+            <strong>📥 Últimas Entradas</strong>
+            <div id="dashEntradas" style="margin-top:8px; font-size:13px;"></div>
+          </div>
+          <div class="card">
+            <strong>📤 Últimas Salidas</strong>
+            <div id="dashSalidas" style="margin-top:8px; font-size:13px;"></div>
+          </div>
+        </div>
       </div>
-      <div id="histList"></div>
-    </div>
 
-  </div><!-- fin app-content -->
+      <!-- ENTRADAS -->
+      <div class="page" id="page-entrees">
+        <h2>📥 Flux de Entradas</h2>
+        <div id="entreeList"></div>
+      </div>
+
+      <!-- ROTURAS -->
+      <div class="page" id="page-casse">
+        <h2>💥 Roturas</h2>
+        <button class="btn-red" onclick="openModal('modalCasse')">Declarar una Rotura</button>
+        <div id="casseList"></div>
+      </div>
+
+      <!-- SALIDAS -->
+      <div class="page" id="page-sorties">
+        <h2>📤 Salidas</h2>
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <button class="btn-orange" style="flex:1;" onclick="openModal('modalSortieVenta')">🛒 Salida Venta</button>
+          <button class="btn-blue" style="flex:1;" onclick="openModal('modalTraspaso')">🚛 Traspaso de Almacén</button>
+        </div>
+        <div id="sortieList"></div>
+      </div>
+
+      <!-- STOCK GLOBAL - TABLEAU EXCEL -->
+      <div class="page" id="page-stock">
+        <h2>🪟 Stock Global</h2>
+        <button class="btn-blue" style="background:#6633aa; margin-bottom:12px;" onclick="goto('historique')">🕓 Ver historial de un contenedor</button>
+        <div id="stockKpis"></div>
+        <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
+        <div id="stockList"></div>
+      </div>
+
+      <!-- MODAL DÉTAIL RÉFÉRENCE -->
+      <div class="modal" id="modalProdDetail">
+        <h2 id="prodDetailTitle">📦 Detalle</h2>
+        <div id="prodDetailList"></div>
+        <button class="btn-blue" onclick="closeModal('modalProdDetail')">Cerrar</button>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="page" id="page-historique">
+        <h2>🕓 Historial de Movimientos</h2>
+        <label>N° Contenedor</label>
+        <div style="display:flex; gap:8px">
+          <input type="text" id="histNum" placeholder="ej: 22325100518C" style="flex:1" oninput="renderHistorique()">
+          <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+        </div>
+        <div id="histList"></div>
+      </div>
+
+    </div><!-- fin app-content -->
+  </div><!-- fin layout -->
 </div><!-- fin app -->
+
+<!-- MODAL CHOIX ENTRÉE -->
+<div class="modal" id="modalEntradaOpts" style="background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:12px; padding:24px; max-width:340px; width:100%; margin:20px;">
+    <h2 style="color:#0055cc; margin-bottom:20px;">📥 Tipo de Entrada</h2>
+    <button class="btn-green" style="margin-bottom:12px;" onclick="closeModal('modalEntradaOpts'); openModal('modalRec');">
+      📦 Nuevo Stock<br><small style="font-weight:normal;">Recepción de nueva mercancía</small>
+    </button>
+    <button class="btn-blue" id="btnReintegracion" onclick="closeModal('modalEntradaOpts'); openModal('modalReintegracion');">
+      🔄 Reintegración<br><small style="font-weight:normal;">Solo Magasinero</small>
+    </button>
+    <button class="btn-red" style="margin-top:12px;" onclick="closeModal('modalEntradaOpts')">Cancelar</button>
+  </div>
+</div>
+
 
 <!-- ═══ MODAL SORTIE ═══ -->
 <div class="modal" id="modalSortie">
@@ -342,10 +386,99 @@
   </div>
 </div>
 
+<!-- ═══ MODAL SALIDA VENTA ═══ -->
+<div class="modal" id="modalSortieVenta">
+  <h2>🛒 Salida Venta</h2>
+  <label>N° Pedido / Commande</label>
+  <input type="text" id="ventaPedido" placeholder="ej: PED-2024-001">
+  <label>N° Contenedor</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="ventaNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('ventaNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+  <label>Número de cajas a salir</label>
+  <input type="number" id="ventaCajas" value="1" min="1">
+  <label>Cliente</label>
+  <input type="text" id="ventaCliente" placeholder="ej: Empresa ABC">
+  <button class="btn-orange" onclick="saveSalidaVenta()">✓ Confirmar Venta</button>
+  <button class="btn-red" onclick="closeModal('modalSortieVenta')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL TRASPASO DE ALMACÉN ═══ -->
+<div class="modal" id="modalTraspaso">
+  <h2>🚛 Traspaso de Almacén</h2>
+  <label>Almacén destino (ciudad)</label>
+  <input type="text" id="traspasoDest" placeholder="ej: Madrid, Barcelona, Sevilla...">
+  <label>N° Contenedor</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="traspasoNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('traspasoNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+  <label>Número de cajas a transferir</label>
+  <input type="number" id="traspasoCajas" value="1" min="1">
+  <div id="traspasoWarning" style="color:#cc6600; font-size:13px; margin:8px 0; display:none;"></div>
+  <button class="btn-blue" onclick="saveTraspaso()">✓ Confirmar Traspaso</button>
+  <button class="btn-red" onclick="closeModal('modalTraspaso')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL REINTEGRACIÓN (solo Magasinero) ═══ -->
+<div class="modal" id="modalReintegracion">
+  <h2>🔄 Reintegración de Stock</h2>
+  <p style="color:#888; font-size:13px; margin-bottom:16px;">Permite reingresar un contenedor previamente salido. Solo Magasinero.</p>
+  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta</button>
+  <label>Producto (código)</label>
+  <input type="text" id="reintProd" placeholder="ej: FL8-321/214" oninput="onReintProdChange()">
+  <label>Hojas por caja <span id="reintFpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
+  <input type="number" id="reintFpc" min="1" placeholder="ej: 16">
+  <label>N° Contenedor</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="reintNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('reintNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+  <label>Número de cajas</label>
+  <input type="number" id="reintNb" value="1" min="1">
+  <label>Ubicación</label>
+  <input type="text" id="reintEmp" placeholder="ej: A1,3">
+  <button class="btn-green" onclick="saveReintegracion()">✓ Confirmar Reintegración</button>
+  <button class="btn-red" onclick="closeModal('modalReintegracion')">Cancelar</button>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════
-// DONNÉES
+// SIDEBAR CSS injected via JS for sidebar-btn
 // ═══════════════════════════════════════════════════════════
+const sidebarStyle = document.createElement('style');
+sidebarStyle.textContent = `
+  .sidebar-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    background: transparent;
+    color: rgba(255,255,255,0.85);
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: normal;
+    cursor: pointer;
+    margin: 2px 0;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-btn:hover { background: rgba(255,255,255,0.08); }
+  .sidebar-btn.active {
+    background: rgba(255,255,255,0.12);
+    border-left-color: #00aa44;
+    color: white;
+    font-weight: bold;
+  }
+`;
+document.head.appendChild(sidebarStyle);
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
+}
+
 const USERS = [
   {id:'u1', nom:'HAMZA MAROC', prenom:'HAMZA', role:'Operador', pin:'1234'},
   {id:'u2', nom:'TAFAT KHALED', prenom:'TAFAT', role:'Operador', pin:'5678'},
@@ -541,7 +674,7 @@ function loginSuccess(user) {
   document.getElementById('login').classList.remove('active');
   document.getElementById('app').classList.add('active');
   document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
-  goto('entrees');
+  goto('dashboard');
 }
 
 function logout() {
@@ -559,12 +692,218 @@ function logout() {
 function goto(page) {
   document.querySelectorAll('#app .page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  if (page === 'entrees') renderEntrees();
+  // Highlight sidebar button
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  const sb = document.getElementById('sb-' + page);
+  if (sb) sb.classList.add('active');
+  if (page === 'dashboard') renderDashboard();
+  else if (page === 'entrees') renderEntrees();
   else if (page === 'casse') renderCasse();
   else if (page === 'sorties') renderSorties();
   else if (page === 'stock') renderStock();
   else if (page === 'historique') renderHistorique();
 }
+
+// ─── Dashboard / KPI ───
+function renderDashboard() {
+  let totF = 0, totC = 0, totCasseF = 0, totSortiesF = 0;
+  Object.values(DB.stock).forEach(v => { totF += v.f; totC += v.c; });
+  DB.casses.forEach(c => totCasseF += c.qty);
+  DB.sorties.forEach(s => totSortiesF += s.feuilles);
+
+  document.getElementById('kpiDashboard').innerHTML =
+    kpiCard('🪟 Hojas en Stock', totF, '#0055cc') +
+    kpiCard('📦 Cajas en Stock', totC, '#0055cc') +
+    kpiCard('📤 Hojas Salidas', totSortiesF, '#cc6600') +
+    kpiCard('💥 Hojas Rotas', totCasseF, '#cc2222') +
+    kpiCard('📥 Recepciones', DB.entrees.length, '#00aa44') +
+    kpiCard('📤 Movimientos', DB.sorties.length, '#6633aa');
+
+  const ent = DB.entrees.slice(-3).reverse().map(e =>
+    '<div style="padding:4px 0; border-bottom:1px solid #eee;">' +
+    '<strong>' + e.prod + '</strong> · ' + e.feuilles + ' hojas<br>' +
+    '<small style="color:#888;">' + new Date(e.date).toLocaleDateString('es-ES') + '</small></div>'
+  ).join('') || '<p style="color:#999;">Sin entradas</p>';
+
+  const sal = DB.sorties.slice(-3).reverse().map(s =>
+    '<div style="padding:4px 0; border-bottom:1px solid #eee;">' +
+    '<strong>' + s.prod + '</strong> · ' + s.feuilles + ' hojas<br>' +
+    '<small style="color:#888;">' + new Date(s.date).toLocaleDateString('es-ES') + '</small></div>'
+  ).join('') || '<p style="color:#999;">Sin salidas</p>';
+
+  document.getElementById('dashEntradas').innerHTML = ent;
+  document.getElementById('dashSalidas').innerHTML = sal;
+}
+
+function kpiCard(label, value, color) {
+  return '<div style="background:' + color + '22; border-left:4px solid ' + color + '; border-radius:8px; padding:14px; text-align:center;">' +
+    '<div style="font-size:22px; font-weight:bold; color:' + color + ';">' + value + '</div>' +
+    '<div style="font-size:12px; color:#555; margin-top:4px;">' + label + '</div>' +
+    '</div>';
+}
+
+// ─── Mostrar opciones de entrada ───
+function showEntradaOptions() {
+  const isMagasinero = currentUser && currentUser.role === 'Magasinero';
+  const btn = document.getElementById('btnReintegracion');
+  if (btn) {
+    btn.style.opacity = isMagasinero ? '1' : '0.4';
+    btn.onclick = isMagasinero
+      ? function() { closeModal('modalEntradaOpts'); openModal('modalReintegracion'); }
+      : function() { alert('⛔ Reintegración: solo Magasinero (LUIS MIGUEL SOLERA)'); };
+  }
+  document.getElementById('modalEntradaOpts').style.display = 'flex';
+}
+
+// ─── Salida Venta ───
+function saveSalidaVenta() {
+  const num = document.getElementById('ventaNum').value.trim();
+  const pedido = document.getElementById('ventaPedido').value.trim();
+  const cajas = parseInt(document.getElementById('ventaCajas').value) || 1;
+  const cliente = document.getElementById('ventaCliente').value.trim();
+
+  if (!num || !pedido) {
+    alert('⛔ Por favor complete el N° de contenedor y el N° de pedido.');
+    return;
+  }
+
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (!entry) {
+    alert('⚠️ No se encontró ninguna recepción para el contenedor: ' + num);
+    return;
+  }
+
+  const prod = entry.prod;
+  const fpcUnidad = entry.feuilles / entry.nb;
+  const feuilles = Math.round(fpcUnidad * cajas);
+
+  if (!DB.stock[prod] || DB.stock[prod].f < feuilles) {
+    alert('⚠️ Stock insuficiente para este producto (' + prod + ')');
+    return;
+  }
+
+  DB.stock[prod].f -= feuilles;
+  DB.stock[prod].c -= cajas;
+
+  const sortie = { prod, num, feuilles, nb: cajas, client: cliente, pedido, tipo: 'Venta', date: new Date().toISOString() };
+  DB.sorties.push(sortie);
+  logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas' + (cliente ? ' · ' + cliente : ''));
+
+  saveDB();
+  closeModal('modalSortieVenta');
+  document.getElementById('ventaNum').value = '';
+  document.getElementById('ventaPedido').value = '';
+  document.getElementById('ventaCajas').value = '1';
+  document.getElementById('ventaCliente').value = '';
+
+  renderSorties();
+  alert('✓ Salida Venta registrada: -' + feuilles + ' hojas\nPedido: ' + pedido);
+  setTimeout(() => envoyerEmailSortie(prod, num, feuilles, cliente || pedido), 300);
+}
+
+// ─── Traspaso de Almacén ───
+function saveTraspaso() {
+  const num = document.getElementById('traspasoNum').value.trim();
+  const dest = document.getElementById('traspasoDest').value.trim();
+  const cajas = parseInt(document.getElementById('traspasoCajas').value) || 1;
+
+  if (!num || !dest) {
+    alert('⛔ Complete el N° de contenedor y el almacén destino.');
+    return;
+  }
+
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (!entry) {
+    alert('⚠️ No se encontró ninguna recepción para el contenedor: ' + num);
+    return;
+  }
+
+  // Validación estricta : el número de cajas debe coincidir exactamente
+  if (cajas !== entry.nb) {
+    alert('⛔ El número de cajas (' + cajas + ') no coincide con las cajas recibidas (' + entry.nb + ').\nEl traspaso debe ser por el total exacto del contenedor.');
+    return;
+  }
+
+  const prod = entry.prod;
+  const feuilles = entry.feuilles;
+
+  if (!DB.stock[prod] || DB.stock[prod].f < feuilles) {
+    alert('⚠️ Stock insuficiente para este producto.');
+    return;
+  }
+
+  DB.stock[prod].f -= feuilles;
+  DB.stock[prod].c -= cajas;
+
+  DB.sorties.push({ prod, num, feuilles, nb: cajas, client: dest, tipo: 'Traspaso', date: new Date().toISOString() });
+  logMouvement('Sortie', num, prod + ' · Traspaso → ' + dest + ' · -' + feuilles + ' hojas');
+
+  saveDB();
+  closeModal('modalTraspaso');
+  document.getElementById('traspasoNum').value = '';
+  document.getElementById('traspasoDest').value = '';
+  document.getElementById('traspasoCajas').value = '1';
+
+  renderSorties();
+  alert('✓ Traspaso registrado hacia ' + dest + ' : -' + feuilles + ' hojas');
+  setTimeout(() => envoyerEmailSortie(prod, num, feuilles, 'Traspaso → ' + dest), 300);
+}
+
+// ─── Reintegración (solo Magasinero) ───
+function onReintProdChange() {
+  const prod = document.getElementById('reintProd').value.trim();
+  const fpcInput = document.getElementById('reintFpc');
+  const statusEl = document.getElementById('reintFpcStatus');
+  if (!fpcInput || !statusEl) return;
+  const parsed = parseProductCode(prod);
+  if (!parsed) { statusEl.textContent = ''; return; }
+  if (FPC_TABLE[parsed.key] !== undefined) {
+    fpcInput.value = FPC_TABLE[parsed.key];
+    statusEl.innerHTML = '<span style="color:#00aa44;">✓ Referencia conocida</span>';
+  } else {
+    fpcInput.value = '';
+    statusEl.innerHTML = '<span style="color:#cc6600;">⚠️ Nueva referencia</span>';
+  }
+}
+
+function saveReintegracion() {
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Solo el Magasinero puede hacer una Reintegración.');
+    return;
+  }
+
+  const prod = document.getElementById('reintProd').value.trim();
+  const nb = parseInt(document.getElementById('reintNb').value) || 1;
+  const num = document.getElementById('reintNum').value.trim();
+  const emp = document.getElementById('reintEmp').value.trim();
+  const fpcSaisi = parseInt(document.getElementById('reintFpc').value);
+
+  if (!prod || !num || !fpcSaisi) {
+    alert('⛔ Complete todos los campos obligatorios.');
+    return;
+  }
+
+  const feuilles = fpcSaisi * nb;
+  DB.entrees.push({ prod, nb, num, emp, feuilles, tipo: 'Reintegración', date: new Date().toISOString() });
+
+  if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
+  DB.stock[prod].f += feuilles;
+  DB.stock[prod].c += nb;
+
+  logMouvement('Entrée', num, prod + ' · Reintegración · ' + feuilles + ' hojas');
+  saveDB();
+  closeModal('modalReintegracion');
+
+  document.getElementById('reintProd').value = '';
+  document.getElementById('reintFpc').value = '';
+  document.getElementById('reintNb').value = '1';
+  document.getElementById('reintNum').value = '';
+  document.getElementById('reintEmp').value = '';
+
+  renderEntrees();
+  alert('✓ Reintegración registrada: +' + feuilles + ' hojas (' + prod + ')');
+}
+
 
 function openModal(id) {
   document.getElementById(id).style.display = 'block';
@@ -797,11 +1136,15 @@ function renderSorties() {
   }
   let html = '';
   DB.sorties.slice().reverse().forEach(s => {
+    const tipo = s.tipo || 'Salida';
+    const colorTipo = tipo === 'Venta' ? '#cc6600' : tipo === 'Traspaso' ? '#0055cc' : '#555';
     html += '<div class="card">' +
+            '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + tipo + '</span> ' +
             '<strong>' + s.prod + '</strong><br>' +
-            'N° ' + s.num + ' · -' + s.hojas + ' hojas<br>';
+            'N° ' + s.num + ' · -' + s.feuilles + ' hojas<br>';
+    if (s.pedido) html += '📋 Pedido: <strong>' + s.pedido + '</strong><br>';
     if (s.client) html += '<span style="color:#cc6600;">👤 ' + s.client + '</span><br>';
-    html += '<span style="color:#888; font-size:12px;">' + new Date(s.date).toLocaleString('fr-FR') + '</span>' +
+    html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(s.date).toLocaleString('es-ES') + '</span>' +
             '</div>';
   });
   document.getElementById('sortieList').innerHTML = html;
@@ -879,64 +1222,82 @@ function renderStock() {
     '<div class="kpi">' + totF + ' hojas</div>' +
     '<div class="kpi">' + totC + ' cajas</div>';
 
-  if (Object.keys(DB.stock).length === 0) {
-    document.getElementById('stockTableWrap').innerHTML = '';
-    document.getElementById('stockList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Sin stock</p>';
+  // Construire le tableau Excel complet à partir de toutes les entrées
+  const allEntries = DB.entrees;
+  if (allEntries.length === 0) {
+    document.getElementById('stockTableWrap').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Sin stock</p>';
+    document.getElementById('stockList').innerHTML = '';
     return;
   }
 
-  // ── Tableau compact vertical : Référence | Feuilles | Caisses, cliquable ──
-  let tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:14px;">' +
-    '<tr style="background:#0055cc; color:#fff;">' +
-    '<th style="padding:8px; text-align:left;">Référence</th>' +
-    '<th style="padding:8px; text-align:right;">Feuilles</th>' +
-    '<th style="padding:8px; text-align:right;">Caisses</th>' +
-    '</tr>';
-  Object.entries(DB.stock).forEach(([prod, v]) => {
-    if (v.f > 0) {
-      tableHtml += '<tr onclick="openProdDetail(\'' + prod.replace(/'/g, "\\'") + '\')" ' +
-        'style="border-bottom:1px solid #ddd; cursor:pointer;">' +
-        '<td style="padding:8px; color:#0055cc; font-weight:bold;">' + prod + '</td>' +
-        '<td style="padding:8px; text-align:right;">' + v.f + '</td>' +
-        '<td style="padding:8px; text-align:right;">' + v.c + '</td>' +
-        '</tr>';
-    }
-  });
-  tableHtml += '</table>';
-  document.getElementById('stockTableWrap').innerHTML = tableHtml;
-
   const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
 
-  let html = '';
-  Object.entries(DB.stock).forEach(([prod, v]) => {
-    if (v.f > 0) {
-      const contenants = getContenantsActifs(prod);
-      html += '<div class="card"><strong>' + prod + '</strong><br>' +
-              v.f + ' hojas · ' + v.c + ' cajas';
+  // En-têtes style Excel
+  let tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:700px;">' +
+    '<thead><tr style="background:#0055cc; color:#fff; position:sticky; top:0;">' +
+    '<th style="padding:8px 6px; text-align:left; white-space:nowrap;">Referencia</th>' +
+    '<th style="padding:8px 6px; text-align:left;">Dimensión</th>' +
+    '<th style="padding:8px 6px; text-align:right;">Hojas Iniciales</th>' +
+    '<th style="padding:8px 6px; text-align:left;">Fecha Entrada</th>' +
+    '<th style="padding:8px 6px; text-align:left;">Operador</th>' +
+    '<th style="padding:8px 6px; text-align:center;">Rotura</th>' +
+    '<th style="padding:8px 6px; text-align:right;">Hojas Conformes</th>' +
+    '<th style="padding:8px 6px; text-align:left;">Ubicación</th>' +
+    '<th style="padding:8px 6px; text-align:left;">N° Contenedor</th>' +
+    '<th style="padding:8px 6px; text-align:left;">Estado</th>' +
+    (isGestionnaire ? '<th style="padding:8px 6px;"></th>' : '') +
+    '</tr></thead><tbody>';
 
-      if (contenants.length > 0) {
-        html += '<div style="margin-top:8px; padding-top:8px; border-top:1px solid #ddd;">';
-        contenants.forEach(c => {
-          html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:13px;">' +
-                  '<span>📦 <strong>' + c.num + '</strong> · ' + c.hojas + ' hojas' +
-                  (c.emp ? ' · 📍' + c.emp : '') + '</span>';
-          if (isGestionnaire) {
-            html += '<button onclick="removeContenantFromStock(\'' + prod.replace(/'/g, "\\'") + '\',\'' + c.num.replace(/'/g, "\\'") + '\')" ' +
-                    'style="background:#cc2222; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:16px; margin:0;">🗑️</button>';
-          }
-          html += '</div>';
-        });
-        html += '</div>';
-      }
+  allEntries.forEach((e, idx) => {
+    // Calcul casses pour ce conteneur
+    const casseTotal = DB.casses
+      .filter(c => c.num === e.num)
+      .reduce((s, c) => s + c.qty, 0);
+    const hojasConformes = Math.max(0, e.feuilles - casseTotal);
+    const tieneCasse = casseTotal > 0;
 
-      if (isGestionnaire) {
-        html += '<button class="btn-red" style="margin-top:8px; padding:8px; font-size:13px;" onclick="removeProductFromStock(\'' + prod.replace(/'/g, "\\'") + '\')">🗑️ Retirar TODO el producto del stock</button>';
-      }
-      html += '</div>';
+    // Etat du conteneur
+    const estSorti = DB.sorties.some(s => s.num === e.num);
+    const sortie = DB.sorties.find(s => s.num === e.num);
+    let estadoHtml = '';
+    if (estSorti) {
+      const tipo = sortie && sortie.tipo ? sortie.tipo : 'Salida';
+      estadoHtml = '<span style="background:#cc6600; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">' + tipo + '</span>';
+    } else {
+      estadoHtml = '<span style="background:#00aa44; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">En Stock</span>';
     }
+
+    // Extraire dimension du code produit
+    const dimMatch = e.prod ? e.prod.match(/(\d+\/\d+)$/) : null;
+    const dimension = dimMatch ? dimMatch[1] : '—';
+
+    // Opérateur qui a scanné (chercher dans mouvements)
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const operador = mvt ? mvt.operateur : '—';
+
+    const bg = idx % 2 === 0 ? '#fff' : '#f8f9fa';
+    const rowStyle = 'background:' + bg + '; border-bottom:1px solid #e0e0e0;';
+
+    tableHtml += '<tr style="' + rowStyle + '">' +
+      '<td style="padding:7px 6px; font-weight:bold; color:#0055cc; white-space:nowrap;">' + (e.prod || '—') + '</td>' +
+      '<td style="padding:7px 6px; white-space:nowrap;">' + dimension + '</td>' +
+      '<td style="padding:7px 6px; text-align:right;">' + e.feuilles + '</td>' +
+      '<td style="padding:7px 6px; white-space:nowrap;">' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
+      '<td style="padding:7px 6px;">' + operador + '</td>' +
+      '<td style="padding:7px 6px; text-align:center;">' + (tieneCasse ? '💥 ' + casseTotal : '—') + '</td>' +
+      '<td style="padding:7px 6px; text-align:right; font-weight:bold; color:' + (hojasConformes < e.feuilles ? '#cc2222' : '#00aa44') + ';">' + hojasConformes + '</td>' +
+      '<td style="padding:7px 6px;">' + (e.emp || '—') + '</td>' +
+      '<td style="padding:7px 6px; font-family:monospace; font-size:11px;">' + e.num + '</td>' +
+      '<td style="padding:7px 6px;">' + estadoHtml + '</td>' +
+      (isGestionnaire && !estSorti ? '<td style="padding:4px;"><button onclick="removeContenantFromStock(\'' + (e.prod||'').replace(/'/g,"\\'") + '\',\'' + e.num.replace(/'/g,"\\'") + '\')" style="background:#cc2222; color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:13px; cursor:pointer;">🗑️</button></td>' : (isGestionnaire ? '<td></td>' : '')) +
+      '</tr>';
   });
-  document.getElementById('stockList').innerHTML = html || '<p style="color:#999;">Stock vacío</p>';
+
+  tableHtml += '</tbody></table>';
+  document.getElementById('stockTableWrap').innerHTML = tableHtml;
+  document.getElementById('stockList').innerHTML = '';
 }
+
 
 // Ouvre la fenêtre flottante de détail pour une référence produit :
 // liste des contenants actifs avec N°, hojas, et emplacement.

@@ -12,9 +12,8 @@
     margin: 0;
     padding: 0;
   }
-  .page { display: none !important; }
-  .page.active { display: block !important; }
-  #login.active { display: flex !important; }
+  .page { display: none; }
+  .page.active { display: block; }
   /* Login styles */
   #login {
     background-color: #f4f6f9;
@@ -38,10 +37,10 @@
   .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px; }
   .input-group input { width: 100%; height: 54px; padding: 0 15px; font-size: 16px; border: 2px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
   .input-group input:focus { border-color: #2563eb; }
-  .btn-login { width: 100%; height: 56px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex !important; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; }
+  .btn-login { width: 100%; height: 56px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; }
   .btn-login:active { background-color: #1d4ed8; }
-  #loginError { color: #cc2222; text-align: center; font-size: 14px; margin-top: 10px; display: none !important; }
-  #loginError.visible { display: block !important; }
+  #loginError { color: #cc2222; text-align: center; font-size: 14px; margin-top: 10px; display: none; }
+  #loginError.visible { display: block; }
   h1 { text-align: center; color: #0055cc; margin:0; }
   h2 { color: #0055cc; border-bottom: 2px solid #0055cc; padding-bottom: 5px; }
   button {
@@ -168,7 +167,7 @@
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div class="page active" id="login">
+<div class="page active" id="login" style="display:flex; flex-wrap:wrap; background:#f4f6f9; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
   <div class="login-container">
     <div class="login-header">
       <h1>🪟 VerreStock Pro</h1>
@@ -188,7 +187,7 @@
 </div>
 
 <!-- ═══ APP ═══ -->
-<div class="page" id="app">
+<div class="page" id="app" style="display:none;">
 
   <!-- BARRE TOP -->
   <div class="topnav" style="justify-content:space-between;">
@@ -669,25 +668,16 @@ document.addEventListener('keydown', function(e) {
 
 function loginSuccess(user) {
   currentUser = user;
-  // On force display:none directement pour éviter tout conflit CSS
-  const loginEl = document.getElementById('login');
-  loginEl.classList.remove('active');
-  loginEl.style.display = 'none';
-  const appEl = document.getElementById('app');
-  appEl.classList.add('active');
-  appEl.style.display = 'block';
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
   document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
   goto('dashboard');
 }
 
 function logout() {
   currentUser = null;
-  const appEl = document.getElementById('app');
-  appEl.classList.remove('active');
-  appEl.style.display = 'none';
-  const loginEl = document.getElementById('login');
-  loginEl.classList.add('active');
-  loginEl.style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
   document.getElementById('usernameInput').value = '';
   document.getElementById('passwordInput').value = '';
   document.getElementById('loginError').classList.remove('visible');
@@ -1646,7 +1636,6 @@ function validateManualScan() {
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
-// Init : focus sur le champ username au démarrage
 document.addEventListener('DOMContentLoaded', function() {
   const u = document.getElementById('usernameInput');
   if (u) u.focus();

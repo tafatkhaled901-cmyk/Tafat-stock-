@@ -397,11 +397,12 @@
   <button class="btn-blue" onclick="openScanner(['casseProd','casseNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta (producto + lote)</button>
 
   <label>Referencia del producto</label>
-  <input type="text" id="casseProd" placeholder="ej: FL8-321/214">
+  <input type="text" id="casseProd" placeholder="ej: FL8-321/214" oninput="onCasseProdChange()">
+  <div id="casseProdHint" style="font-size:12px; color:#0055cc; margin-top:-4px; margin-bottom:8px;"></div>
 
   <label>N° Lote</label>
   <div style="display:flex; gap:8px">
-    <input type="text" id="casseNum" placeholder="ej: 22325100518C" style="flex:1">
+    <input type="text" id="casseNum" placeholder="ej: 22325100518C" style="flex:1" oninput="autofillCasseProd()">
     <button onclick="openScanner('casseNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
   </div>
 
@@ -1019,6 +1020,27 @@ function saveTraspaso() {
 }
 
 // ─── Reintegración (solo Magasinero) ───
+// Auto-remplit la référence produit depuis le N° Lote (cherche dans les entrées)
+function autofillCasseProd() {
+  const num = document.getElementById('casseNum').value.trim();
+  const prodEl = document.getElementById('casseProd');
+  const hintEl = document.getElementById('casseProdHint');
+  if (!num || !prodEl) return;
+
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (entry && entry.prod) {
+    prodEl.value = entry.prod;
+    if (hintEl) hintEl.textContent = '✓ Referencia encontrada automáticamente';
+  } else {
+    if (hintEl) hintEl.textContent = 'Lote no encontrado en recepciones — ingrese la referencia manualmente';
+  }
+}
+
+function onCasseProdChange() {
+  const hintEl = document.getElementById('casseProdHint');
+  if (hintEl) hintEl.textContent = '';
+}
+
 function onReintProdChange() {
   const prod = document.getElementById('reintProd').value.trim();
   const fpcInput = document.getElementById('reintFpc');
@@ -1864,7 +1886,7 @@ async function startCamera() {
       // Uniquement Code 128 et Code 39 (formats réellement utilisés sur ces étiquettes).
       // EAN-13, QR, Data Matrix, etc. sont volontairement exclus pour éviter les faux positifs.
       scanDetector = new BarcodeDetector({
-        formats: ['code_128', 'code_39']
+        formats: ['code_128', 'code_39', 'code_93', 'codabar', 'itf', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code', 'data_matrix']
       });
       updateScanStatus();
       scanRunning = true;
@@ -1987,6 +2009,7 @@ function acceptCode(field, code) {
   if (el) el.value = code;
   if (field === 'recProd') onProdChange();
   if (field === 'reintProd') onReintProdChange();
+  if (field === 'casseNum') autofillCasseProd();
   if (field === 'histNum' || field === 'glLote') renderGrandLivre();
 
   if (scanTargetQueue.length > 0) {

@@ -1781,7 +1781,7 @@ function openScanner(targetFieldId) {
     'modalTraspaso','modalReintegracion','modalEntradaOpts','modalProdDetail'];
   openModals.forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.style.display !== 'none' && el.style.display !== '') {
+    if (el && window.getComputedStyle(el).display !== 'none') {
       scanParentModalId = id;
       el.style.display = 'none';
     }

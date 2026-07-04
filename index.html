@@ -178,7 +178,7 @@
     </div>
     <div class="input-group">
       <label for="usernameInput">Nombre de usuario / Operador</label>
-      <input type="text" id="usernameInput" placeholder="Ej: HAMZA MAROC" autocomplete="username">
+      <input type="text" id="usernameInput" placeholder="Ej: HAMZA o TAFAT o LUIS" autocomplete="username">
     </div>
     <div class="input-group">
       <label for="passwordInput">Contraseña (PIN)</label>
@@ -347,9 +347,9 @@
 // DONNÉES
 // ═══════════════════════════════════════════════════════════
 const USERS = [
-  {id:'u1', nom:'HAMZA MAROC', role:'Operador', pin:'1234'},
-  {id:'u2', nom:'TAFAT KHALED', role:'Operador', pin:'5678'},
-  {id:'u3', nom:'LUIS MIGUEL SOLERA', role:'Magasinero', pin:'0000'},
+  {id:'u1', nom:'HAMZA MAROC', prenom:'HAMZA', role:'Operador', pin:'1234'},
+  {id:'u2', nom:'TAFAT KHALED', prenom:'TAFAT', role:'Operador', pin:'5678'},
+  {id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS', role:'Magasinero', pin:'0000'},
 ];
 
 // Table précise : hojas par caja selon la référence EXACTE (épaisseur + dimensions)
@@ -512,9 +512,11 @@ function doLogin() {
   const password = document.getElementById('passwordInput').value.trim();
   const errorEl = document.getElementById('loginError');
 
-  // Recherche l'utilisateur par nom (insensible à la casse) et PIN
+  // Accepte le prénom seul (HAMZA, TAFAT, LUIS) OU le nom complet
   const user = USERS.find(u =>
-    u.nom.toUpperCase() === username && u.pin === password
+    (u.nom.toUpperCase() === username ||
+     u.prenom.toUpperCase() === username) &&
+    u.pin === password
   );
 
   if (user) {

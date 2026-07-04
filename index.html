@@ -999,7 +999,7 @@ function saveTraspaso() {
   DB.stock[prod].c -= cajas;
 
   DB.sorties.push({ prod, num, feuilles, nb: cajas, client: dest, tipo: 'Traspaso', date: new Date().toISOString() });
-  logMouvement('Sortie', num, prod + ' · Traspaso → ' + dest + ' · -' + feuilles + ' hojas');
+  logMouvement('Traspaso', num, prod + ' · Traspaso → ' + dest + ' · -' + feuilles + ' hojas');
 
   saveDB();
   closeModal('modalTraspaso');
@@ -1053,7 +1053,7 @@ function saveReintegracion() {
   DB.stock[prod].f += feuilles;
   DB.stock[prod].c += nb;
 
-  logMouvement('Entrée', num, prod + ' · Reintegración · ' + feuilles + ' hojas');
+  logMouvement('Reintegración', num, prod + ' · Reintegración · ' + feuilles + ' hojas' + (emp ? ' · 📍' + emp : ''));
   saveDB();
   closeModal('modalReintegracion');
 

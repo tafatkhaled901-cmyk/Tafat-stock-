@@ -393,6 +393,12 @@
 <!-- ═══ MODAL ROTURA ═══ -->
 <div class="modal" id="modalCasse">
   <h2>💥 Declaración de Rotura</h2>
+
+  <button class="btn-blue" onclick="openScanner(['casseProd','casseNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta (producto + lote)</button>
+
+  <label>Referencia del producto</label>
+  <input type="text" id="casseProd" placeholder="ej: FL8-321/214">
+
   <label>N° Lote</label>
   <div style="display:flex; gap:8px">
     <input type="text" id="casseNum" placeholder="ej: 22325100518C" style="flex:1">
@@ -402,7 +408,7 @@
   <label>Número de hojas rotas</label>
   <input type="number" id="casseQty" value="1" min="1">
 
-  <button class="btn-red" onclick="saveCasse()">💥 Validar</button>
+  <button class="btn-red" onclick="saveCasse()">💥 Validar Rotura</button>
   <button class="btn-blue" onclick="closeModal('modalCasse')">Cancelar</button>
 </div>
 
@@ -1212,81 +1218,95 @@ function renderCasse() {
 function saveCasse() {
   const num = document.getElementById('casseNum').value.trim();
   const qty = parseInt(document.getElementById('casseQty').value) || 1;
+  const prodScanned = document.getElementById('casseProd').value.trim();
 
-  if (!num) {
-    alert('Por favor ingrese el N° de lote');
-    return;
-  }
+  if (!num) { alert('Por favor ingrese o escanee el N° de lote'); return; }
 
-  // Retrouve le produit associé a ce contenant pour décrémenter le stock global
+  // Utilise la référence scannée, sinon cherche dans les entrées
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
-  const prodLabel = entry ? entry.prod : '(produit inconnu)';
+  const prodLabel = prodScanned || (entry ? entry.prod : '(producto desconocido)');
 
-  // Calcule les hojas restantes AVANT de décrémenter
+  // Calcul hojas restantes AVANT décrémentation
   const casseAvant = DB.casses.filter(c => c.num === num).reduce((s, c) => s + c.qty, 0);
-  const hojasInit = entry ? entry.hojas : 0;
+  const hojasInit = entry ? entry.feuilles : 0;
   const hojasRestantes = Math.max(0, hojasInit - casseAvant - qty);
 
   if (entry && DB.stock[entry.prod]) {
     DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
   }
 
-  DB.casses.push({ num, qty, date: new Date().toISOString() });
-  logMouvement('Casse', num, '-' + qty + ' hojas rotas · reste ' + hojasRestantes);
+  DB.casses.push({ num, qty, prod: prodLabel, date: new Date().toISOString() });
+  logMouvement('Casse', num, prodLabel + ' · -' + qty + ' hojas rotas · resto ' + hojasRestantes + ' hojas');
   saveDB();
   closeModal('modalCasse');
 
+  document.getElementById('casseProd').value = '';
   document.getElementById('casseNum').value = '';
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
+  alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas rotas: ' + qty + '\nHojas restantes: ' + hojasRestantes);
 
-  alert('💥 Rotura declarada : -' + qty + ' hojas.\nHojas restantes : ' + hojasRestantes + '\nAbriendo su app de correo...');
-
+  // Email avec délai pour laisser l'alert se fermer
   setTimeout(() => {
     envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
-  }, 300);
+  }, 800);
 }
 
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
 const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
 
 function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
-  const dateStr = new Date().toLocaleString('fr-FR');
+  const dateStr = new Date().toLocaleString('es-ES');
   const operateur = currentUser ? currentUser.nom : '—';
 
-  const subject = 'Declaration de Casse - ' + produit;
+  const subject = '💥 Declaración de Rotura - ' + produit;
   const body =
-    'Declaration de Casse - VerreStock Pro\n\n' +
+    'DECLARACIÓN DE ROTURA - VerreStock Pro\n\n' +
     'Producto : ' + produit + '\n' +
-    'N. Lote : ' + contenant + '\n' +
+    'N° Lote : ' + contenant + '\n' +
     'Hojas rotas : ' + hojasCassees + '\n' +
     'Hojas restantes : ' + hojasRestantes + '\n' +
     'Operador : ' + operateur + '\n' +
     'Fecha/Hora : ' + dateStr;
 
-  window.location.href = 'mailto:' + EMAIL_RESPONSABLE +
+  const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
+
+  // Utilise un lien temporaire pour éviter de quitter la page
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function envoyerEmailSortie(produit, contenant, hojas, client) {
-  const dateStr = new Date().toLocaleString('fr-FR');
+  const dateStr = new Date().toLocaleString('es-ES');
   const operateur = currentUser ? currentUser.nom : '—';
 
-  const subject = 'Salida de Stock - ' + produit;
+  const subject = '📤 Salida de Stock - ' + produit;
   const body =
-    'Salida de Stock - VerreStock Pro\n\n' +
+    'SALIDA DE STOCK - VerreStock Pro\n\n' +
     'Producto : ' + produit + '\n' +
-    'N. Lote : ' + contenant + '\n' +
+    'N° Lote : ' + contenant + '\n' +
     'Hojas salidas : ' + hojas + '\n' +
-    (client ? 'Cliente : ' + client + '\n' : '') +
+    (client ? 'Cliente/Destino : ' + client + '\n' : '') +
     'Operador : ' + operateur + '\n' +
     'Fecha/Hora : ' + dateStr;
 
-  window.location.href = 'mailto:' + EMAIL_RESPONSABLE +
+  const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1745,6 +1765,7 @@ let scanLastTickAt = 0;
 const FIELD_LABELS = {
   recProd:     'PRODUCTO',
   recNum:      'N° LOTE',
+  casseProd:   'PRODUCTO',
   casseNum:    'N° lote',
   sortieNum:   'N° lote',
   histNum:     'N° lote',

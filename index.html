@@ -262,7 +262,7 @@
       <!-- STOCK GLOBAL - TABLEAU EXCEL -->
       <div class="page" id="page-stock">
         <h2>🪟 Stock Global</h2>
-        <button class="btn-blue" style="background:#6633aa; margin-bottom:12px;" onclick="goto('historique')">🕓 Ver historial de un contenedor</button>
+        <button class="btn-blue" style="background:#6633aa; margin-bottom:12px;" onclick="goto('historique')">🕓 Ver historial de un lote</button>
         <div id="stockKpis"></div>
         <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
         <div id="stockList"></div>
@@ -278,7 +278,7 @@
       <!-- HISTORIAL -->
       <div class="page" id="page-historique">
         <h2>🕓 Historial de Movimientos</h2>
-        <label>N° Contenedor</label>
+        <label>N° Lote</label>
         <div style="display:flex; gap:8px">
           <input type="text" id="histNum" placeholder="ej: 22325100518C" style="flex:1" oninput="renderHistorique()">
           <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
@@ -308,7 +308,7 @@
 <!-- ═══ MODAL SORTIE ═══ -->
 <div class="modal" id="modalSortie">
   <h2>📤 Nueva Salida</h2>
-  <label>N° Contenedor</label>
+  <label>N° Lote</label>
   <div style="display:flex; gap:8px">
     <input type="text" id="sortieNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('sortieNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
@@ -325,7 +325,7 @@
 <div class="modal" id="modalRec">
   <h2>📥 Nueva Recepción</h2>
 
-  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Escanear etiqueta (producto + contenedor)</button>
+  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Escanear etiqueta (producto + lote)</button>
 
   <label>Producto (código)</label>
   <input type="text" id="recProd" placeholder="ej: FLT8-321/214" list="prodList" oninput="onProdChange()">
@@ -337,7 +337,7 @@
   <label>Número de cajas</label>
   <input type="number" id="recNb" value="1" min="1">
 
-  <label>N° Contenedor</label>
+  <label>N° Lote</label>
   <div style="display:flex; gap:8px">
     <input type="text" id="recNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('recNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
@@ -353,7 +353,7 @@
 <!-- ═══ MODAL ROTURA ═══ -->
 <div class="modal" id="modalCasse">
   <h2>💥 Declaración de Rotura</h2>
-  <label>N° Contenedor</label>
+  <label>N° Lote</label>
   <div style="display:flex; gap:8px">
     <input type="text" id="casseNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('casseNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
@@ -400,7 +400,7 @@
   <div id="ventaContador" style="display:none; text-align:center; margin:16px 0; padding:16px; background:#f0f4ff; border-radius:12px; border:2px solid #0055cc;">
     <div style="font-size:13px; color:#555; margin-bottom:6px;">Cajas restantes por escanear</div>
     <div id="ventaContadorNum" style="font-size:52px; font-weight:bold; color:#0055cc; line-height:1;">0</div>
-    <div style="font-size:12px; color:#888; margin-top:6px;">Escanee cada contenedor uno a uno</div>
+    <div style="font-size:12px; color:#888; margin-top:6px;">Escanee cada lote uno a uno</div>
   </div>
 
   <!-- Liste des conteneurs scannés -->
@@ -420,7 +420,7 @@
   <h2>🚛 Traspaso de Almacén</h2>
   <label>Almacén destino (ciudad)</label>
   <input type="text" id="traspasoDest" placeholder="ej: Madrid, Barcelona, Sevilla...">
-  <label>N° Contenedor</label>
+  <label>N° Lote</label>
   <div style="display:flex; gap:8px">
     <input type="text" id="traspasoNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('traspasoNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
@@ -435,13 +435,13 @@
 <!-- ═══ MODAL REINTEGRACIÓN (solo Magasinero) ═══ -->
 <div class="modal" id="modalReintegracion">
   <h2>🔄 Reintegración de Stock</h2>
-  <p style="color:#888; font-size:13px; margin-bottom:16px;">Permite reingresar un contenedor previamente salido. Solo Magasinero.</p>
+  <p style="color:#888; font-size:13px; margin-bottom:16px;">Permite reingresar un lote previamente salido. Solo Magasinero.</p>
   <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta</button>
   <label>Producto (código)</label>
   <input type="text" id="reintProd" placeholder="ej: FL8-321/214" oninput="onReintProdChange()">
   <label>Hojas por caja <span id="reintFpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
   <input type="number" id="reintFpc" min="1" placeholder="ej: 16">
-  <label>N° Contenedor</label>
+  <label>N° Lote</label>
   <div style="display:flex; gap:8px">
     <input type="text" id="reintNum" placeholder="ej: 22325100518C" style="flex:1">
     <button onclick="openScanner('reintNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
@@ -827,20 +827,20 @@ function ventaOnCodeScanned(code) {
   // Vérifier que ce conteneur existe en stock
   const entry = DB.entrees.slice().reverse().find(e => e.num === code);
   if (!entry) {
-    alert('⚠️ Contenedor ' + code + ' no encontrado en recepciones.');
+    alert('⚠️ Lote ' + code + ' no encontrado en recepciones.');
     return;
   }
 
   // Vérifier que ce conteneur n'a pas déjà été scanné dans cette vente
   if (ventaScannedNums.includes(code)) {
-    alert('⛔ El contenedor ' + code + ' ya fue escaneado en esta venta.');
+    alert('⛔ El lote ' + code + ' ya fue escaneado en esta venta.');
     return;
   }
 
   // Vérifier qu'il est en stock
   const dejaSorti = DB.sorties.some(s => s.num === code);
   if (dejaSorti) {
-    alert('⛔ El contenedor ' + code + ' ya fue RETIRADO del stock.');
+    alert('⛔ El lote ' + code + ' ya fue RETIRADO del stock.');
     return;
   }
 
@@ -866,7 +866,7 @@ function saveSalidaVenta() {
   const cliente = document.getElementById('ventaCliente').value.trim();
 
   if (ventaScannedNums.length === 0) {
-    alert('⛔ Escanee al menos un contenedor primero.');
+    alert('⛔ Escanee al menos un lote primero.');
     return;
   }
 
@@ -911,19 +911,19 @@ function saveTraspaso() {
   const cajas = parseInt(document.getElementById('traspasoCajas').value) || 1;
 
   if (!num || !dest) {
-    alert('⛔ Complete el N° de contenedor y el almacén destino.');
+    alert('⛔ Complete el N° de lote y el almacén destino.');
     return;
   }
 
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
   if (!entry) {
-    alert('⚠️ No se encontró ninguna recepción para el contenedor: ' + num);
+    alert('⚠️ No se encontró ninguna recepción para el lote: ' + num);
     return;
   }
 
   // Validación estricta : el número de cajas debe coincidir exactamente
   if (cajas !== entry.nb) {
-    alert('⛔ El número de cajas (' + cajas + ') no coincide con las cajas recibidas (' + entry.nb + ').\nEl traspaso debe ser por el total exacto del contenedor.');
+    alert('⛔ El número de cajas (' + cajas + ') no coincide con las cajas recibidas (' + entry.nb + ').\nEl traspaso debe ser por el total exacto del lote.');
     return;
   }
 
@@ -1075,7 +1075,7 @@ function saveRec() {
   const fpcSaisi = parseInt(document.getElementById('recFpc').value);
 
   if (!prod || !num) {
-    alert('Por favor complete el producto y el N° de contenedor');
+    alert('Por favor complete el producto y el N° de lote');
     return;
   }
 
@@ -1090,12 +1090,12 @@ function saveRec() {
   const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
 
   if (dejaRecu && !dejaSorti) {
-    alert('⛔ El N° de contenedor (' + num + ') ya está registrado en stock.\nNo se puede escanear dos veces.');
+    alert('⛔ El N° de lote (' + num + ') ya está registrado en stock.\nNo se puede escanear dos veces.');
     return;
   }
 
   if (dejaSorti && !isGestionnaire) {
-    alert('⛔ El N° de contenedor (' + num + ') ya fue RETIRADO del stock.\n' +
+    alert('⛔ El N° de lote (' + num + ') ya fue RETIRADO del stock.\n' +
           'Una nueva recepción con este número es imposible.\n' +
           'Solo el Magasinero puede autorizar esta operación.');
     return;
@@ -1154,7 +1154,7 @@ function saveCasse() {
   const qty = parseInt(document.getElementById('casseQty').value) || 1;
 
   if (!num) {
-    alert('Por favor ingrese el N° de contenedor');
+    alert('Por favor ingrese el N° de lote');
     return;
   }
 
@@ -1199,7 +1199,7 @@ function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
   const body =
     'Declaration de Casse - VerreStock Pro\n\n' +
     'Producto : ' + produit + '\n' +
-    'N. Contenedor : ' + contenant + '\n' +
+    'N. Lote : ' + contenant + '\n' +
     'Hojas rotas : ' + hojasCassees + '\n' +
     'Hojas restantes : ' + hojasRestantes + '\n' +
     'Operador : ' + operateur + '\n' +
@@ -1218,7 +1218,7 @@ function envoyerEmailSortie(produit, contenant, hojas, client) {
   const body =
     'Salida de Stock - VerreStock Pro\n\n' +
     'Producto : ' + produit + '\n' +
-    'N. Contenedor : ' + contenant + '\n' +
+    'N. Lote : ' + contenant + '\n' +
     'Hojas salidas : ' + hojas + '\n' +
     (client ? 'Cliente : ' + client + '\n' : '') +
     'Operador : ' + operateur + '\n' +
@@ -1258,14 +1258,14 @@ function saveSortie() {
   const client = document.getElementById('sortieCliente').value.trim();
 
   if (!num) {
-    alert('Por favor escanee o ingrese el N° de contenedor');
+    alert('Por favor escanee o ingrese el N° de lote');
     return;
   }
 
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
 
   if (!entry) {
-    alert('⚠️ No se encontró ninguna recepción para el contenedor: ' + num);
+    alert('⚠️ No se encontró ninguna recepción para el lote: ' + num);
     return;
   }
 
@@ -1346,7 +1346,7 @@ function renderStock() {
     '<th style="padding:8px 6px; text-align:center;">Rotura</th>' +
     '<th style="padding:8px 6px; text-align:right;">Hojas Conformes</th>' +
     '<th style="padding:8px 6px; text-align:left;">Ubicación</th>' +
-    '<th style="padding:8px 6px; text-align:left;">N° Contenedor</th>' +
+    '<th style="padding:8px 6px; text-align:left;">N° Lote</th>' +
     '<th style="padding:8px 6px; text-align:left;">Estado</th>' +
     (isGestionnaire ? '<th style="padding:8px 6px;"></th>' : '') +
     '</tr></thead><tbody>';
@@ -1409,7 +1409,7 @@ function openProdDetail(prod) {
   document.getElementById('prodDetailTitle').textContent = '📦 ' + prod;
 
   if (contenants.length === 0) {
-    document.getElementById('prodDetailList').innerHTML = '<p style="color:#999;">No hay contenedores activos para esta referencia</p>';
+    document.getElementById('prodDetailList').innerHTML = '<p style="color:#999;">No hay lotees activos para esta referencia</p>';
   } else {
     let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">' +
       '<tr style="background:#f0f0f0;">' +
@@ -1495,7 +1495,7 @@ function renderHistorique() {
   const listEl = document.getElementById('histList');
 
   if (!num) {
-    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Ingrese o escanee un N° de contenedor para ver su historial</p>';
+    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Ingrese o escanee un N° de lote para ver su historial</p>';
     return;
   }
 
@@ -1505,7 +1505,7 @@ function renderHistorique() {
     .sort((a, b) => new Date(a.date) - new Date(b.date)); // ordre chronologique
 
   if (mouvements.length === 0) {
-    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No se encontraron movimientos para este N° de contenedor</p>';
+    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No se encontraron movimientos para este N° de lote</p>';
     return;
   }
 
@@ -1539,13 +1539,13 @@ let scanLastTickAt = 0;
 
 const FIELD_LABELS = {
   recProd:     'PRODUCTO',
-  recNum:      'N° CONTENEDOR',
-  casseNum:    'N° contenedor',
-  sortieNum:   'N° contenedor',
-  histNum:     'N° contenedor',
-  ventaNum:    'N° contenedor',
-  traspasoNum: 'N° contenedor',
-  reintNum:    'N° contenedor',
+  recNum:      'N° LOTE',
+  casseNum:    'N° lote',
+  sortieNum:   'N° lote',
+  histNum:     'N° lote',
+  ventaNum:    'N° lote',
+  traspasoNum: 'N° lote',
+  reintNum:    'N° lote',
   reintProd:   'PRODUCTO'
 };
 

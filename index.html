@@ -140,18 +140,51 @@
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div class="page active" id="login" style="padding:20px;">
-  <h1 style="margin-top:40px;">🪟 VerreStock Pro</h1>
-  <p style="text-align:center; color:#888;">Seleccione su perfil</p>
+<div class="page active" id="login">
+  <style>
+    #login {
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-container {
+      background-color: #ffffff;
+      width: 100%;
+      max-width: 400px;
+      padding: 30px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .login-header { text-align: center; margin-bottom: 25px; }
+    .login-header h1 { font-size: 24px; color: #1e293b; margin-bottom: 5px; }
+    .login-header p { font-size: 14px; color: #64748b; }
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px; }
+    .input-group input { width: 100%; height: 54px; padding: 0 15px; font-size: 16px; border: 2px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+    .input-group input:focus { border-color: #2563eb; }
+    .btn-login { width: 100%; height: 56px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; transition: background-color 0.2s; }
+    .btn-login:active { background-color: #1d4ed8; }
+    #loginError { color: #cc2222; text-align: center; font-size: 14px; margin-top: 10px; display: none; }
+  </style>
 
-  <div id="userList"></div>
-
-  <div id="pinScreen" style="display:none; text-align:center;">
-    <h2 id="pinUserName" style="border:none;"></h2>
-    <div id="pinDots" style="margin:20px 0;"></div>
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:280px; margin:0 auto;" id="pinKeys"></div>
-    <p style="color:#999; font-size:12px; margin-top:20px;">PIN: HAMZA=1234, TAFAT=5678, LUIS=0000</p>
-    <button class="btn-red" style="max-width:280px; margin:20px auto;" onclick="backToUsers()">← Volver</button>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>🪟 VerreStock Pro</h1>
+      <p>Identifíquese para continuar</p>
+    </div>
+    <div class="input-group">
+      <label for="usernameInput">Nombre de usuario / Operador</label>
+      <input type="text" id="usernameInput" placeholder="Ej: HAMZA MAROC" autocomplete="username">
+    </div>
+    <div class="input-group">
+      <label for="passwordInput">Contraseña (PIN)</label>
+      <input type="password" id="passwordInput" placeholder="••••" autocomplete="current-password" maxlength="4" inputmode="numeric">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Conectarse 🔑</button>
+    <div id="loginError">❌ Usuario o contraseña incorrectos</div>
   </div>
 </div>
 
@@ -387,8 +420,6 @@ let DB = {
 };
 
 let currentUser = null;
-let selectedPinUser = null;
-let pinValue = '';
 
 // URL du Google Apps Script de synchronisation
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwva6-Ugbh9icmKJOZVg5Dyj3NPgC0-Px-m0VO9lOW1E9Kd3r6p_CyZ77JY6pUUJmyJ/exec';
@@ -472,78 +503,35 @@ function logMouvement(type, num, detail) {
 // ═══════════════════════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════════════════════
-function renderUserList() {
-  let html = '';
-  USERS.forEach(u => {
-    html += '<button class="btn-user" onclick=\'selectUser("' + u.id + '")\'>' +
-            '<strong>' + u.nom + '</strong><br>' +
-            '<span style="color:#888; font-size:12px;">' + u.role + '</span>' +
-            '</button>';
-  });
-  document.getElementById('userList').innerHTML = html;
-}
+// ═══════════════════════════════════════════════════════════
+// LOGIN — Formulaire username + password
+// ═══════════════════════════════════════════════════════════
+function doLogin() {
+  const username = document.getElementById('usernameInput').value.trim().toUpperCase();
+  const password = document.getElementById('passwordInput').value.trim();
+  const errorEl = document.getElementById('loginError');
 
-function selectUser(id) {
-  selectedPinUser = USERS.find(u => u.id === id);
-  pinValue = '';
-  document.getElementById('userList').style.display = 'none';
-  document.getElementById('pinScreen').style.display = 'block';
-  document.getElementById('pinUserName').textContent = selectedPinUser.nom;
-  renderPinDots();
-  renderPinKeys();
-}
+  // Recherche l'utilisateur par nom (insensible à la casse) et PIN
+  const user = USERS.find(u =>
+    u.nom.toUpperCase() === username && u.pin === password
+  );
 
-function backToUsers() {
-  document.getElementById('userList').style.display = 'block';
-  document.getElementById('pinScreen').style.display = 'none';
-  selectedPinUser = null;
-  pinValue = '';
-}
-
-function renderPinDots() {
-  let html = '';
-  for (let i = 0; i < 4; i++) {
-    html += '<span class="pindot ' + (pinValue.length > i ? 'filled' : '') + '"></span>';
-  }
-  document.getElementById('pinDots').innerHTML = html;
-}
-
-function renderPinKeys() {
-  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
-  let html = '';
-  keys.forEach(k => {
-    if (k === '') {
-      html += '<div></div>';
-    } else if (k === '⌫') {
-      html += '<button class="pinkey" style="color:#cc2222;" onclick="pinDelete()">⌫</button>';
-    } else {
-      html += '<button class="pinkey" onclick=\'pinPress("' + k + '")\'>' + k + '</button>';
-    }
-  });
-  document.getElementById('pinKeys').innerHTML = html;
-}
-
-function pinPress(k) {
-  if (pinValue.length >= 4) return;
-  pinValue += k;
-  renderPinDots();
-  if (pinValue.length === 4) {
-    if (selectedPinUser.pin === pinValue) {
-      loginSuccess(selectedPinUser);
-    } else {
-      setTimeout(() => {
-        alert('PIN incorrect');
-        pinValue = '';
-        renderPinDots();
-      }, 100);
-    }
+  if (user) {
+    errorEl.style.display = 'none';
+    loginSuccess(user);
+  } else {
+    errorEl.style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
   }
 }
 
-function pinDelete() {
-  pinValue = pinValue.slice(0, -1);
-  renderPinDots();
-}
+// Permet de se connecter en appuyant sur Entrée
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('login').classList.contains('active')) {
+    doLogin();
+  }
+});
 
 function loginSuccess(user) {
   currentUser = user;
@@ -555,12 +543,11 @@ function loginSuccess(user) {
 
 function logout() {
   currentUser = null;
-  selectedPinUser = null;
-  pinValue = '';
   document.getElementById('app').classList.remove('active');
   document.getElementById('login').classList.add('active');
-  document.getElementById('userList').style.display = 'block';
-  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('usernameInput').value = '';
+  document.getElementById('passwordInput').value = '';
+  document.getElementById('loginError').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1288,7 +1275,11 @@ function validateManualScan() {
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
-renderUserList();
+// Init : focus sur le champ username au démarrage
+document.addEventListener('DOMContentLoaded', function() {
+  const u = document.getElementById('usernameInput');
+  if (u) u.focus();
+});
 </script>
 
 </body>

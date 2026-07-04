@@ -272,14 +272,58 @@
       </div>
 
       <!-- HISTORIAL -->
+      <!-- GRAND LIVRE DES MOUVEMENTS -->
       <div class="page" id="page-historique">
-        <h2>🕓 Historial de Movimientos</h2>
-        <label>N° Lote</label>
-        <div style="display:flex; gap:8px">
-          <input type="text" id="histNum" placeholder="ej: 22325100518C" style="flex:1" oninput="renderHistorique()">
-          <button onclick="openScanner('histNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;">📒 Grand Livre des Mouvements</h2>
+          <span style="font-size:12px; color:#888; font-style:italic;">Append-Only · Non modifiable</span>
         </div>
-        <div id="histList"></div>
+
+        <!-- FILTRES DATE -->
+        <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#555; margin-bottom:8px; text-transform:uppercase;">📅 Période</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+            <button onclick="setGLPeriod('today')" class="gl-period-btn" id="glp-today">Hoy</button>
+            <button onclick="setGLPeriod('7days')" class="gl-period-btn" id="glp-7days">7 días</button>
+            <button onclick="setGLPeriod('month')" class="gl-period-btn" id="glp-month">Este mes</button>
+            <button onclick="setGLPeriod('all')" class="gl-period-btn active" id="glp-all">Todo</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input type="date" id="glDateFrom" onchange="renderGrandLivre()" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+            <span style="color:#888;">→</span>
+            <input type="date" id="glDateTo" onchange="renderGrandLivre()" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+          </div>
+        </div>
+
+        <!-- FILTRES OPÉRATIONS -->
+        <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#555; margin-bottom:8px; text-transform:uppercase;">🔍 Tipos de operación</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;" id="glTypeFilters">
+            <label class="gl-type-btn" style="background:#00aa4422; border:1px solid #00aa44;"><input type="checkbox" value="Entrée" checked onchange="renderGrandLivre()"> 📥 Entrada</label>
+            <label class="gl-type-btn" style="background:#cc660022; border:1px solid #cc6600;"><input type="checkbox" value="Sortie" checked onchange="renderGrandLivre()"> 📤 Salida</label>
+            <label class="gl-type-btn" style="background:#cc222222; border:1px solid #cc2222;"><input type="checkbox" value="Casse" checked onchange="renderGrandLivre()"> 💥 Rotura</label>
+            <label class="gl-type-btn" style="background:#0055cc22; border:1px solid #0055cc;"><input type="checkbox" value="Reintegración" checked onchange="renderGrandLivre()"> 🔄 Reintegración</label>
+            <label class="gl-type-btn" style="background:#66330022; border:1px solid #663300;"><input type="checkbox" value="Traspaso" checked onchange="renderGrandLivre()"> 🚛 Traspaso</label>
+            <label class="gl-type-btn" style="background:#66336622; border:1px solid #663366;"><input type="checkbox" value="Suppression" checked onchange="renderGrandLivre()"> 🗑️ Supresión</label>
+            <label class="gl-type-btn" style="background:#88888822; border:1px solid #888;"><input type="checkbox" value="Système" checked onchange="renderGrandLivre()"> 🤖 Sistema/Email</label>
+          </div>
+        </div>
+
+        <!-- FILTRE N° LOTE -->
+        <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#555; margin-bottom:8px; text-transform:uppercase;">🏷️ Filtrar por N° Lote</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="glLote" placeholder="ej: 22325100518C" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" oninput="renderGrandLivre()">
+            <button onclick="openScanner('glLote')" style="width:50px; padding:8px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:18px;">📷</button>
+            <button onclick="document.getElementById('glLote').value=''; renderGrandLivre();" style="width:40px; padding:8px; background:#eee; border:none; border-radius:6px; font-size:14px;">✕</button>
+          </div>
+        </div>
+
+        <!-- RÉSUMÉ KPI -->
+        <div id="glKpis" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+
+        <!-- TABLEAU GRAND LIVRE -->
+        <div id="glTable" style="overflow-x:auto; font-size:12px;"></div>
       </div>
 
     </div><!-- fin app-content -->
@@ -477,6 +521,25 @@ sidebarStyle.textContent = `
     border-left-color: #00aa44;
     color: white;
     font-weight: bold;
+  }
+  /* Grand Livre */
+  .gl-period-btn {
+    padding: 5px 10px; border:1px solid #ddd; border-radius:6px;
+    background:white; font-size:12px; cursor:pointer; color:#555;
+  }
+  .gl-period-btn.active { background:#0055cc; color:white; border-color:#0055cc; }
+  .gl-type-btn {
+    padding: 4px 10px; border-radius:6px; font-size:12px;
+    cursor:pointer; display:flex; align-items:center; gap:5px;
+  }
+  .gl-type-btn input { cursor:pointer; }
+  .gl-row-entree { border-left: 3px solid #00aa44; }
+  .gl-row-sortie { border-left: 3px solid #cc6600; }
+  .gl-row-casse { border-left: 3px solid #cc2222; }
+  .gl-row-autre { border-left: 3px solid #888; }
+  .gl-badge {
+    display:inline-block; padding:2px 7px; border-radius:10px;
+    font-size:11px; font-weight:bold; white-space:nowrap;
   }
 `;
 document.head.appendChild(sidebarStyle);
@@ -708,7 +771,7 @@ function goto(page) {
   else if (page === 'casse') renderCasse();
   else if (page === 'sorties') renderSorties();
   else if (page === 'stock') renderStock();
-  else if (page === 'historique') renderHistorique();
+  else if (page === 'historique') { renderGrandLivre(); }
 }
 
 // ─── Dashboard / KPI ───
@@ -1486,38 +1549,183 @@ const MOUVEMENT_COLORS = {
   'Transfert': '#6633aa'
 };
 
-function renderHistorique() {
-  const num = document.getElementById('histNum').value.trim();
-  const listEl = document.getElementById('histList');
+// ═══════════════════════════════════════════════════════════
+// GRAND LIVRE DES MOUVEMENTS — Append-Only
+// ═══════════════════════════════════════════════════════════
 
-  if (!num) {
-    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Ingrese o escanee un N° de lote para ver su historial</p>';
-    return;
-  }
+const GL_TYPE_CONFIG = {
+  'Entrée':        { color:'#00aa44', bg:'#e8f5e9', icon:'📥', label:'Entrada',       sign:'+' },
+  'Sortie':        { color:'#cc6600', bg:'#fff3e0', icon:'📤', label:'Salida',         sign:'-' },
+  'Casse':         { color:'#cc2222', bg:'#ffebee', icon:'💥', label:'Rotura',         sign:'-' },
+  'Reintegración': { color:'#0055cc', bg:'#e3f2fd', icon:'🔄', label:'Reintegración',  sign:'+' },
+  'Traspaso':      { color:'#663300', bg:'#fbe9e7', icon:'🚛', label:'Traspaso',       sign:'-' },
+  'Suppression':   { color:'#660000', bg:'#fce4ec', icon:'🗑️', label:'Supresión',     sign:'-' },
+  'Système':       { color:'#888888', bg:'#f5f5f5', icon:'🤖', label:'Sistema/Email', sign:'~' },
+};
 
-  const mouvements = DB.mouvements
-    .filter(m => m.num === num)
-    .slice()
-    .sort((a, b) => new Date(a.date) - new Date(b.date)); // ordre chronologique
-
-  if (mouvements.length === 0) {
-    listEl.innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No se encontraron movimientos para este N° de lote</p>';
-    return;
-  }
-
-  let html = '<p style="color:#888; font-size:13px;">' + mouvements.length + ' movimiento(s) encontrado(s) pour <strong>' + num + '</strong></p>';
-  mouvements.forEach(m => {
-    const color = MOUVEMENT_COLORS[m.type] || '#555';
-    const d = new Date(m.date);
-    const dateStr = d.toLocaleDateString('fr-FR') + ' a ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-    html += '<div class="card" style="border-left:4px solid ' + color + ';">' +
-            '<strong style="color:' + color + ';">' + m.type + '</strong><br>' +
-            m.detail + '<br>' +
-            '<span style="color:#888; font-size:12px;">👤 ' + m.operateur + ' · ' + dateStr + '</span>' +
-            '</div>';
+// Correction Append-Only : ajoute une ligne corrective sans modifier l'existante
+function addCorrection(originalMvtIndex, reason, qty) {
+  const original = DB.mouvements[originalMvtIndex];
+  if (!original) return;
+  DB.mouvements.push({
+    type: 'Correction',
+    num: original.num,
+    detail: 'CORRECCIÓN de [' + original.type + '] · ' + reason + ' · ' + (qty > 0 ? '+' : '') + qty + ' hojas',
+    operateur: currentUser ? currentUser.nom : '—',
+    date: new Date().toISOString(),
+    correction: true,
+    originalIndex: originalMvtIndex,
+    qty
   });
-  listEl.innerHTML = html;
+  saveDB();
 }
+
+function setGLPeriod(period) {
+  document.querySelectorAll('.gl-period-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('glp-' + period).classList.add('active');
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+
+  if (period === 'today') {
+    const t = fmt(now);
+    document.getElementById('glDateFrom').value = t;
+    document.getElementById('glDateTo').value = t;
+  } else if (period === '7days') {
+    const d7 = new Date(now); d7.setDate(d7.getDate() - 7);
+    document.getElementById('glDateFrom').value = fmt(d7);
+    document.getElementById('glDateTo').value = fmt(now);
+  } else if (period === 'month') {
+    document.getElementById('glDateFrom').value = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-01';
+    document.getElementById('glDateTo').value = fmt(now);
+  } else {
+    document.getElementById('glDateFrom').value = '';
+    document.getElementById('glDateTo').value = '';
+  }
+  renderGrandLivre();
+}
+
+function renderGrandLivre() {
+  // Récupère les filtres actifs
+  const dateFrom = document.getElementById('glDateFrom').value;
+  const dateTo = document.getElementById('glDateTo').value;
+  const loteFilter = (document.getElementById('glLote') || {}).value || '';
+  const activeTypes = [...document.querySelectorAll('#glTypeFilters input:checked')].map(i => i.value);
+
+  // Filtre les mouvements
+  let mvts = DB.mouvements.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (dateFrom) mvts = mvts.filter(m => m.date >= dateFrom);
+  if (dateTo)   mvts = mvts.filter(m => m.date <= dateTo + 'T23:59:59');
+  if (loteFilter) mvts = mvts.filter(m => m.num && m.num.includes(loteFilter.toUpperCase()));
+  mvts = mvts.filter(m => activeTypes.some(t => m.type === t || m.type.includes(t)));
+
+  // KPI résumé
+  let totEntrees = 0, totSorties = 0, totCasses = 0, totMvts = mvts.length;
+  mvts.forEach(m => {
+    const qty = extractQty(m.detail);
+    if (m.type === 'Entrée' || m.type === 'Reintegración') totEntrees += qty;
+    else if (m.type === 'Sortie' || m.type === 'Traspaso') totSorties += qty;
+    else if (m.type === 'Casse') totCasses += qty;
+  });
+
+  document.getElementById('glKpis').innerHTML =
+    glKpi('📋 Movimientos', totMvts, '#0055cc') +
+    glKpi('📥 Entradas', '+' + totEntrees + ' hj', '#00aa44') +
+    glKpi('📤 Salidas', '-' + totSorties + ' hj', '#cc6600') +
+    glKpi('💥 Roturas', '-' + totCasses + ' hj', '#cc2222');
+
+  if (mvts.length === 0) {
+    document.getElementById('glTable').innerHTML =
+      '<div style="text-align:center; padding:40px; color:#999;">📭 No se encontraron movimientos con estos filtros</div>';
+    return;
+  }
+
+  // Calcul du stock cumulé (solde après chaque opération)
+  let solde = 0;
+  // Calcul solde initial (avant la période filtrée)
+  if (dateFrom) {
+    DB.mouvements
+      .filter(m => m.date < dateFrom)
+      .forEach(m => { solde += signedQty(m); });
+  }
+
+  // Construction du tableau
+  let html = '<table style="width:100%; border-collapse:collapse; min-width:900px;">' +
+    '<thead><tr style="background:#1e293b; color:white; font-size:11px; text-transform:uppercase;">' +
+    '<th style="padding:10px 8px; text-align:left; white-space:nowrap;">Fecha y Hora</th>' +
+    '<th style="padding:10px 8px; text-align:left;">Operador</th>' +
+    '<th style="padding:10px 8px; text-align:left;">Operación</th>' +
+    '<th style="padding:10px 8px; text-align:left;">Referencia</th>' +
+    '<th style="padding:10px 8px; text-align:left;">N° Lote</th>' +
+    '<th style="padding:10px 8px; text-align:left;">Detalle / Doc.</th>' +
+    '<th style="padding:10px 8px; text-align:right;">Cantidad</th>' +
+    '<th style="padding:10px 8px; text-align:right;">Saldo Final</th>' +
+    '</tr></thead><tbody>';
+
+  mvts.forEach((m, idx) => {
+    const cfg = GL_TYPE_CONFIG[m.type] || { color:'#888', bg:'#f5f5f5', icon:'•', label:m.type, sign:'~' };
+    const d = new Date(m.date);
+    const dateStr = d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const timeStr = d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    const qty = signedQty(m);
+    solde += qty;
+
+    // Extraire référence depuis le détail
+    const refMatch = m.detail ? m.detail.match(/^([A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d+\/\d+)/) : null;
+    const ref = refMatch ? refMatch[1] : '—';
+
+    const qtyColor = qty > 0 ? '#00aa44' : qty < 0 ? '#cc2222' : '#888';
+    const qtyStr = qty > 0 ? '+' + qty : qty === 0 ? '~' : String(qty);
+    const bgRow = idx % 2 === 0 ? 'white' : '#fafafa';
+    const isoFlag = m.correction ? ' ⚠️' : '';
+
+    html += '<tr style="background:' + bgRow + '; border-bottom:1px solid #f0f0f0; border-left:3px solid ' + cfg.color + ';">' +
+      '<td style="padding:8px; white-space:nowrap; font-size:11px;">' +
+        '<div style="font-weight:bold;">' + dateStr + '</div>' +
+        '<div style="color:#888;">' + timeStr + '</div>' +
+      '</td>' +
+      '<td style="padding:8px; font-size:12px;">👤 ' + (m.operateur || '—') + '</td>' +
+      '<td style="padding:8px;">' +
+        '<span class="gl-badge" style="background:' + cfg.bg + '; color:' + cfg.color + ';">' +
+        cfg.icon + ' ' + cfg.label + isoFlag + '</span>' +
+      '</td>' +
+      '<td style="padding:8px; font-size:12px; font-weight:bold; color:#0055cc;">' + ref + '</td>' +
+      '<td style="padding:8px; font-family:monospace; font-size:11px;">' + (m.num || '—') + '</td>' +
+      '<td style="padding:8px; font-size:11px; color:#555; max-width:220px;">' + (m.detail || '—') + '</td>' +
+      '<td style="padding:8px; text-align:right; font-weight:bold; color:' + qtyColor + '; font-size:14px;">' + qtyStr + '</td>' +
+      '<td style="padding:8px; text-align:right; font-weight:bold; font-size:13px;">' + solde + ' hj</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('glTable').innerHTML = html;
+}
+
+function glKpi(label, val, color) {
+  return '<div style="flex:1; min-width:100px; background:' + color + '18; border-left:3px solid ' + color + '; border-radius:6px; padding:10px; text-align:center;">' +
+    '<div style="font-size:18px; font-weight:bold; color:' + color + ';">' + val + '</div>' +
+    '<div style="font-size:11px; color:#666; margin-top:2px;">' + label + '</div>' +
+    '</div>';
+}
+
+function extractQty(detail) {
+  if (!detail) return 0;
+  const m = detail.match(/[+-]?(\d+)\s*hoja/i);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function signedQty(mvt) {
+  const qty = extractQty(mvt.detail);
+  const t = mvt.type;
+  if (t === 'Entrée' || t === 'Reintegración') return qty;
+  if (t === 'Sortie' || t === 'Casse' || t === 'Traspaso' || t === 'Suppression') return -qty;
+  if (mvt.correction) return mvt.qty || 0;
+  return 0;
+}
+
+// Alias pour compatibilité avec l'ancien code qui appelait renderHistorique()
+function renderHistorique() { renderGrandLivre(); }
 
 // ═══════════════════════════════════════════════════════════
 // SCANNER CAMÉRA — BarcodeDetector (HTTPS requis)
@@ -1539,6 +1747,7 @@ const FIELD_LABELS = {
   casseNum:    'N° lote',
   sortieNum:   'N° lote',
   histNum:     'N° lote',
+  glLote:      'N° Lote',
   ventaNum:    'N° lote',
   traspasoNum: 'N° lote',
   reintNum:    'N° lote',
@@ -1736,7 +1945,7 @@ function acceptCode(field, code) {
   document.getElementById(field).value = code;
   if (field === 'recProd') onProdChange();
   if (field === 'reintProd') onReintProdChange();
-  if (field === 'histNum') renderHistorique();
+  if (field === 'histNum' || field === 'glLote') renderGrandLivre();
 
   if (scanTargetQueue.length > 0) {
     updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);

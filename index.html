@@ -367,7 +367,7 @@
 </div>
 
 <!-- ═══ MODAL ESCÁNER ═══ -->
-<div class="modal" id="modalScanner" style="background:#000; padding:0">
+<div class="modal" id="modalScanner" style="background:#000; padding:0; z-index:9999;">
   <div style="position:relative; width:100%; height:100vh; display:flex; flex-direction:column">
     <div style="background:#111; color:#fff; padding:14px; display:flex; justify-content:space-between; align-items:center">
       <span style="font-weight:bold; font-size:16px">📷 Escáner</span>
@@ -1467,12 +1467,30 @@ const FIELD_VALIDATORS = {
   reintProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' }
 };
 
+let scanParentModalId = null; // mémorise le modal parent pour le rouvrir après
+
 function openScanner(targetFieldId) {
   scanTargetQueue = Array.isArray(targetFieldId) ? targetFieldId.slice() : [targetFieldId];
   scanFoundCodes = {};
   scanCooldownUntil = 0;
   scanRejectUntil = 0;
-  document.getElementById('modalScanner').style.display = 'block';
+
+  // Masque temporairement tout modal ouvert (sauf le scanner lui-même)
+  // pour que le scanner apparaisse bien au premier plan
+  scanParentModalId = null;
+  const openModals = ['modalRec','modalCasse','modalSortie','modalSortieVenta',
+    'modalTraspaso','modalReintegracion','modalEntradaOpts','modalProdDetail'];
+  openModals.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.style.display !== 'none' && el.style.display !== '') {
+      scanParentModalId = id;
+      el.style.display = 'none';
+    }
+  });
+
+  const scannerEl = document.getElementById('modalScanner');
+  scannerEl.style.display = 'block';
+  scannerEl.style.zIndex = '99999';
   document.getElementById('scanManualInp').value = '';
   updateScanStatus();
   startCamera();
@@ -1641,6 +1659,12 @@ function closeScanner() {
   stopCamera();
   stopWatchdog();
   document.getElementById('modalScanner').style.display = 'none';
+  // Rouvre le modal parent si applicable
+  if (scanParentModalId) {
+    const parent = document.getElementById(scanParentModalId);
+    if (parent) parent.style.display = 'block';
+    scanParentModalId = null;
+  }
 }
 
 function validateManualScan() {

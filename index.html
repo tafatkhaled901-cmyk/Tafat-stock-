@@ -206,15 +206,11 @@
 
     <!-- MENÚ LATERAL -->
     <div id="sidebar" style="width:200px; background:#1e293b; min-height:calc(100vh - 52px); padding:16px 0; flex-shrink:0; transition:width 0.2s;">
-      <div style="padding:0 12px; margin-bottom:8px; color:rgba(255,255,255,0.4); font-size:11px; text-transform:uppercase;">Operaciones</div>
-      <button onclick="goto('entrees')" class="sidebar-btn" id="sb-entrees">📥 Entradas</button>
-      <button onclick="goto('sorties')" class="sidebar-btn" id="sb-sorties">📤 Salidas</button>
-      <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse">💥 Roturas</button>
-      <div style="padding:0 12px; margin:12px 0 8px; color:rgba(255,255,255,0.4); font-size:11px; text-transform:uppercase;">Consultas</div>
+      <button onclick="showEntradaOptions()" class="sidebar-btn" id="sb-entrada" style="background:#00aa44; color:white; font-weight:bold; font-size:15px; border-left:3px solid #00cc55; margin-bottom:8px;">📥 Entrada</button>
+      <button onclick="goto('sorties')" class="sidebar-btn" id="sb-sorties">📤 Salida</button>
+      <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse">💥 Casse</button>
       <button onclick="goto('stock')" class="sidebar-btn" id="sb-stock">🪟 Stock Global</button>
       <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">🕓 Historial</button>
-      <div style="padding:0 12px; margin:12px 0 8px; color:rgba(255,255,255,0.4); font-size:11px; text-transform:uppercase;">Nueva Entrada</div>
-      <button onclick="showEntradaOptions()" class="sidebar-btn" style="background:#00aa44; color:white;">+ Nueva Recepción</button>
     </div>
 
     <!-- CONTENIDO PRINCIPAL -->

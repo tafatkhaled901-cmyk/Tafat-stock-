@@ -386,19 +386,33 @@
 <!-- ═══ MODAL SALIDA VENTA ═══ -->
 <div class="modal" id="modalSortieVenta">
   <h2>🛒 Salida Venta</h2>
+
   <label>N° Pedido / Commande</label>
   <input type="text" id="ventaPedido" placeholder="ej: PED-2024-001">
-  <label>N° Contenedor</label>
-  <div style="display:flex; gap:8px">
-    <input type="text" id="ventaNum" placeholder="ej: 22325100518C" style="flex:1">
-    <button onclick="openScanner('ventaNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
-  </div>
-  <label>Número de cajas a salir</label>
-  <input type="number" id="ventaCajas" value="1" min="1">
+
   <label>Cliente</label>
   <input type="text" id="ventaCliente" placeholder="ej: Empresa ABC">
-  <button class="btn-orange" onclick="saveSalidaVenta()">✓ Confirmar Venta</button>
+
+  <label>Número de cajas a salir</label>
+  <input type="number" id="ventaCajas" value="1" min="1" oninput="resetVentaCounter()">
+
+  <!-- Compteur visuel -->
+  <div id="ventaContador" style="display:none; text-align:center; margin:16px 0; padding:16px; background:#f0f4ff; border-radius:12px; border:2px solid #0055cc;">
+    <div style="font-size:13px; color:#555; margin-bottom:6px;">Cajas restantes por escanear</div>
+    <div id="ventaContadorNum" style="font-size:52px; font-weight:bold; color:#0055cc; line-height:1;">0</div>
+    <div style="font-size:12px; color:#888; margin-top:6px;">Escanee cada contenedor uno a uno</div>
+  </div>
+
+  <!-- Liste des conteneurs scannés -->
+  <div id="ventaScannedList" style="margin:8px 0;"></div>
+
+  <!-- Bouton scan -->
+  <button id="ventaBtnScan" onclick="ventaScanNext()" style="width:100%; padding:14px; background:#0088ff; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0; display:none;">📷 Escanear siguiente caja</button>
+
+  <button class="btn-orange" id="ventaBtnConfirm" onclick="saveSalidaVenta()" style="display:none;">✓ Confirmar Venta</button>
   <button class="btn-red" onclick="closeModal('modalSortieVenta')">Cancelar</button>
+
+  <button class="btn-blue" onclick="iniciarVenta()" id="ventaBtnIniciar" style="margin-bottom:8px;">▶ Iniciar escaneo de cajas</button>
 </div>
 
 <!-- ═══ MODAL TRASPASO DE ALMACÉN ═══ -->
@@ -753,62 +767,142 @@ function showEntradaOptions() {
 }
 
 // ─── Salida Venta ───
-function saveSalidaVenta() {
-  const num = document.getElementById('ventaNum').value.trim();
+// ─── Salida Venta avec compteur de scans ───
+let ventaScannedNums = []; // conteneurs déjà scannés dans cette vente
+let ventaRestantes = 0;
+
+function resetVentaCounter() {
+  ventaScannedNums = [];
+  ventaRestantes = 0;
+  document.getElementById('ventaContador').style.display = 'none';
+  document.getElementById('ventaBtnScan').style.display = 'none';
+  document.getElementById('ventaBtnConfirm').style.display = 'none';
+  document.getElementById('ventaBtnIniciar').style.display = 'block';
+  document.getElementById('ventaScannedList').innerHTML = '';
+}
+
+function iniciarVenta() {
   const pedido = document.getElementById('ventaPedido').value.trim();
-  const cajasInput = parseInt(document.getElementById('ventaCajas').value) || 0;
+  const cajas = parseInt(document.getElementById('ventaCajas').value) || 0;
+  if (!pedido) { alert('⛔ Ingrese primero el N° de pedido.'); return; }
+  if (cajas < 1) { alert('⛔ Indique el número de cajas a salir.'); return; }
+
+  ventaScannedNums = [];
+  ventaRestantes = cajas;
+  document.getElementById('ventaContadorNum').textContent = ventaRestantes;
+  document.getElementById('ventaContador').style.display = 'block';
+  document.getElementById('ventaBtnScan').style.display = 'block';
+  document.getElementById('ventaBtnIniciar').style.display = 'none';
+  document.getElementById('ventaBtnConfirm').style.display = 'none';
+  document.getElementById('ventaScannedList').innerHTML = '';
+}
+
+function ventaScanNext() {
+  if (ventaRestantes <= 0) return;
+  // On ouvre le scanner avec un champ temporaire virtuel traité par callback
+  openScannerVenta();
+}
+
+function openScannerVenta() {
+  // Utilise le scanner standard mais avec un callback personnalisé
+  scanTargetQueue = ['ventaNumTemp'];
+  scanFoundCodes = {};
+  scanCooldownUntil = 0;
+  scanRejectUntil = 0;
+
+  // Cache le modal parent
+  scanParentModalId = 'modalSortieVenta';
+  document.getElementById('modalSortieVenta').style.display = 'none';
+
+  const scannerEl = document.getElementById('modalScanner');
+  scannerEl.style.display = 'block';
+  scannerEl.style.zIndex = '99999';
+  document.getElementById('scanManualInp').value = '';
+  updateScanStatus();
+  startCamera();
+  startWatchdog();
+}
+
+function ventaOnCodeScanned(code) {
+  // Vérifier que ce conteneur existe en stock
+  const entry = DB.entrees.slice().reverse().find(e => e.num === code);
+  if (!entry) {
+    alert('⚠️ Contenedor ' + code + ' no encontrado en recepciones.');
+    return;
+  }
+
+  // Vérifier que ce conteneur n'a pas déjà été scanné dans cette vente
+  if (ventaScannedNums.includes(code)) {
+    alert('⛔ El contenedor ' + code + ' ya fue escaneado en esta venta.');
+    return;
+  }
+
+  // Vérifier qu'il est en stock
+  const dejaSorti = DB.sorties.some(s => s.num === code);
+  if (dejaSorti) {
+    alert('⛔ El contenedor ' + code + ' ya fue RETIRADO del stock.');
+    return;
+  }
+
+  ventaScannedNums.push(code);
+  ventaRestantes--;
+  document.getElementById('ventaContadorNum').textContent = ventaRestantes;
+
+  // Mise à jour de la liste des conteneurs scannés
+  const list = document.getElementById('ventaScannedList');
+  list.innerHTML += '<div style="padding:6px 10px; background:#e8f5e9; border-radius:6px; margin:4px 0; font-size:13px;">✅ ' + code + ' · ' + entry.prod + ' · ' + entry.feuilles + ' hojas</div>';
+
+  if (ventaRestantes <= 0) {
+    // Tous scannés — on peut confirmer
+    document.getElementById('ventaContadorNum').textContent = '✓';
+    document.getElementById('ventaContadorNum').style.color = '#00aa44';
+    document.getElementById('ventaBtnScan').style.display = 'none';
+    document.getElementById('ventaBtnConfirm').style.display = 'block';
+  }
+}
+
+function saveSalidaVenta() {
+  const pedido = document.getElementById('ventaPedido').value.trim();
   const cliente = document.getElementById('ventaCliente').value.trim();
 
-  if (!num) { alert('⛔ Escanee el N° de contenedor.'); return; }
-  if (!pedido) { alert('⛔ Ingrese el N° de pedido.'); return; }
-  if (!cajasInput) { alert('⛔ Ingrese el número de cajas a salir.'); return; }
-
-  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
-  if (!entry) {
-    alert('⚠️ No se encontró ninguna recepción para el contenedor: ' + num);
+  if (ventaScannedNums.length === 0) {
+    alert('⛔ Escanee al menos un contenedor primero.');
     return;
   }
 
-  // VALIDACIÓN ESTRICTA : el número de cajas indicado debe coincidir exactamente
-  // con el número de cajas del contenedor escaneado
-  if (cajasInput !== entry.nb) {
-    alert('⛔ VALIDACIÓN FALLIDA\n\n' +
-          'Cajas indicadas: ' + cajasInput + '\n' +
-          'Cajas del contenedor ' + num + ': ' + entry.nb + '\n\n' +
-          'El número debe coincidir exactamente para confirmar la venta.');
-    return;
-  }
+  // Traiter chaque conteneur scanné
+  let totalHojas = 0;
+  ventaScannedNums.forEach(num => {
+    const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+    if (!entry) return;
+    const prod = entry.prod;
+    const feuilles = entry.feuilles;
+    const nb = entry.nb;
 
-  const prod = entry.prod;
-  const feuilles = entry.feuilles;
+    if (DB.stock[prod]) {
+      DB.stock[prod].f = Math.max(0, DB.stock[prod].f - feuilles);
+      DB.stock[prod].c = Math.max(0, DB.stock[prod].c - nb);
+    }
 
-  if (!DB.stock[prod] || DB.stock[prod].f < feuilles) {
-    alert('⚠️ Stock insuficiente para este producto (' + prod + ')');
-    return;
-  }
-
-  DB.stock[prod].f -= feuilles;
-  DB.stock[prod].c -= cajasInput;
-
-  const sortie = {
-    prod, num, feuilles, nb: cajasInput,
-    client: cliente, pedido, tipo: 'Venta',
-    date: new Date().toISOString()
-  };
-  DB.sorties.push(sortie);
-  logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas' + (cliente ? ' · ' + cliente : ''));
+    DB.sorties.push({ prod, num, feuilles, nb, client: cliente, pedido, tipo: 'Venta', date: new Date().toISOString() });
+    logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas');
+    totalHojas += feuilles;
+  });
 
   saveDB();
   closeModal('modalSortieVenta');
-  document.getElementById('ventaNum').value = '';
+
+  // Reset
   document.getElementById('ventaPedido').value = '';
   document.getElementById('ventaCajas').value = '1';
   document.getElementById('ventaCliente').value = '';
+  resetVentaCounter();
 
   renderSorties();
-  alert('✓ Salida Venta confirmada\nProducto: ' + prod + '\nCajas: ' + cajasInput + '\nPedido: ' + pedido);
-  setTimeout(() => envoyerEmailSortie(prod, num, feuilles, cliente || pedido), 300);
+  alert('✓ Salida Venta confirmada\n' + ventaScannedNums.length + ' cajas · ' + totalHojas + ' hojas\nPedido: ' + pedido);
 }
+
+
 
 // ─── Traspaso de Almacén ───
 function saveTraspaso() {
@@ -1631,6 +1725,18 @@ function acceptCode(field, code) {
   scanFoundCodes[code] = true;
   if (navigator.vibrate) navigator.vibrate([100,50,100]);
   scanTargetQueue.shift();
+
+  // Cas spécial : scan pour la vente avec compteur
+  if (field === 'ventaNumTemp') {
+    document.getElementById('scanStatusMsg').innerHTML = '✅ Escaneado : ' + code + '<br>Cerrando...';
+    scanRunning = false;
+    setTimeout(() => {
+      closeScanner();
+      ventaOnCodeScanned(code);
+    }, 700);
+    return;
+  }
+
   document.getElementById(field).value = code;
   if (field === 'recProd') onProdChange();
   if (field === 'reintProd') onReintProdChange();

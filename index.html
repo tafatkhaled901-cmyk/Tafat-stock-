@@ -869,9 +869,10 @@ function openScannerVenta() {
   scanCooldownUntil = 0;
   scanRejectUntil = 0;
 
-  // Cache le modal parent
+  // Passe le modal parent derrière le scanner (z-index) sans le cacher
   scanParentModalId = 'modalSortieVenta';
-  document.getElementById('modalSortieVenta').style.display = 'none';
+  const parentEl = document.getElementById('modalSortieVenta');
+  if (parentEl) parentEl.style.zIndex = '1';
 
   const scannerEl = document.getElementById('modalScanner');
   scannerEl.style.display = 'block';
@@ -1783,7 +1784,9 @@ function openScanner(targetFieldId) {
     const el = document.getElementById(id);
     if (el && window.getComputedStyle(el).display !== 'none') {
       scanParentModalId = id;
-      el.style.display = 'none';
+      // Ne pas cacher le modal — juste le passer derrière le scanner
+      // Les champs restent accessibles dans le DOM même visuellement cachés par le scanner
+      el.style.zIndex = '1';
     }
   });
 
@@ -1942,15 +1945,20 @@ function acceptCode(field, code) {
     return;
   }
 
-  document.getElementById(field).value = code;
+  // Écriture dans le champ (même si le modal est caché, la valeur est bien stockée)
+  const el = document.getElementById(field);
+  if (el) el.value = code;
   if (field === 'recProd') onProdChange();
   if (field === 'reintProd') onReintProdChange();
   if (field === 'histNum' || field === 'glLote') renderGrandLivre();
 
   if (scanTargetQueue.length > 0) {
+    // Il reste des champs à scanner — on montre le statut et continue
     updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);
   } else {
-    document.getElementById('scanStatusMsg').innerHTML = '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminado !';
+    // Tous les champs sont remplis — on ferme le scanner
+    document.getElementById('scanStatusMsg').innerHTML =
+      '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminado !';
     scanRunning = false;
     setTimeout(() => { closeScanner(); }, 700);
   }
@@ -1970,10 +1978,10 @@ function closeScanner() {
   stopCamera();
   stopWatchdog();
   document.getElementById('modalScanner').style.display = 'none';
-  // Rouvre le modal parent si applicable
+  // Remet le modal parent au premier plan
   if (scanParentModalId) {
     const parent = document.getElementById(scanParentModalId);
-    if (parent) parent.style.display = 'block';
+    if (parent) parent.style.zIndex = '999';
     scanParentModalId = null;
   }
 }

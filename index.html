@@ -1919,34 +1919,46 @@ function detectLoop() {
 // Cela évite le problème où 2 codes sont visibles simultanément a l'écran mais le
 // detector ne "voit" toujours que le même, bloquant la progression vers le 2e champ.
 function handleCodesFound(codes) {
-  // Essaie d'assigner chaque champ encore en attente a un code qui correspond a sa regex
-  // et qui n'a pas déja été utilisé dans cette session.
-  for (let i = scanTargetQueue.length - 1; i >= 0; i--) {
-    const field = scanTargetQueue[i];
-    if (field !== scanTargetQueue[0]) continue; // on ne traite que le champ courant en tête de file, dans l'ordre
-    const validator = FIELD_VALIDATORS[field];
+  // Nouvelle logique : pour chaque code détecté, on cherche le champ dans la queue
+  // dont la regex correspond — peu importe l'ordre dans la queue.
+  // Cela permet de scanner produit et lote dans n'importe quel ordre.
+  let assigned = false;
 
-    // Cherche parmi les codes visibles celui qui correspond a ce champ et n'a pas déja été pris
-    const match = codes.find(code => !scanFoundCodes[code] && (!validator || validator.regex.test(code)));
+  codes.forEach(code => {
+    if (scanFoundCodes[code]) return; // déjà utilisé
 
-    if (match) {
-      acceptCode(field, match);
-      return; // on retraite a la prochaine frame pour le champ suivant
+    // Cherche le champ dans la queue qui accepte ce code
+    for (let i = 0; i < scanTargetQueue.length; i++) {
+      const field = scanTargetQueue[i];
+      const validator = FIELD_VALIDATORS[field];
+
+      // Si ce champ a un validator et que le code correspond
+      if (validator && validator.regex.test(code)) {
+        acceptCode(field, code);
+        assigned = true;
+        return; // passe au code suivant
+      }
     }
-  }
 
-  // Aucun code valide trouvé pour le champ courant : si un code a été vu mais ne correspond
-  // a aucune règle attendue, on peut signaler un rejet (seulement si un seul nouveau code visible)
-  const field = scanTargetQueue[0];
-  const validator = FIELD_VALIDATORS[field];
-  const unseenCodes = codes.filter(c => !scanFoundCodes[c]);
-  if (unseenCodes.length > 0 && validator) {
-    const rejectedCode = unseenCodes[0];
-    if (Date.now() >= scanRejectUntil) {
-      if (navigator.vibrate) navigator.vibrate(150);
-      document.getElementById('scanStatusMsg').innerHTML =
-        '⛔ Código no reconocido pour ce champ : "' + rejectedCode + '"<br>' + validator.msg;
-      scanRejectUntil = Date.now() + 1200;
+    // Si aucun champ avec validator n'a matché, essaie le premier champ sans validator
+    const fieldSansValidator = scanTargetQueue.find(f => !FIELD_VALIDATORS[f]);
+    if (fieldSansValidator && !scanFoundCodes[code]) {
+      acceptCode(fieldSansValidator, code);
+      assigned = true;
+    }
+  });
+
+  // Affiche un message de rejet si aucun code n'a pu être assigné
+  if (!assigned && codes.length > 0) {
+    const unseenCodes = codes.filter(c => !scanFoundCodes[c]);
+    if (unseenCodes.length > 0 && Date.now() >= scanRejectUntil) {
+      const field = scanTargetQueue[0];
+      const validator = FIELD_VALIDATORS[field];
+      if (validator) {
+        document.getElementById('scanStatusMsg').innerHTML =
+          '⛔ Código no reconocido: "' + unseenCodes[0] + '"<br>' + validator.msg;
+        scanRejectUntil = Date.now() + 1200;
+      }
     }
   }
 }

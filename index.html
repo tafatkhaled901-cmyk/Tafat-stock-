@@ -671,16 +671,25 @@ document.addEventListener('keydown', function(e) {
 
 function loginSuccess(user) {
   currentUser = user;
-  document.getElementById('login').classList.remove('active');
-  document.getElementById('app').classList.add('active');
+  // On force display:none directement pour éviter tout conflit CSS
+  const loginEl = document.getElementById('login');
+  loginEl.classList.remove('active');
+  loginEl.style.display = 'none';
+  const appEl = document.getElementById('app');
+  appEl.classList.add('active');
+  appEl.style.display = 'block';
   document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
   goto('dashboard');
 }
 
 function logout() {
   currentUser = null;
-  document.getElementById('app').classList.remove('active');
-  document.getElementById('login').classList.add('active');
+  const appEl = document.getElementById('app');
+  appEl.classList.remove('active');
+  appEl.style.display = 'none';
+  const loginEl = document.getElementById('login');
+  loginEl.classList.add('active');
+  loginEl.style.display = 'flex';
   document.getElementById('usernameInput').value = '';
   document.getElementById('passwordInput').value = '';
   document.getElementById('loginError').style.display = 'none';

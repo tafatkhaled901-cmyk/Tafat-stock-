@@ -222,9 +222,19 @@
 
       <!-- PÁGINA INICIO / KPI -->
       <div class="page active" id="page-dashboard">
-        <h2>📊 Panel de Control</h2>
-        <div id="kpiDashboard" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:20px;"></div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;">📊 Panel de Control</h2>
+          <div id="dashLastUpdate" style="font-size:11px; color:#888;"></div>
+        </div>
+
+        <!-- KPI principales -->
+        <div id="kpiDashboard" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:10px; margin-bottom:16px;"></div>
+
+        <!-- Alertas -->
+        <div id="dashAlertas" style="margin-bottom:16px;"></div>
+
+        <!-- Últimas operaciones + Roturas recientes -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
           <div class="card">
             <strong>📥 Últimas Entradas</strong>
             <div id="dashEntradas" style="margin-top:8px; font-size:13px;"></div>
@@ -233,6 +243,12 @@
             <strong>📤 Últimas Salidas</strong>
             <div id="dashSalidas" style="margin-top:8px; font-size:13px;"></div>
           </div>
+        </div>
+
+        <!-- Top références en stock -->
+        <div class="card">
+          <strong>🏆 Top Referencias en Stock</strong>
+          <div id="dashTop" style="margin-top:8px;"></div>
         </div>
       </div>
 
@@ -718,6 +734,13 @@ function saveDB() {
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
   syncToSheets();
+  // Rafraîchit le dashboard si on y est, sinon met à jour en arrière-plan
+  if (typeof renderDashboard === 'function') {
+    setTimeout(() => {
+      const dash = document.getElementById('page-dashboard');
+      if (dash && dash.classList.contains('active')) renderDashboard();
+    }, 100);
+  }
 }
 
 let syncTimer = null;
@@ -862,39 +885,99 @@ function goto(page) {
 
 // ─── Dashboard / KPI ───
 function renderDashboard() {
-  let totF = 0, totC = 0, totCasseF = 0, totSortiesF = 0;
-  Object.values(DB.stock).forEach(v => { totF += v.f; totC += v.c; });
+  const now = new Date();
+
+  // ── KPI totaux ──
+  let totF = 0, totC = 0, totCasseF = 0, totSortiesF = 0, totRefs = 0;
+  Object.values(DB.stock).forEach(v => { if (v.f > 0) { totF += v.f; totC += v.c; totRefs++; } });
   DB.casses.forEach(c => totCasseF += c.qty);
-  DB.sorties.forEach(s => totSortiesF += s.feuilles);
+  DB.sorties.forEach(s => totSortiesF += (s.feuilles || 0));
+
+  // ── KPI du jour ──
+  const todayStr = now.toISOString().slice(0, 10);
+  const entHoy = DB.entrees.filter(e => e.date && e.date.startsWith(todayStr)).length;
+  const salHoy = DB.sorties.filter(s => s.date && s.date.startsWith(todayStr)).length;
+  const casseHoy = DB.casses.filter(c => c.date && c.date.startsWith(todayStr)).reduce((s,c) => s + c.qty, 0);
 
   document.getElementById('kpiDashboard').innerHTML =
     kpiCard('🪟 Hojas en Stock', totF, '#0055cc') +
     kpiCard('📦 Cajas en Stock', totC, '#0055cc') +
-    kpiCard('📤 Hojas Salidas', totSortiesF, '#cc6600') +
-    kpiCard('💥 Hojas Rotas', totCasseF, '#cc2222') +
-    kpiCard('📥 Recepciones', DB.entrees.length, '#00aa44') +
-    kpiCard('📤 Movimientos', DB.sorties.length, '#6633aa');
+    kpiCard('📋 Referencias', totRefs, '#334155') +
+    kpiCard('📥 Entradas Hoy', entHoy, '#00aa44') +
+    kpiCard('📤 Salidas Hoy', salHoy, '#cc6600') +
+    kpiCard('💥 Roturas Hoy', casseHoy + ' hj', '#cc2222') +
+    kpiCard('📤 Total Salidas', totSortiesF + ' hj', '#cc6600') +
+    kpiCard('💥 Total Roturas', totCasseF + ' hj', '#cc2222');
 
-  const ent = DB.entrees.slice(-3).reverse().map(e =>
-    '<div style="padding:4px 0; border-bottom:1px solid #eee;">' +
-    '<strong>' + e.prod + '</strong> · ' + e.feuilles + ' hojas<br>' +
-    '<small style="color:#888;">' + new Date(e.date).toLocaleDateString('es-ES') + '</small></div>'
-  ).join('') || '<p style="color:#999;">Sin entradas</p>';
+  // ── Alertas ──
+  let alertas = '';
+  // Stock faible : produits avec moins de 20 hojas
+  Object.entries(DB.stock).forEach(([prod, v]) => {
+    if (v.f > 0 && v.f < 20) {
+      alertas += '<div style="background:#fff3e0; border-left:4px solid #ff9800; border-radius:6px; padding:10px 12px; margin-bottom:6px; font-size:13px;">⚠️ <strong>' + prod + '</strong> — Solo <strong>' + v.f + ' hojas</strong> en stock</div>';
+    }
+  });
+  // Casses récentes (dernières 24h)
+  const hier = new Date(now - 86400000).toISOString();
+  const cassesRecientes = DB.casses.filter(c => c.date > hier);
+  if (cassesRecientes.length > 0) {
+    alertas += '<div style="background:#ffebee; border-left:4px solid #cc2222; border-radius:6px; padding:10px 12px; margin-bottom:6px; font-size:13px;">💥 <strong>' + cassesRecientes.length + ' rotura(s)</strong> declarada(s) en las últimas 24h</div>';
+  }
+  document.getElementById('dashAlertas').innerHTML = alertas ||
+    '<div style="background:#e8f5e9; border-left:4px solid #00aa44; border-radius:6px; padding:10px 12px; font-size:13px;">✅ Sin alertas — Todo en orden</div>';
 
-  const sal = DB.sorties.slice(-3).reverse().map(s =>
-    '<div style="padding:4px 0; border-bottom:1px solid #eee;">' +
-    '<strong>' + s.prod + '</strong> · ' + s.feuilles + ' hojas<br>' +
-    '<small style="color:#888;">' + new Date(s.date).toLocaleDateString('es-ES') + '</small></div>'
-  ).join('') || '<p style="color:#999;">Sin salidas</p>';
+  // ── Últimas entradas ──
+  const ent = DB.entrees.slice(-5).reverse().map(e =>
+    '<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">' +
+    '<span><strong>' + (e.prod || '—') + '</strong><br><small style="color:#888;">' + e.num + '</small></span>' +
+    '<span style="text-align:right;"><strong style="color:#00aa44;">+' + e.feuilles + ' hj</strong><br><small style="color:#888;">' + new Date(e.date).toLocaleDateString('es-ES') + '</small></span>' +
+    '</div>'
+  ).join('') || '<p style="color:#999; font-size:13px;">Sin entradas</p>';
+
+  // ── Últimas salidas ──
+  const sal = DB.sorties.slice(-5).reverse().map(s =>
+    '<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">' +
+    '<span><strong>' + (s.prod || '—') + '</strong><br><small style="color:#888;">' + (s.tipo || 'Salida') + (s.pedido ? ' · ' + s.pedido : '') + '</small></span>' +
+    '<span style="text-align:right;"><strong style="color:#cc6600;">-' + (s.feuilles || 0) + ' hj</strong><br><small style="color:#888;">' + new Date(s.date).toLocaleDateString('es-ES') + '</small></span>' +
+    '</div>'
+  ).join('') || '<p style="color:#999; font-size:13px;">Sin salidas</p>';
 
   document.getElementById('dashEntradas').innerHTML = ent;
   document.getElementById('dashSalidas').innerHTML = sal;
+
+  // ── Top références en stock ──
+  const topEl = document.getElementById('dashTop');
+  if (topEl) {
+    const sorted = Object.entries(DB.stock)
+      .filter(([,v]) => v.f > 0)
+      .sort((a,b) => b[1].f - a[1].f)
+      .slice(0, 5);
+    topEl.innerHTML = sorted.map(([prod, v], i) =>
+      '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #eee;">' +
+      '<span style="background:#0055cc; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; flex-shrink:0;">' + (i+1) + '</span>' +
+      '<span style="flex:1; font-weight:bold; font-size:13px;">' + prod + '</span>' +
+      '<span style="color:#0055cc; font-weight:bold;">' + v.f + ' hj</span>' +
+      '<span style="color:#888; font-size:12px;">· ' + v.c + ' cj</span>' +
+      '</div>'
+    ).join('') || '<p style="color:#999; font-size:13px;">Sin stock</p>';
+  }
+
+  // ── Horodatage ──
+  const lastUpEl = document.getElementById('dashLastUpdate');
+  if (lastUpEl) lastUpEl.textContent = 'Actualizado: ' + now.toLocaleTimeString('es-ES');
 }
 
+// Rafraîchit le dashboard automatiquement toutes les 30 secondes si on y est
+setInterval(() => {
+  if (currentUser && document.getElementById('page-dashboard').classList.contains('active')) {
+    renderDashboard();
+  }
+}, 30000);
+
 function kpiCard(label, value, color) {
-  return '<div style="background:' + color + '22; border-left:4px solid ' + color + '; border-radius:8px; padding:14px; text-align:center;">' +
-    '<div style="font-size:22px; font-weight:bold; color:' + color + ';">' + value + '</div>' +
-    '<div style="font-size:12px; color:#555; margin-top:4px;">' + label + '</div>' +
+  return '<div style="background:' + color + '18; border-left:4px solid ' + color + '; border-radius:8px; padding:12px 10px; text-align:center;">' +
+    '<div style="font-size:20px; font-weight:bold; color:' + color + ';">' + value + '</div>' +
+    '<div style="font-size:11px; color:#555; margin-top:4px;">' + label + '</div>' +
     '</div>';
 }
 

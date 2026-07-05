@@ -167,7 +167,7 @@
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div class="page active" id="login" style="display:flex; flex-wrap:wrap; background:#f4f6f9; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
+<div id="login" style="display:flex; flex-wrap:wrap; background:#f4f6f9; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
   <div class="login-container">
     <div class="login-header">
       <h1>🪟 VerreStock Pro</h1>
@@ -187,7 +187,7 @@
 </div>
 
 <!-- ═══ APP ═══ -->
-<div class="page" id="app" style="display:none;">
+<div id="app" style="display:none;">
 
   <!-- BARRE TOP -->
   <div class="topnav" style="justify-content:space-between;">
@@ -2043,46 +2043,21 @@ function detectLoop() {
 // Cela évite le problème où 2 codes sont visibles simultanément a l'écran mais le
 // detector ne "voit" toujours que le même, bloquant la progression vers le 2e champ.
 function handleCodesFound(codes) {
-  // Nouvelle logique : pour chaque code détecté, on cherche le champ dans la queue
-  // dont la regex correspond — peu importe l'ordre dans la queue.
-  // Cela permet de scanner produit et lote dans n'importe quel ordre.
-  let assigned = false;
-
-  codes.forEach(code => {
-    if (scanFoundCodes[code]) return; // déjà utilisé
-
-    // Cherche le champ dans la queue qui accepte ce code
+  for (const code of codes) {
+    if (scanFoundCodes[code]) continue;
+    let matched = false;
     for (let i = 0; i < scanTargetQueue.length; i++) {
       const field = scanTargetQueue[i];
       const validator = FIELD_VALIDATORS[field];
-
-      // Si ce champ a un validator et que le code correspond
       if (validator && validator.regex.test(code)) {
         acceptCode(field, code);
-        assigned = true;
-        return; // passe au code suivant
+        matched = true;
+        break;
       }
     }
-
-    // Si aucun champ avec validator n'a matché, essaie le premier champ sans validator
-    const fieldSansValidator = scanTargetQueue.find(f => !FIELD_VALIDATORS[f]);
-    if (fieldSansValidator && !scanFoundCodes[code]) {
-      acceptCode(fieldSansValidator, code);
-      assigned = true;
-    }
-  });
-
-  // Affiche un message de rejet si aucun code n'a pu être assigné
-  if (!assigned && codes.length > 0) {
-    const unseenCodes = codes.filter(c => !scanFoundCodes[c]);
-    if (unseenCodes.length > 0 && Date.now() >= scanRejectUntil) {
-      const field = scanTargetQueue[0];
-      const validator = FIELD_VALIDATORS[field];
-      if (validator) {
-        document.getElementById('scanStatusMsg').innerHTML =
-          '⛔ Código no reconocido: "' + unseenCodes[0] + '"<br>' + validator.msg;
-        scanRejectUntil = Date.now() + 1200;
-      }
+    if (!matched) {
+      const fieldLibre = scanTargetQueue.find(f => !FIELD_VALIDATORS[f]);
+      if (fieldLibre) acceptCode(fieldLibre, code);
     }
   }
 }

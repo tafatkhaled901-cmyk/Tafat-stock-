@@ -1295,60 +1295,7 @@ function onCasseProdChange() {
   if (hintEl) hintEl.textContent = '';
 }
 
-function onReintProdChange() {
-  const prod = document.getElementById('reintProd').value.trim();
-  const fpcInput = document.getElementById('reintFpc');
-  const statusEl = document.getElementById('reintFpcStatus');
-  if (!fpcInput || !statusEl) return;
-  const parsed = parseProductCode(prod);
-  if (!parsed) { statusEl.textContent = ''; return; }
-  if (FPC_TABLE[parsed.key] !== undefined) {
-    fpcInput.value = FPC_TABLE[parsed.key];
-    statusEl.innerHTML = '<span style="color:#00aa44;">✓ Referencia conocida</span>';
-  } else {
-    fpcInput.value = '';
-    statusEl.innerHTML = '<span style="color:#cc6600;">⚠️ Nueva referencia</span>';
-  }
-}
-
-function saveReintegracion() {
-  if (!currentUser || currentUser.role !== 'Magasinero') {
-    alert('⛔ Solo el Magasinero puede hacer una Reintegración.');
-    return;
-  }
-
-  const prod = document.getElementById('reintProd').value.trim();
-  const nb = parseInt(document.getElementById('reintNb').value) || 1;
-  const num = document.getElementById('reintNum').value.trim();
-  const emp = document.getElementById('reintEmp').value.trim();
-  const fpcSaisi = parseInt(document.getElementById('reintFpc').value);
-
-  if (!prod || !num || !fpcSaisi) {
-    alert('⛔ Complete todos los campos obligatorios.');
-    return;
-  }
-
-  const feuilles = fpcSaisi * nb;
-  DB.entrees.push({ prod, nb, num, emp, feuilles, tipo: 'Reintegración', date: new Date().toISOString() });
-
-  if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
-  DB.stock[prod].f += feuilles;
-  DB.stock[prod].c += nb;
-
-  logMouvement('Reintegración', num, prod + ' · Reintegración · ' + feuilles + ' hojas' + (emp ? ' · 📍' + emp : ''));
-  saveDB();
-  closeModal('modalReintegracion');
-
-  document.getElementById('reintProd').value = '';
-  document.getElementById('reintFpc').value = '';
-  document.getElementById('reintNb').value = '1';
-  document.getElementById('reintNum').value = '';
-  document.getElementById('reintEmp').value = '';
-
-  renderEntrees();
-  alert('✓ Reintegración registrada: +' + feuilles + ' hojas (' + prod + ')');
-}
-
+// onReintProdChange et saveReintegracion supprimées (remplacées par Retorno Cliente)
 
 function openModal(id) {
   document.getElementById(id).style.display = 'block';
@@ -2289,25 +2236,6 @@ function renderGrandLivre() {
   }
 
   // Lecture des filtres colonne (Excel-style)
-  const colFecha = (document.getElementById('glColFecha') || {}).value || '';
-  const colOper = (document.getElementById('glColOper') || {}).value || '';
-  const colOp = (document.getElementById('glColOp') || {}).value || '';
-  const colRef = (document.getElementById('glColRef') || {}).value || '';
-  const colLote = (document.getElementById('glColLote') || {}).value || '';
-  const colDetalle = (document.getElementById('glColDetalle') || {}).value || '';
-
-  // Application des filtres colonne
-  if (colFecha) mvts = mvts.filter(m => new Date(m.date).toLocaleDateString('es-ES').includes(colFecha));
-  if (colOper) mvts = mvts.filter(m => (m.operateur || '').toLowerCase().includes(colOper.toLowerCase()));
-  if (colOp) mvts = mvts.filter(m => (m.type || '').toLowerCase().includes(colOp.toLowerCase()));
-  if (colRef) {
-    mvts = mvts.filter(m => {
-      const refMatch = m.detail ? m.detail.match(/^([A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d+\/\d+)/) : null;
-      return refMatch && refMatch[1].toLowerCase().includes(colRef.toLowerCase());
-    });
-  }
-  if (colLote) mvts = mvts.filter(m => (m.num || '').toLowerCase().includes(colLote.toLowerCase()));
-  if (colDetalle) mvts = mvts.filter(m => (m.detail || '').toLowerCase().includes(colDetalle.toLowerCase()));
 
   // Valeurs uniques pour dropdowns
   function getRef(m) {
@@ -2455,8 +2383,7 @@ const FIELD_LABELS = {
   stockLoteSearch: 'N° Lote',
   ventaNum:    'N° lote',
   traspasoNum: 'N° lote',
-  reintNum:    'N° lote',
-  reintProd:   'PRODUCTO'
+
 };
 
 const FIELD_VALIDATORS = {
@@ -2488,7 +2415,7 @@ function openScanner(targetFieldId) {
   // pour que le scanner apparaisse bien au premier plan
   scanParentModalId = null;
   const openModals = ['modalRec','modalCasse','modalSortie','modalSortieVenta',
-    'modalTraspaso','modalReintegracion','modalEntradaOpts','modalProdDetail'];
+    'modalTraspaso','modalRetorno','modalCorreccion','modalEntradaOpts','modalProdDetail'];
   openModals.forEach(id => {
     const el = document.getElementById(id);
     if (el && window.getComputedStyle(el).display !== 'none') {
@@ -2648,7 +2575,6 @@ function acceptCode(field, code) {
   const el = document.getElementById(field);
   if (el) el.value = code;
   if (field === 'recProd') onProdChange();
-  if (field === 'reintProd') onReintProdChange();
   if (field === 'casseNum') autofillCasseProd();
   if (field === 'histNum' || field === 'glLote') renderGrandLivre();
   if (field === 'stockLoteSearch') searchStockByLote();

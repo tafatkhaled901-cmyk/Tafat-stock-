@@ -211,6 +211,10 @@
       <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse">💥 Casse</button>
       <button onclick="goto('stock')" class="sidebar-btn" id="sb-stock">🪟 Stock Global</button>
       <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">🕓 Historial</button>
+      <div id="sbMagasinero" style="display:none;">
+        <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Magasinero</div>
+        <button onclick="openModal('modalCorreccion')" class="sidebar-btn" style="color:#ffcc44;">⚠️ Corrección Error</button>
+      </div>
     </div>
 
     <!-- CONTENIDO PRINCIPAL -->
@@ -248,9 +252,10 @@
       <!-- SALIDAS -->
       <div class="page" id="page-sorties">
         <h2>📤 Salidas</h2>
-        <div style="display:flex; gap:10px; margin-bottom:16px;">
-          <button class="btn-orange" style="flex:1;" onclick="openModal('modalSortieVenta')">🛒 Salida Venta</button>
-          <button class="btn-blue" style="flex:1;" onclick="openModal('modalTraspaso')">🚛 Traspaso de Almacén</button>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="btn-orange" style="flex:1; min-width:120px;" onclick="openModal('modalSortieVenta')">🛒 Salida Venta</button>
+          <button class="btn-blue" style="flex:1; min-width:120px;" onclick="openModal('modalTraspaso')">🚛 Traspaso</button>
+          <button style="flex:1; min-width:120px; background:#9c27b0; color:white; border:none; border-radius:8px; padding:15px; font-size:14px; font-weight:bold; cursor:pointer;" onclick="openModal('modalRetorno')">↩️ Retorno Cliente</button>
         </div>
         <div id="sortieList"></div>
       </div>
@@ -460,6 +465,67 @@
   <button class="btn-red" onclick="closeModal('modalSortieVenta')">Cancelar</button>
 
   <button class="btn-blue" onclick="iniciarVenta()" id="ventaBtnIniciar" style="margin-bottom:8px;">▶ Iniciar escaneo de cajas</button>
+</div>
+
+<!-- ═══ MODAL RETORNO CLIENTE ═══ -->
+<div class="modal" id="modalRetorno">
+  <h2>↩️ Retorno de Cliente</h2>
+  <p style="color:#888; font-size:13px; margin-bottom:12px;">El producto vuelve al stock. Se registra en zona de cuarentena hasta validación.</p>
+
+  <button class="btn-blue" onclick="openScanner(['retornoProd','retornoNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta (producto + lote)</button>
+
+  <label>Referencia del producto</label>
+  <input type="text" id="retornoProd" placeholder="ej: FL8-321/214">
+
+  <label>N° Lote</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="retornoNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('retornoNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+
+  <label>Motivo del retorno</label>
+  <input type="text" id="retornoMotivo" placeholder="ej: Producto defectuoso, error de pedido...">
+
+  <label>Cliente</label>
+  <input type="text" id="retornoCliente" placeholder="ej: Empresa ABC">
+
+  <label>Estado del producto</label>
+  <select id="retornoEstado" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; font-size:16px; margin:8px 0;">
+    <option value="cuarentena">⚠️ Cuarentena (pendiente de revisión)</option>
+    <option value="bueno">✅ Buen estado — vuelve al stock</option>
+    <option value="destruir">❌ A destruir</option>
+  </select>
+
+  <button style="width:100%; padding:15px; background:#9c27b0; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0;" onclick="saveRetorno()">↩️ Confirmar Retorno</button>
+  <button class="btn-red" onclick="closeModal('modalRetorno')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL CORRECCIÓN (Append-Only) ═══ -->
+<div class="modal" id="modalCorreccion">
+  <h2>⚠️ Corrección de Error</h2>
+  <p style="color:#888; font-size:13px; margin-bottom:12px;">Solo el Magasinero puede añadir una línea correctiva.<br>El registro original NO se modifica (Append-Only).</p>
+
+  <label>N° Lote a corregir</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="corrLote" placeholder="ej: 22325100518C" style="flex:1" oninput="onCorrLoteChange()">
+    <button onclick="openScanner('corrLote')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+  <div id="corrLoteInfo" style="font-size:12px; color:#0055cc; margin:4px 0;"></div>
+
+  <label>Tipo de corrección</label>
+  <select id="corrTipo" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; font-size:16px; margin:8px 0;">
+    <option value="+">➕ Añadir hojas (error de menos)</option>
+    <option value="-">➖ Quitar hojas (error de más)</option>
+  </select>
+
+  <label>Cantidad a corregir (hojas)</label>
+  <input type="number" id="corrQty" value="1" min="1">
+
+  <label>Motivo de la corrección</label>
+  <input type="text" id="corrMotivo" placeholder="ej: Error de saisie — se marcaron 100 en lugar de 10">
+
+  <button style="width:100%; padding:15px; background:#cc6600; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0;" onclick="saveCorreccion()">⚠️ Registrar Corrección</button>
+  <button class="btn-red" onclick="closeModal('modalCorreccion')">Cancelar</button>
 </div>
 
 <!-- ═══ MODAL TRASPASO DE ALMACÉN ═══ -->
@@ -751,6 +817,9 @@ function loginSuccess(user) {
   document.getElementById('login').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
+  // Affiche section Magasinero dans le sidebar si applicable
+  const sbMag = document.getElementById('sbMagasinero');
+  if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
   goto('dashboard');
 }
 
@@ -1021,6 +1090,99 @@ function saveTraspaso() {
 
 // ─── Reintegración (solo Magasinero) ───
 // Auto-remplit la référence produit depuis le N° Lote (cherche dans les entrées)
+// ─── Retorno Cliente ───
+function saveRetorno() {
+  const prod = document.getElementById('retornoProd').value.trim();
+  const num = document.getElementById('retornoNum').value.trim();
+  const motivo = document.getElementById('retornoMotivo').value.trim();
+  const cliente = document.getElementById('retornoCliente').value.trim();
+  const estado = document.getElementById('retornoEstado').value;
+
+  if (!num) { alert('⛔ Escanee o ingrese el N° de lote.'); return; }
+
+  const estadoLabel = { cuarentena: '⚠️ Cuarentena', bueno: '✅ Buen estado', destruir: '❌ A destruir' }[estado];
+
+  // Si buen estado, vuelve al stock
+  if (estado === 'bueno' && prod) {
+    if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
+    const entry = DB.entrees.find(e => e.num === num);
+    const hojas = entry ? entry.feuilles : 0;
+    DB.stock[prod].f += hojas;
+    DB.stock[prod].c += 1;
+
+    // Elimina de las salidas si estaba marcado como salido
+    DB.sorties = DB.sorties.filter(s => s.num !== num);
+  }
+
+  logMouvement('Entrée', num, (prod || '?') + ' · Retorno Cliente · ' + estadoLabel + (motivo ? ' · ' + motivo : '') + (cliente ? ' · ' + cliente : ''));
+  saveDB();
+  closeModal('modalRetorno');
+
+  document.getElementById('retornoProd').value = '';
+  document.getElementById('retornoNum').value = '';
+  document.getElementById('retornoMotivo').value = '';
+  document.getElementById('retornoCliente').value = '';
+
+  alert('↩️ Retorno registrado\nEstado: ' + estadoLabel + (estado === 'bueno' ? '\nProducto vuelto al stock.' : ''));
+}
+
+// ─── Corrección Append-Only ───
+function onCorrLoteChange() {
+  const num = document.getElementById('corrLote').value.trim();
+  const infoEl = document.getElementById('corrLoteInfo');
+  if (!num) { infoEl.textContent = ''; return; }
+  const entry = DB.entrees.find(e => e.num === num);
+  if (entry) {
+    infoEl.textContent = '✓ Lote encontrado: ' + entry.prod + ' · ' + entry.feuilles + ' hojas';
+  } else {
+    infoEl.textContent = '⚠️ Lote no encontrado en recepciones';
+  }
+}
+
+function saveCorreccion() {
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Solo el Magasinero puede registrar correcciones.');
+    return;
+  }
+
+  const num = document.getElementById('corrLote').value.trim();
+  const tipo = document.getElementById('corrTipo').value;
+  const qty = parseInt(document.getElementById('corrQty').value) || 1;
+  const motivo = document.getElementById('corrMotivo').value.trim();
+
+  if (!num) { alert('⛔ Ingrese el N° de lote a corregir.'); return; }
+  if (!motivo) { alert('⛔ Indique el motivo de la corrección.'); return; }
+
+  const entry = DB.entrees.find(e => e.num === num);
+  const prod = entry ? entry.prod : '?';
+  const qtySignee = tipo === '+' ? qty : -qty;
+
+  // Append-Only : on ajoute une ligne corrective
+  DB.mouvements.push({
+    type: 'Système',
+    num,
+    detail: '⚠️ CORRECCIÓN · ' + (tipo === '+' ? '+' : '-') + qty + ' hojas · ' + motivo,
+    operateur: currentUser.nom,
+    date: new Date().toISOString(),
+    correction: true,
+    qty: qtySignee
+  });
+
+  // Mise à jour du stock
+  if (entry && DB.stock[prod]) {
+    DB.stock[prod].f = Math.max(0, DB.stock[prod].f + qtySignee);
+  }
+
+  saveDB();
+  closeModal('modalCorreccion');
+  document.getElementById('corrLote').value = '';
+  document.getElementById('corrLoteInfo').textContent = '';
+  document.getElementById('corrMotivo').value = '';
+  document.getElementById('corrQty').value = '1';
+
+  alert('✓ Corrección registrada\n' + (tipo === '+' ? '+' : '-') + qty + ' hojas · ' + motivo + '\n\nEl registro original NO ha sido modificado.');
+}
+
 function autofillCasseProd() {
   const num = document.getElementById('casseNum').value.trim();
   const prodEl = document.getElementById('casseProd');
@@ -1910,6 +2072,9 @@ const FIELD_VALIDATORS = {
   ventaNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
   traspasoNum: { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
   reintNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  retornoProd: { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' },
+  retornoNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
+  corrLote:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
   reintProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' }
 };
 

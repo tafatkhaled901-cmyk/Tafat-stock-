@@ -347,7 +347,7 @@
             <label class="gl-type-btn" style="background:#00aa4422; border:1px solid #00aa44;"><input type="checkbox" value="Entrée" checked onchange="renderGrandLivre()"> 📥 Entrada</label>
             <label class="gl-type-btn" style="background:#cc660022; border:1px solid #cc6600;"><input type="checkbox" value="Sortie" checked onchange="renderGrandLivre()"> 📤 Salida</label>
             <label class="gl-type-btn" style="background:#cc222222; border:1px solid #cc2222;"><input type="checkbox" value="Casse" checked onchange="renderGrandLivre()"> 💥 Rotura</label>
-            <label class="gl-type-btn" style="background:#0055cc22; border:1px solid #0055cc;"><input type="checkbox" value="Reintegración" checked onchange="renderGrandLivre()"> 🔄 Reintegración</label>
+            <label class="gl-type-btn" style="background:#9c27b022; border:1px solid #9c27b0;"><input type="checkbox" value="Reintegración" checked onchange="renderGrandLivre()"> ↩️ Retorno Cliente</label>
             <label class="gl-type-btn" style="background:#66330022; border:1px solid #663300;"><input type="checkbox" value="Traspaso" checked onchange="renderGrandLivre()"> 🚛 Traspaso</label>
             <label class="gl-type-btn" style="background:#66336622; border:1px solid #663366;"><input type="checkbox" value="Suppression" checked onchange="renderGrandLivre()"> 🗑️ Supresión</label>
             <label class="gl-type-btn" style="background:#88888822; border:1px solid #888;"><input type="checkbox" value="Système" checked onchange="renderGrandLivre()"> 🤖 Sistema/Email</label>
@@ -382,13 +382,12 @@
     <button class="btn-green" style="margin-bottom:12px;" onclick="closeModal('modalEntradaOpts'); openModal('modalRec');">
       📦 Nuevo Stock<br><small style="font-weight:normal;">Recepción de nueva mercancía</small>
     </button>
-    <button class="btn-blue" id="btnReintegracion" onclick="closeModal('modalEntradaOpts'); openModal('modalReintegracion');">
-      🔄 Reintegración<br><small style="font-weight:normal;">Solo Magasinero</small>
+    <button id="btnRetornoEntrada" style="width:100%; padding:15px; margin-bottom:12px; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; background:#9c27b0; color:white;" onclick="abrirRetornoDesdeEntrada()">
+      ↩️ Retorno Cliente<br><small style="font-weight:normal;">Solo Magasinero</small>
     </button>
-    <button class="btn-red" style="margin-top:12px;" onclick="closeModal('modalEntradaOpts')">Cancelar</button>
+    <button class="btn-red" onclick="closeModal('modalEntradaOpts')">Cancelar</button>
   </div>
 </div>
-
 
 <!-- ═══ MODAL SORTIE ═══ -->
 <div class="modal" id="modalSortie">
@@ -585,27 +584,6 @@
   <button class="btn-red" onclick="closeModal('modalTraspaso')">Cancelar</button>
 </div>
 
-<!-- ═══ MODAL REINTEGRACIÓN (solo Magasinero) ═══ -->
-<div class="modal" id="modalReintegracion">
-  <h2>🔄 Reintegración de Stock</h2>
-  <p style="color:#888; font-size:13px; margin-bottom:16px;">Permite reingresar un lote previamente salido. Solo Magasinero.</p>
-  <button class="btn-blue" onclick="openScanner(['reintProd','reintNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta (producto + lote)</button>
-  <label>Producto (código)</label>
-  <input type="text" id="reintProd" placeholder="ej: FL8-321/214" oninput="onReintProdChange()">
-  <label>Hojas por caja <span id="reintFpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
-  <input type="number" id="reintFpc" min="1" placeholder="ej: 16">
-  <label>N° Lote</label>
-  <div style="display:flex; gap:8px">
-    <input type="text" id="reintNum" placeholder="ej: 22325100518C" style="flex:1">
-    <button onclick="openScanner('reintNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
-  </div>
-  <label>Número de cajas</label>
-  <input type="number" id="reintNb" value="1" min="1">
-  <label>Ubicación</label>
-  <input type="text" id="reintEmp" placeholder="ej: A1,3">
-  <button class="btn-green" onclick="saveReintegracion()">✓ Confirmar Reintegración</button>
-  <button class="btn-red" onclick="closeModal('modalReintegracion')">Cancelar</button>
-</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -998,14 +976,22 @@ function kpiCard(label, value, color) {
 // ─── Mostrar opciones de entrada ───
 function showEntradaOptions() {
   const isMagasinero = currentUser && currentUser.role === 'Magasinero';
-  const btn = document.getElementById('btnReintegracion');
+  const btn = document.getElementById('btnRetornoEntrada');
   if (btn) {
     btn.style.opacity = isMagasinero ? '1' : '0.4';
-    btn.onclick = isMagasinero
-      ? function() { closeModal('modalEntradaOpts'); openModal('modalReintegracion'); }
-      : function() { alert('⛔ Reintegración: solo Magasinero (LUIS MIGUEL SOLERA)'); };
+    btn.title = isMagasinero ? '' : 'Solo Magasinero';
   }
   document.getElementById('modalEntradaOpts').style.display = 'flex';
+}
+
+function abrirRetornoDesdeEntrada() {
+  const isMagasinero = currentUser && currentUser.role === 'Magasinero';
+  if (!isMagasinero) {
+    alert('⛔ Retorno Cliente: Solo el Magasinero (LUIS MIGUEL SOLERA) puede realizar esta operación.');
+    return;
+  }
+  closeModal('modalEntradaOpts');
+  openModal('modalRetorno');
 }
 
 // ─── Salida Venta ───

@@ -1399,13 +1399,21 @@ function renderEntrees() {
     return;
   }
   let html = '';
-  DB.entrees.slice().reverse().forEach(e => {
-    html += '<div class="card">' +
-            '<strong>' + e.prod + '</strong><br>' +
-            'N° ' + e.num + ' · ' + e.nb + ' caja(s) · ' + e.hojas + ' hojas<br>';
-    if (e.emp) html += '<span style="color:#0055cc;">📍 ' + e.emp + '</span><br>';
-    html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(e.date).toLocaleString('fr-FR') + '</span>' +
-            '</div>';
+  DB.entrees.slice().reverse().forEach((e, idx) => {
+    const realIdx = DB.entrees.length - 1 - idx;
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const op = mvt ? mvt.operateur : (currentUser ? currentUser.nom : '—');
+    html += '<div class="card" style="border-left:3px solid #00aa44;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+      '<div>' +
+      '<strong style="color:#0055cc;">' + (e.prod || '—') + '</strong><br>' +
+      '<span style="font-family:monospace; font-size:12px;">N° ' + e.num + '</span><br>' +
+      e.nb + ' caja(s) · ' + e.feuilles + ' hojas';
+    if (e.emp) html += ' · <span style="color:#0055cc;">📍 ' + e.emp + '</span>';
+    html += '<br><span style="color:#888; font-size:12px;">📅 ' + new Date(e.date).toLocaleString('es-ES') + ' · 👤 ' + op + '</span>' +
+      '</div>' +
+      '<button onclick="imprimirFichaEntrada(' + realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px;">🖨️ Fiche</button>' +
+      '</div></div>';
   });
   document.getElementById('entreeList').innerHTML = html;
 }
@@ -1595,17 +1603,22 @@ function renderSorties() {
     return;
   }
   let html = '';
-  DB.sorties.slice().reverse().forEach(s => {
+  DB.sorties.slice().reverse().forEach((s, idx) => {
+    const realIdx = DB.sorties.length - 1 - idx;
     const tipo = s.tipo || 'Salida';
-    const colorTipo = tipo === 'Venta' ? '#cc6600' : tipo === 'Traspaso' ? '#0055cc' : '#555';
-    html += '<div class="card">' +
-            '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + tipo + '</span> ' +
-            '<strong>' + s.prod + '</strong><br>' +
-            'N° ' + s.num + ' · -' + s.feuilles + ' hojas<br>';
-    if (s.pedido) html += '📋 Pedido: <strong>' + s.pedido + '</strong><br>';
-    if (s.client) html += '<span style="color:#cc6600;">👤 ' + s.client + '</span><br>';
+    const colorTipo = tipo === 'Venta' ? '#cc6600' : tipo === 'Traspaso' ? '#0055cc' : tipo === 'Retorno' ? '#9c27b0' : '#555';
+    html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+      '<div>' +
+      '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + tipo + '</span> ' +
+      '<strong style="color:#0055cc;">' + (s.prod || '—') + '</strong><br>' +
+      '<span style="font-family:monospace; font-size:12px;">N° ' + s.num + '</span> · -' + (s.feuilles || 0) + ' hojas<br>';
+    if (s.pedido) html += '📋 <strong>' + s.pedido + '</strong><br>';
+    if (s.client) html += '<span style="color:#888;">👤 ' + s.client + '</span><br>';
     html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(s.date).toLocaleString('es-ES') + '</span>' +
-            '</div>';
+      '</div>' +
+      '<button onclick="imprimirFichaSalida(' + realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px;">🖨️ Fiche</button>' +
+      '</div></div>';
   });
   document.getElementById('sortieList').innerHTML = html;
 }
@@ -1977,6 +1990,73 @@ function exportHistoriqueCSV() {
 }
 
 // ── Export PDF via impression navigateur ──
+// ═══════════════════════════════════════════════════════════
+// IMPRESSION FICHES DE RÉCEPTION ET SORTIE
+// ═══════════════════════════════════════════════════════════
+
+function imprimirFichaEntrada(idx) {
+  const e = DB.entrees[idx];
+  if (!e) return;
+  const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s + c.qty, 0);
+  const hojasConf = Math.max(0, e.feuilles - casseTotal);
+  const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+  const op = mvt ? mvt.operateur : '—';
+  const fecha = new Date(e.date).toLocaleString('es-ES');
+
+  const html = `
+    <div style="text-align:center; margin-bottom:20px;">
+      <div style="font-size:28px; font-weight:bold; color:#0055cc;">🪟 VerreStock Pro</div>
+      <div style="font-size:18px; font-weight:bold; margin-top:8px; color:#1e293b;">FICHE DE RÉCEPTION</div>
+      <div style="color:#888; font-size:13px; margin-top:4px;">N° Fiche: REC-${String(idx+1).padStart(4,'0')}</div>
+    </div>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; width:40%; border:1px solid #ddd;">Referencia Producto</td><td style="padding:10px; border:1px solid #ddd; font-size:18px; font-weight:bold; color:#0055cc;">${e.prod || '—'}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">N° Lote</td><td style="padding:10px; border:1px solid #ddd; font-family:monospace; font-size:16px;">${e.num}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Número de Cajas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px;">${e.nb}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Recibidas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:#00aa44; font-weight:bold;">${e.feuilles}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Conformes</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:#00aa44; font-weight:bold;">${hojasConf}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Rotas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:${casseTotal>0?'#cc2222':'#888'};">${casseTotal || 0}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Ubicación</td><td style="padding:10px; border:1px solid #ddd;">${e.emp || '—'}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Operador</td><td style="padding:10px; border:1px solid #ddd;">${op}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Fecha y Hora</td><td style="padding:10px; border:1px solid #ddd;">${fecha}</td></tr>
+    </table>
+    <div style="display:flex; gap:40px; margin-top:40px;">
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Operador</div>
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Responsable</div>
+    </div>`;
+  exportPDF('Fiche de Réception — ' + e.num, html);
+}
+
+function imprimirFichaSalida(idx) {
+  const s = DB.sorties[idx];
+  if (!s) return;
+  const fecha = new Date(s.date).toLocaleString('es-ES');
+  const tipo = s.tipo || 'Salida';
+
+  const html = `
+    <div style="text-align:center; margin-bottom:20px;">
+      <div style="font-size:28px; font-weight:bold; color:#cc6600;">🪟 VerreStock Pro</div>
+      <div style="font-size:18px; font-weight:bold; margin-top:8px; color:#1e293b;">BON DE SORTIE — ${tipo.toUpperCase()}</div>
+      <div style="color:#888; font-size:13px; margin-top:4px;">N° Fiche: SAL-${String(idx+1).padStart(4,'0')}</div>
+    </div>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+      <tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; width:40%; border:1px solid #ddd;">Tipo de Operación</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; font-weight:bold; color:#cc6600;">${tipo}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Referencia Producto</td><td style="padding:10px; border:1px solid #ddd; font-size:18px; font-weight:bold; color:#0055cc;">${s.prod || '—'}</td></tr>
+      <tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">N° Lote</td><td style="padding:10px; border:1px solid #ddd; font-family:monospace; font-size:16px;">${s.num}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Cajas Salidas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px;">${s.nb || 1}</td></tr>
+      <tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Salidas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:#cc6600; font-weight:bold;">-${s.feuilles || 0}</td></tr>
+      ${s.pedido ? `<tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">N° Pedido</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; font-weight:bold;">${s.pedido}</td></tr>` : ''}
+      ${s.client ? `<tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Cliente / Destino</td><td style="padding:10px; border:1px solid #ddd;">${s.client}</td></tr>` : ''}
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Operador</td><td style="padding:10px; border:1px solid #ddd;">${currentUser ? currentUser.nom : '—'}</td></tr>
+      <tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Fecha y Hora</td><td style="padding:10px; border:1px solid #ddd;">${fecha}</td></tr>
+    </table>
+    <div style="display:flex; gap:40px; margin-top:40px;">
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Operador</div>
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Cliente / Responsable</div>
+    </div>`;
+  exportPDF('Bon de Sortie — ' + s.num, html);
+}
+
 function exportPDF(title, tableHTML) {
   const now = new Date().toLocaleString('es-ES');
   const printWindow = window.open('', '_blank');

@@ -1704,62 +1704,43 @@ function renderStock() {
 
   const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
 
-  // En-têtes style Excel
+  // En-têtes style Excel - nouvel ordre
   let tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:700px;">' +
     '<thead><tr style="background:#0055cc; color:#fff; position:sticky; top:0;">' +
     '<th style="padding:8px 6px; text-align:left; white-space:nowrap;">Referencia</th>' +
-    '<th style="padding:8px 6px; text-align:left;">Dimensión</th>' +
-    '<th style="padding:8px 6px; text-align:right;">Hojas Iniciales</th>' +
+    '<th style="padding:8px 6px; text-align:left;">N° Lote</th>' +
     '<th style="padding:8px 6px; text-align:left;">Fecha Entrada</th>' +
     '<th style="padding:8px 6px; text-align:left;">Operador</th>' +
-    '<th style="padding:8px 6px; text-align:center;">Rotura</th>' +
+    '<th style="padding:8px 6px; text-align:right;">Hojas Iniciales</th>' +
+    '<th style="padding:8px 6px; text-align:center;">Declaración Rotura</th>' +
     '<th style="padding:8px 6px; text-align:right;">Hojas Conformes</th>' +
     '<th style="padding:8px 6px; text-align:left;">Ubicación</th>' +
-    '<th style="padding:8px 6px; text-align:left;">N° Lote</th>' +
     '<th style="padding:8px 6px; text-align:left;">Estado</th>' +
     (isGestionnaire ? '<th style="padding:8px 6px;"></th>' : '') +
     '</tr></thead><tbody>';
 
   allEntries.forEach((e, idx) => {
-    // Calcul casses pour ce conteneur
-    const casseTotal = DB.casses
-      .filter(c => c.num === e.num)
-      .reduce((s, c) => s + c.qty, 0);
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + c.qty, 0);
     const hojasConformes = Math.max(0, e.feuilles - casseTotal);
     const tieneCasse = casseTotal > 0;
-
-    // Etat du conteneur
     const estSorti = DB.sorties.some(s => s.num === e.num);
     const sortie = DB.sorties.find(s => s.num === e.num);
-    let estadoHtml = '';
-    if (estSorti) {
-      const tipo = sortie && sortie.tipo ? sortie.tipo : 'Salida';
-      estadoHtml = '<span style="background:#cc6600; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">' + tipo + '</span>';
-    } else {
-      estadoHtml = '<span style="background:#00aa44; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">En Stock</span>';
-    }
-
-    // Extraire dimension du code produit
-    const dimMatch = e.prod ? e.prod.match(/(\d+\/\d+)$/) : null;
-    const dimension = dimMatch ? dimMatch[1] : '—';
-
-    // Opérateur qui a scanné (chercher dans mouvements)
+    const estadoHtml = estSorti
+      ? '<span style="background:#cc6600; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">' + (sortie && sortie.tipo ? sortie.tipo : 'Salida') + '</span>'
+      : '<span style="background:#00aa44; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">En Stock</span>';
     const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
     const operador = mvt ? mvt.operateur : '—';
-
     const bg = idx % 2 === 0 ? '#fff' : '#f8f9fa';
-    const rowStyle = 'background:' + bg + '; border-bottom:1px solid #e0e0e0;';
 
-    tableHtml += '<tr style="' + rowStyle + '">' +
+    tableHtml += '<tr style="background:' + bg + '; border-bottom:1px solid #e0e0e0;">' +
       '<td style="padding:7px 6px; font-weight:bold; color:#0055cc; white-space:nowrap;">' + (e.prod || '—') + '</td>' +
-      '<td style="padding:7px 6px; white-space:nowrap;">' + dimension + '</td>' +
-      '<td style="padding:7px 6px; text-align:right;">' + e.feuilles + '</td>' +
+      '<td style="padding:7px 6px; font-family:monospace; font-size:11px;">' + e.num + '</td>' +
       '<td style="padding:7px 6px; white-space:nowrap;">' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
       '<td style="padding:7px 6px;">' + operador + '</td>' +
-      '<td style="padding:7px 6px; text-align:center;">' + (tieneCasse ? '💥 ' + casseTotal : '—') + '</td>' +
+      '<td style="padding:7px 6px; text-align:right;">' + e.feuilles + '</td>' +
+      '<td style="padding:7px 6px; text-align:center;">' + (tieneCasse ? '<span style="color:#cc2222; font-weight:bold;">💥 Sí — ' + casseTotal + ' hj</span>' : '<span style="color:#888;">No</span>') + '</td>' +
       '<td style="padding:7px 6px; text-align:right; font-weight:bold; color:' + (hojasConformes < e.feuilles ? '#cc2222' : '#00aa44') + ';">' + hojasConformes + '</td>' +
       '<td style="padding:7px 6px;">' + (e.emp || '—') + '</td>' +
-      '<td style="padding:7px 6px; font-family:monospace; font-size:11px;">' + e.num + '</td>' +
       '<td style="padding:7px 6px;">' + estadoHtml + '</td>' +
       (isGestionnaire && !estSorti ? '<td style="padding:4px;"><button onclick="removeContenantFromStock(\'' + (e.prod||'').replace(/'/g,"\\'") + '\',\'' + e.num.replace(/'/g,"\\'") + '\')" style="background:#cc2222; color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:13px; cursor:pointer;">🗑️</button></td>' : (isGestionnaire ? '<td></td>' : '')) +
       '</tr>';

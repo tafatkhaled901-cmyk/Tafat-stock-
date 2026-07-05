@@ -285,6 +285,20 @@
             <button onclick="exportStockPDF()" style="background:#cc2222; color:white; border:none; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:bold; cursor:pointer;">📄 PDF</button>
           </div>
         </div>
+
+        <!-- Barre de recherche rapide N° Lote -->
+        <div style="background:#f0f4ff; border-radius:10px; padding:12px; margin-bottom:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span style="font-size:13px; font-weight:bold; color:#0055cc; white-space:nowrap;">🔍 Buscar N° Lote:</span>
+          <div style="display:flex; gap:6px; flex:1; min-width:200px;">
+            <input type="text" id="stockLoteSearch" placeholder="ej: 22325100518C" style="flex:1; padding:8px 12px; border:2px solid #0055cc; border-radius:8px; font-size:14px; font-family:monospace;" oninput="searchStockByLote()" autocomplete="off">
+            <button onclick="openScanner('stockLoteSearch')" style="width:44px; padding:8px; background:#0088ff; color:#fff; border:none; border-radius:8px; font-size:18px; cursor:pointer;">📷</button>
+            <button onclick="clearStockSearch()" style="width:44px; padding:8px; background:#eee; border:none; border-radius:8px; font-size:14px; cursor:pointer;">✕</button>
+          </div>
+        </div>
+
+        <!-- Résultat de la recherche par lote -->
+        <div id="stockSearchResult" style="margin-bottom:12px;"></div>
+
         <button class="btn-blue" style="background:#6633aa; margin-bottom:12px;" onclick="goto('historique')">🕓 Ver historial de un lote</button>
         <div id="stockKpis"></div>
         <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
@@ -2142,6 +2156,70 @@ function exportHistoriquePDF() {
   exportPDF('Grand Livre des Mouvements', tableHTML);
 }
 
+// ═══════════════════════════════════════════════════════════
+// RECHERCHE RAPIDE PAR N° LOTE DANS LE STOCK
+// ═══════════════════════════════════════════════════════════
+function searchStockByLote() {
+  const query = (document.getElementById('stockLoteSearch').value || '').trim().toUpperCase();
+  const resultEl = document.getElementById('stockSearchResult');
+  if (!resultEl) return;
+
+  if (!query) {
+    resultEl.innerHTML = '';
+    return;
+  }
+
+  // Cherche dans les entrées
+  const matches = DB.entrees.filter(e => e.num && e.num.toUpperCase().includes(query));
+
+  if (matches.length === 0) {
+    resultEl.innerHTML = '<div style="background:#ffebee; border-left:4px solid #cc2222; border-radius:8px; padding:12px; font-size:14px;">❌ Ningún lote encontrado para: <strong>' + query + '</strong></div>';
+    return;
+  }
+
+  let html = '<div style="margin-bottom:8px; font-size:13px; color:#555;">' + matches.length + ' resultado(s) para <strong>' + query + '</strong></div>';
+
+  matches.forEach(e => {
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s + c.qty, 0);
+    const hojasConf = Math.max(0, e.feuilles - casseTotal);
+    const estSorti = DB.sorties.some(s => s.num === e.num);
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const op = mvt ? mvt.operateur : '—';
+    const estadoColor = estSorti ? '#cc6600' : '#00aa44';
+    const estadoLabel = estSorti ? '📤 Salida' : '✅ En Stock';
+
+    html += '<div style="background:white; border:2px solid ' + estadoColor + '; border-radius:10px; padding:14px; margin-bottom:8px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">' +
+      '<span style="font-family:monospace; font-size:16px; font-weight:bold; color:#0055cc;">' + e.num + '</span>' +
+      '<span style="background:' + estadoColor + '; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">' + estadoLabel + '</span>' +
+      '</div>' +
+      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
+      '<div>📦 <strong>Ref:</strong> ' + (e.prod || '—') + '</div>' +
+      '<div>📅 <strong>Entrada:</strong> ' + new Date(e.date).toLocaleDateString('es-ES') + '</div>' +
+      '<div>🧮 <strong>Hojas iniciales:</strong> ' + e.feuilles + '</div>' +
+      '<div style="color:#00aa44; font-weight:bold;">✅ <strong>Conformes:</strong> ' + hojasConf + '</div>' +
+      '<div style="color:' + (casseTotal > 0 ? '#cc2222' : '#888') + ';">💥 <strong>Rotas:</strong> ' + casseTotal + '</div>' +
+      '<div>📦 <strong>Cajas:</strong> ' + e.nb + '</div>' +
+      '<div>📍 <strong>Ubicación:</strong> ' + (e.emp || '—') + '</div>' +
+      '<div>👤 <strong>Operador:</strong> ' + op + '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:8px; margin-top:10px;">' +
+      '<button onclick="imprimirFichaEntrada(' + DB.entrees.indexOf(e) + ')" style="flex:1; padding:8px; background:#1e293b; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer;">🖨️ Fiche</button>' +
+      '<button onclick="document.getElementById(\'histNum\').value=\'' + e.num + '\'; goto(\'historique\')" style="flex:1; padding:8px; background:#6633aa; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer;">🕓 Historial</button>' +
+      '</div>' +
+      '</div>';
+  });
+
+  resultEl.innerHTML = html;
+}
+
+function clearStockSearch() {
+  const el = document.getElementById('stockLoteSearch');
+  if (el) el.value = '';
+  const res = document.getElementById('stockSearchResult');
+  if (res) res.innerHTML = '';
+}
+
 function clearGLColFilters() {
   glColFilters = {};
   glDropdownOpen = null;
@@ -2408,7 +2486,8 @@ const FIELD_LABELS = {
   casseNum:    'N° lote',
   sortieNum:   'N° lote',
   histNum:     'N° lote',
-  glLote:      'N° Lote',
+  glLote:          'N° Lote',
+  stockLoteSearch: 'N° Lote',
   ventaNum:    'N° lote',
   traspasoNum: 'N° lote',
   reintNum:    'N° lote',
@@ -2427,7 +2506,8 @@ const FIELD_VALIDATORS = {
   reintNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
   retornoProd: { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' },
   retornoNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
-  corrLote:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
+  corrLote:        { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
+  stockLoteSearch: { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
   reintProd:   { regex: /^[A-Z]{1,6}\d{1,3}[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' }
 };
 
@@ -2606,6 +2686,7 @@ function acceptCode(field, code) {
   if (field === 'reintProd') onReintProdChange();
   if (field === 'casseNum') autofillCasseProd();
   if (field === 'histNum' || field === 'glLote') renderGrandLivre();
+  if (field === 'stockLoteSearch') searchStockByLote();
 
   if (scanTargetQueue.length > 0) {
     // Il reste des champs à scanner — on montre le statut et continue

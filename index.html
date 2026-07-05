@@ -1931,25 +1931,22 @@ function downloadXLSX(filename, rows, headers) {
 
 // ── Export Stock Global ──
 function exportStockCSV() {
-  const headers = ['Referencia', 'Dimensión', 'N° Lote', 'Hojas Iniciales', 'Hojas Rotas', 'Hojas Conformes', 'Cajas', 'Fecha Entrada', 'Operador', 'Ubicación', 'Estado'];
+  const headers = ['Referencia', 'N° Lote', 'Fecha Entrada', 'Operador', 'Hojas Iniciales', 'Declaración Rotura', 'Hojas Conformes', 'Ubicación', 'Estado'];
   const rows = [];
 
   DB.entrees.forEach(e => {
     const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + c.qty, 0);
     const hojasConformes = Math.max(0, e.feuilles - casseTotal);
     const estSorti = DB.sorties.some(s => s.num === e.num);
-    const dimMatch = e.prod ? e.prod.match(/(\d+\/\d+)$/) : null;
     const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
     rows.push([
       e.prod || '',
-      dimMatch ? dimMatch[1] : '',
       e.num,
-      e.feuilles,
-      casseTotal || 0,
-      hojasConformes,
-      e.nb,
       new Date(e.date).toLocaleDateString('es-ES'),
       mvt ? mvt.operateur : '',
+      e.feuilles,
+      casseTotal > 0 ? 'Sí — ' + casseTotal + ' hojas' : 'No',
+      hojasConformes,
       e.emp || '',
       estSorti ? 'Salida' : 'En Stock'
     ]);
@@ -2088,21 +2085,23 @@ function exportPDF(title, tableHTML) {
 }
 
 function exportStockPDF() {
-  const headers = ['Referencia', 'N° Lote', 'Hojas Init.', 'H. Rotas', 'H. Conformes', 'Cajas', 'Fecha', 'Ubicación', 'Estado'];
+  const headers = ['Referencia', 'N° Lote', 'Fecha Entrada', 'Operador', 'Hojas Iniciales', 'Declaración Rotura', 'Hojas Conformes', 'Ubicación', 'Estado'];
   let tableHTML = '<table><thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>';
 
   DB.entrees.forEach(e => {
     const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s + c.qty, 0);
     const conf = Math.max(0, e.feuilles - casseTotal);
     const estSorti = DB.sorties.some(s => s.num === e.num);
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const op = mvt ? mvt.operateur : '—';
     tableHTML += '<tr>' +
       '<td><b>' + (e.prod||'—') + '</b></td>' +
       '<td style="font-family:monospace;">' + e.num + '</td>' +
-      '<td align="right">' + e.feuilles + '</td>' +
-      '<td align="right" style="color:' + (casseTotal>0?'#cc2222':'#888') + ';">' + casseTotal + '</td>' +
-      '<td align="right" style="color:#00aa44;font-weight:bold;">' + conf + '</td>' +
-      '<td align="right">' + e.nb + '</td>' +
       '<td>' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
+      '<td>' + op + '</td>' +
+      '<td align="right">' + e.feuilles + '</td>' +
+      '<td align="right" style="color:' + (casseTotal>0?'#cc2222':'#888') + ';">' + (casseTotal>0?'Sí — '+casseTotal+' hj':'No') + '</td>' +
+      '<td align="right" style="color:#00aa44;font-weight:bold;">' + conf + '</td>' +
       '<td>' + (e.emp||'—') + '</td>' +
       '<td><span style="background:' + (estSorti?'#cc6600':'#00aa44') + ';color:white;padding:1px 6px;border-radius:4px;">' + (estSorti?'Salida':'En Stock') + '</span></td>' +
       '</tr>';

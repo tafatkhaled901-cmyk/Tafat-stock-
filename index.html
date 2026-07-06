@@ -1596,13 +1596,13 @@ function saveRec() {
     saveFpcTable();
   }
 
-  const hojas = fpcSaisi * nb;
+  const feuilles = fpcSaisi * nb;
 
-  DB.entrees.push({ prod, nb, num, emp, hojas, date: new Date().toISOString() });
-  logMouvement('Entrée', num, prod + ' · ' + nb + ' caja(s) · ' + hojas + ' hojas' + (emp ? ' · 📍' + emp : ''));
+  DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
+  logMouvement('Entrée', num, prod + ' · ' + nb + ' caja(s) · ' + feuilles + ' hojas' + (emp ? ' · 📍' + emp : ''));
 
   if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
-  DB.stock[prod].f += hojas;
+  DB.stock[prod].f += feuilles;
   DB.stock[prod].c += nb;
 
   saveDB();
@@ -1777,7 +1777,7 @@ function saveSortie() {
   }
 
   const prod = entry.prod;
-  const hojas = entry.hojas;
+  const hojas = entry.feuilles;
   const nb = entry.nb;
 
   if (!DB.stock[prod] || DB.stock[prod].f < hojas) {
@@ -1978,7 +1978,7 @@ function openProdDetail(prod) {
     contenants.forEach(c => {
       html += '<tr style="border-bottom:1px solid #eee;">' +
         '<td style="padding:6px;">' + c.num + '</td>' +
-        '<td style="padding:6px; text-align:right;">' + c.hojas + '</td>' +
+        '<td style="padding:6px; text-align:right;">' + c.feuilles + '</td>' +
         '<td style="padding:6px;">' + (c.emp || '—') + '</td>' +
         '</tr>';
     });
@@ -1998,9 +1998,9 @@ function removeContenantFromStock(prod, num) {
   const entry = DB.entrees.find(e => e.prod === prod && e.num === num);
   if (!entry || !DB.stock[prod]) return;
 
-  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.hojas + ' hojas) du stock ?\nCette action est irreversible.')) return;
+  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.feuilles + ' hojas) du stock ?\nCette action est irreversible.')) return;
 
-  DB.stock[prod].f -= entry.hojas;
+  DB.stock[prod].f -= entry.feuilles;
   DB.stock[prod].c -= entry.nb;
   if (DB.stock[prod].f <= 0) delete DB.stock[prod];
 

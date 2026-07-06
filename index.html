@@ -1836,8 +1836,6 @@ function renderStock() {
     '<div class="kpi">' + totF + ' hojas</div>' +
     '<div class="kpi">' + totC + ' cajas</div>';
 
-  // Construire le tableau Excel complet à partir de toutes les entrées
-  // Tri décroissant : plus récent en premier
   const allEntries = DB.entrees.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   if (allEntries.length === 0) {
     document.getElementById('stockTableWrap').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Sin stock</p>';
@@ -1847,52 +1845,125 @@ function renderStock() {
 
   const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
 
-  // En-têtes style Excel - nouvel ordre
-  let tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:700px;">' +
-    '<thead><tr style="background:#0055cc; color:#fff; position:sticky; top:0;">' +
-    '<th style="padding:8px 6px; text-align:left; white-space:nowrap;">Referencia</th>' +
-    '<th style="padding:8px 6px; text-align:left;">N° Lote</th>' +
-    '<th style="padding:8px 6px; text-align:left;">Fecha Entrada</th>' +
-    '<th style="padding:8px 6px; text-align:left;">Operador</th>' +
-    '<th style="padding:8px 6px; text-align:right;">Hojas Iniciales</th>' +
-    '<th style="padding:8px 6px; text-align:center;">Declaración Rotura</th>' +
-    '<th style="padding:8px 6px; text-align:right;">Hojas Conformes</th>' +
-    '<th style="padding:8px 6px; text-align:left;">Ubicación</th>' +
-    '<th style="padding:8px 6px; text-align:left;">Estado</th>' +
-    (isGestionnaire ? '<th style="padding:8px 6px;"></th>' : '') +
+  // ── Valeurs uniques pour chaque colonne filtrable ──
+  const getMvtOp = e => { const m = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée'); return m ? m.operateur : '—'; };
+  const getEstado = e => DB.sorties.some(s => s.num === e.num) ? 'Salida' : 'En Stock';
+  const getRotura = e => {
+    const ct = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s+(Number(c.qty)||0), 0);
+    return ct > 0 ? 'Sí' : 'No';
+  };
+
+  const uValsStock = {
+    ref:     [...new Set(allEntries.map(e => e.prod || '—'))].sort(),
+    lote:    [...new Set(allEntries.map(e => e.num || '—'))].sort(),
+    fecha:   [...new Set(allEntries.map(e => new Date(e.date).toLocaleDateString('es-ES')))].sort(),
+    op:      [...new Set(allEntries.map(e => getMvtOp(e)))].sort(),
+    rotura:  ['No', 'Sí'],
+    ubic:    [...new Set(allEntries.map(e => e.emp || '—'))].sort(),
+    estado:  ['En Stock', 'Salida'],
+  };
+
+  // ── Fonction dropdown Excel ──
+  function stTh(label, col, vals, align) {
+    const isFiltered = stockColFilters[col] && stockColFilters[col].size > 0;
+    const isOpen = stockDropdownOpen === col;
+    const thBg = isFiltered ? '#0a3d62' : '#1e293b';
+    const badge = isFiltered ? ' <span style="background:#10b981;color:white;border-radius:8px;padding:1px 5px;font-size:9px;">' + stockColFilters[col].size + '</span>' : '';
+
+    let dd = '';
+    if (isOpen && vals) {
+      const sel = stockColFilters[col] || new Set();
+      dd = '<div style="position:absolute;top:100%;left:0;min-width:180px;background:white;border:2px solid #1e40af;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:99999;font-size:12px;max-height:240px;overflow-y:auto;">' +
+        '<div style="padding:8px;border-bottom:1px solid #eee;display:flex;gap:6px;">' +
+        '<button onclick="stockSelectAll(\'' + col + '\')" style="flex:1;padding:5px;background:#1e40af;color:white;border:none;border-radius:6px;font-size:11px;cursor:pointer;width:auto;margin:0;">✓ Todo</button>' +
+        '<button onclick="delete stockColFilters[\'' + col + '\'];stockDropdownOpen=null;renderStock();" style="flex:1;padding:5px;background:#f1f5f9;border:none;border-radius:6px;font-size:11px;cursor:pointer;color:#475569;width:auto;margin:0;">✕ Limpiar</button>' +
+        '</div>';
+      vals.forEach(v => {
+        const chk = !stockColFilters[col] || sel.has(v);
+        const vs = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        dd += '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f8fafc;transition:background 0.1s;" onmouseover="this.style.background=\'#f0f4f8\'" onmouseout="this.style.background=\'white\'">' +
+          '<input type="checkbox"' + (chk ? ' checked' : '') + ' onchange="stockToggleVal(\'' + col + '\',\'' + vs + '\')" style="cursor:pointer;accent-color:#1e40af;">' +
+          '<span style="font-size:12px;color:#0f172a;">' + v + '</span></label>';
+      });
+      dd += '</div>';
+    }
+
+    const alignStyle = align === 'right' ? 'text-align:right;' : align === 'center' ? 'text-align:center;' : '';
+    return '<th style="padding:0;background:' + thBg + ';position:relative;' + alignStyle + '">' +
+      '<div onclick="stockToggleDropdown(\'' + col + '\',event)" style="padding:9px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;color:white;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;user-select:none;">' +
+      label + badge +
+      '<span style="margin-left:auto;font-size:12px;opacity:0.6;">' + (isOpen ? '▲' : '▼') + '</span>' +
+      '</div>' + dd + '</th>';
+  }
+
+  // Colonnes sans filtre
+  const thF = (label, align) => '<th style="padding:9px 8px;background:#1e293b;color:white;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;' + (align ? 'text-align:' + align + ';' : '') + '">' + label + '</th>';
+
+  // ── Applique les filtres actifs ──
+  let filtered = allEntries.slice();
+  if (stockColFilters.ref    && stockColFilters.ref.size > 0)    filtered = filtered.filter(e => stockColFilters.ref.has(e.prod || '—'));
+  if (stockColFilters.lote   && stockColFilters.lote.size > 0)   filtered = filtered.filter(e => stockColFilters.lote.has(e.num || '—'));
+  if (stockColFilters.fecha  && stockColFilters.fecha.size > 0)  filtered = filtered.filter(e => stockColFilters.fecha.has(new Date(e.date).toLocaleDateString('es-ES')));
+  if (stockColFilters.op     && stockColFilters.op.size > 0)     filtered = filtered.filter(e => stockColFilters.op.has(getMvtOp(e)));
+  if (stockColFilters.rotura && stockColFilters.rotura.size > 0) filtered = filtered.filter(e => stockColFilters.rotura.has(getRotura(e)));
+  if (stockColFilters.ubic   && stockColFilters.ubic.size > 0)   filtered = filtered.filter(e => stockColFilters.ubic.has(e.emp || '—'));
+  if (stockColFilters.estado && stockColFilters.estado.size > 0) filtered = filtered.filter(e => stockColFilters.estado.has(getEstado(e)));
+
+  // ── Construction du tableau ──
+  let tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:760px; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08);">' +
+    '<thead><tr>' +
+    stTh('Referencia', 'ref', uValsStock.ref) +
+    stTh('N° Lote', 'lote', uValsStock.lote) +
+    stTh('Fecha', 'fecha', uValsStock.fecha) +
+    stTh('Operador', 'op', uValsStock.op) +
+    thF('Hojas Iniciales', 'right') +
+    stTh('Rotura', 'rotura', uValsStock.rotura, 'center') +
+    thF('Hojas Conformes', 'right') +
+    stTh('Ubicación', 'ubic', uValsStock.ubic) +
+    stTh('Estado', 'estado', uValsStock.estado) +
+    (isGestionnaire ? thF('') : '') +
     '</tr></thead><tbody>';
 
-  allEntries.forEach((e, idx) => {
+  filtered.forEach((e, idx) => {
     const hojasInit = Number(e.feuilles) || 0;
-    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + (Number(c.qty) || 0), 0);
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s+(Number(c.qty)||0), 0);
     const hojasConformes = Math.max(0, hojasInit - casseTotal);
     const tieneCasse = casseTotal > 0;
     const estSorti = DB.sorties.some(s => s.num === e.num);
     const sortie = DB.sorties.find(s => s.num === e.num);
     const estadoHtml = estSorti
-      ? '<span style="background:#cc6600; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">' + (sortie && sortie.tipo ? sortie.tipo : 'Salida') + '</span>'
-      : '<span style="background:#00aa44; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">En Stock</span>';
+      ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">' + (sortie?.tipo || 'Salida') + '</span>'
+      : '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">En Stock</span>';
     const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
     const operador = mvt ? mvt.operateur : '—';
-    const bg = idx % 2 === 0 ? '#fff' : '#f8f9fa';
+    const bg = idx % 2 === 0 ? '#ffffff' : '#F8FAFC';
 
-    tableHtml += '<tr style="background:' + bg + '; border-bottom:1px solid #e0e0e0;">' +
-      '<td style="padding:7px 6px; font-weight:bold; color:#0055cc; white-space:nowrap;">' + (e.prod || '—') + '</td>' +
-      '<td style="padding:7px 6px; font-family:monospace; font-size:11px;">' + e.num + '</td>' +
-      '<td style="padding:7px 6px; white-space:nowrap;">' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
-      '<td style="padding:7px 6px;">' + operador + '</td>' +
-      '<td style="padding:7px 6px; text-align:right;">' + hojasInit + '</td>' +
-      '<td style="padding:7px 6px; text-align:center;">' + (tieneCasse ? '<span style="color:#cc2222; font-weight:bold;">💥 Sí — ' + casseTotal + ' hj</span>' : '<span style="color:#888;">No</span>') + '</td>' +
-      '<td style="padding:7px 6px; text-align:right; font-weight:bold; color:' + (hojasConformes < e.feuilles ? '#cc2222' : '#00aa44') + ';">' + hojasConformes + '</td>' +
-      '<td style="padding:7px 6px;">' + (e.emp || '—') + '</td>' +
-      '<td style="padding:7px 6px;">' + estadoHtml + '</td>' +
-      (isGestionnaire && !estSorti ? '<td style="padding:4px;"><button onclick="removeContenantFromStock(\'' + (e.prod||'').replace(/'/g,"\\'") + '\',\'' + e.num.replace(/'/g,"\\'") + '\')" style="background:#cc2222; color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:13px; cursor:pointer;">🗑️</button></td>' : (isGestionnaire ? '<td></td>' : '')) +
+    tableHtml += '<tr style="background:' + bg + ';border-bottom:1px solid #E2E8F0;transition:background 0.1s;" onmouseover="this.style.background=\'#EFF6FF\'" onmouseout="this.style.background=\'' + bg + '\'">' +
+      '<td style="padding:8px 8px;font-weight:600;color:#1E40AF;white-space:nowrap;">' + (e.prod || '—') + '</td>' +
+      '<td style="padding:8px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#475569;">' + e.num + '</td>' +
+      '<td style="padding:8px;white-space:nowrap;color:#475569;">' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
+      '<td style="padding:8px;color:#475569;">' + operador + '</td>' +
+      '<td style="padding:8px;text-align:right;color:#0F172A;font-weight:600;">' + hojasInit + '</td>' +
+      '<td style="padding:8px;text-align:center;">' + (tieneCasse ? '<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">💥 ' + casseTotal + ' hj</span>' : '<span style="color:#94A3B8;font-size:12px;">—</span>') + '</td>' +
+      '<td style="padding:8px;text-align:right;font-weight:700;color:' + (hojasConformes < hojasInit ? '#DC2626' : '#059669') + ';">' + hojasConformes + '</td>' +
+      '<td style="padding:8px;color:#475569;">' + (e.emp || '<span style="color:#CBD5E1;">—</span>') + '</td>' +
+      '<td style="padding:8px;">' + estadoHtml + '</td>' +
+      (isGestionnaire && !estSorti ? '<td style="padding:4px 8px;"><button onclick="removeContenantFromStock(\'' + (e.prod||'').replace(/'/g,"\\'") + '\',\'' + e.num.replace(/'/g,"\\'") + '\')" style="background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:auto;margin:0;font-weight:600;">🗑️</button></td>' : (isGestionnaire ? '<td></td>' : '')) +
       '</tr>';
   });
 
   tableHtml += '</tbody></table>';
+  if (filtered.length === 0) tableHtml = '<div style="text-align:center;padding:40px;color:#94A3B8;font-size:14px;">🔍 Ningún resultado con los filtros actuales — <button onclick="stockColFilters={};renderStock();" style="background:none;border:none;color:#1E40AF;cursor:pointer;font-weight:600;width:auto;padding:0;margin:0;display:inline;font-size:14px;">Limpiar filtros</button></div>';
+
   document.getElementById('stockTableWrap').innerHTML = tableHtml;
   document.getElementById('stockList').innerHTML = '';
+
+  // Ferme les dropdowns au clic extérieur
+  setTimeout(() => {
+    if (stockDropdownOpen) {
+      document.onclick = () => { stockDropdownOpen = null; renderStock(); document.onclick = null; };
+    }
+  }, 100);
 }
 
 

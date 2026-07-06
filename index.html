@@ -1332,8 +1332,8 @@ function saveSalidaVenta() {
     const entry = DB.entrees.slice().reverse().find(e => e.num === num);
     if (!entry) return;
     const prod = entry.prod;
-    const feuilles = entry.feuilles;
-    const nb = entry.nb;
+    const feuilles = Number(entry.feuilles) || Number(entry.hojas) || 0;
+    const nb = Number(entry.nb) || 1;
 
     if (DB.stock[prod]) {
       DB.stock[prod].f = Math.max(0, DB.stock[prod].f - feuilles);
@@ -2308,9 +2308,11 @@ function imprimirFichaSalida(idx) {
     // Toutes les sorties avec le même pedido = même bon de sortie
     const mismoPedido = DB.sorties.filter(x => x.pedido === s.pedido);
     mismoPedido.forEach(x => {
-      lignes.push({ prod: x.prod, num: x.num, feuilles: x.feuilles || 0, nb: x.nb || 1 });
-      totalHojas += (x.feuilles || 0);
-      totalCajas += (x.nb || 1);
+      const f = Number(x.feuilles) || Number(x.hojas) || 0;
+      const n = Number(x.nb) || 1;
+      lignes.push({ prod: x.prod, num: x.num, feuilles: f, nb: n });
+      totalHojas += f;
+      totalCajas += n;
     });
   } else {
     // Sortie simple (Traspaso ou autre)

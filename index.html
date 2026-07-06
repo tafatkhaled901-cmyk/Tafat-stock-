@@ -1873,16 +1873,16 @@ function renderStock() {
     let dd = '';
     if (isOpen && vals) {
       const sel = stockColFilters[col] || new Set();
-      dd = '<div style="position:absolute;top:100%;left:0;min-width:180px;background:white;border:2px solid #1e40af;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:99999;font-size:12px;max-height:240px;overflow-y:auto;">' +
+      dd = '<div onclick="event.stopPropagation()" style="position:absolute;top:100%;left:0;min-width:190px;background:white;border:2px solid #1e40af;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:99999;font-size:12px;max-height:260px;overflow-y:auto;">' +
         '<div style="padding:8px;border-bottom:1px solid #eee;display:flex;gap:6px;">' +
-        '<button onclick="stockSelectAll(\'' + col + '\')" style="flex:1;padding:5px;background:#1e40af;color:white;border:none;border-radius:6px;font-size:11px;cursor:pointer;width:auto;margin:0;">✓ Todo</button>' +
-        '<button onclick="delete stockColFilters[\'' + col + '\'];stockDropdownOpen=null;renderStock();" style="flex:1;padding:5px;background:#f1f5f9;border:none;border-radius:6px;font-size:11px;cursor:pointer;color:#475569;width:auto;margin:0;">✕ Limpiar</button>' +
+        '<button onclick="event.stopPropagation();stockSelectAll(\'' + col + '\')" style="flex:1;padding:5px;background:#1e40af;color:white;border:none;border-radius:6px;font-size:11px;cursor:pointer;width:auto;margin:0;">✓ Todo</button>' +
+        '<button onclick="event.stopPropagation();delete stockColFilters[\'' + col + '\'];stockDropdownOpen=null;renderStock();" style="flex:1;padding:5px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;color:#475569;width:auto;margin:0;">✕ Limpiar</button>' +
         '</div>';
       vals.forEach(v => {
         const chk = !stockColFilters[col] || sel.has(v);
         const vs = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        dd += '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f8fafc;transition:background 0.1s;" onmouseover="this.style.background=\'#f0f4f8\'" onmouseout="this.style.background=\'white\'">' +
-          '<input type="checkbox"' + (chk ? ' checked' : '') + ' onchange="stockToggleVal(\'' + col + '\',\'' + vs + '\')" style="cursor:pointer;accent-color:#1e40af;">' +
+        dd += '<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f8fafc;">' +
+          '<input type="checkbox"' + (chk ? ' checked' : '') + ' onclick="event.stopPropagation();stockToggleVal(\'' + col + '\',\'' + vs + '\')" style="cursor:pointer;accent-color:#1e40af;width:15px;height:15px;">' +
           '<span style="font-size:12px;color:#0f172a;">' + v + '</span></label>';
       });
       dd += '</div>';
@@ -1957,13 +1957,6 @@ function renderStock() {
 
   document.getElementById('stockTableWrap').innerHTML = tableHtml;
   document.getElementById('stockList').innerHTML = '';
-
-  // Ferme les dropdowns au clic extérieur
-  setTimeout(() => {
-    if (stockDropdownOpen) {
-      document.onclick = () => { stockDropdownOpen = null; renderStock(); document.onclick = null; };
-    }
-  }, 100);
 }
 
 

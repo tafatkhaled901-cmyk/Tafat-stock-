@@ -4,174 +4,346 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VerreStock Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #ffffff;
-    color: #000000;
-    margin: 0;
-    padding: 0;
+  :root {
+    --bg:        #F0F4F8;
+    --surface:   #FFFFFF;
+    --sidebar:   #0F172A;
+    --sidebar2:  #1E293B;
+    --accent:    #1E40AF;
+    --accent2:   #3B82F6;
+    --green:     #059669;
+    --red:       #DC2626;
+    --orange:    #D97706;
+    --purple:    #7C3AED;
+    --text:      #0F172A;
+    --text2:     #475569;
+    --text3:     #94A3B8;
+    --border:    #E2E8F0;
+    --radius:    10px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
   }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── PAGES ── */
   .page { display: none; }
   .page.active { display: block; }
-  /* Login styles */
+
+  /* ── LOGIN ── */
   #login {
-    background-color: #f4f6f9;
+    background: linear-gradient(135deg, #0F172A 0%, #1E40AF 100%);
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     padding: 20px;
   }
   .login-container {
-    background-color: #ffffff;
+    background: var(--surface);
     width: 100%;
-    max-width: 400px;
-    padding: 30px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    max-width: 420px;
+    padding: 40px 32px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
   }
-  .login-header { text-align: center; margin-bottom: 25px; }
-  .login-header h1 { font-size: 24px; color: #1e293b; margin-bottom: 5px; }
-  .login-header p { font-size: 14px; color: #64748b; }
-  .input-group { margin-bottom: 20px; }
-  .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px; }
-  .input-group input { width: 100%; height: 54px; padding: 0 15px; font-size: 16px; border: 2px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
-  .input-group input:focus { border-color: #2563eb; }
-  .btn-login { width: 100%; height: 56px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; }
-  .btn-login:active { background-color: #1d4ed8; }
-  #loginError { color: #cc2222; text-align: center; font-size: 14px; margin-top: 10px; display: none; }
+  .login-header { text-align: center; margin-bottom: 32px; }
+  .login-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .login-header p { font-size: 14px; color: var(--text2); }
+  .login-logo {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #1E40AF, #3B82F6);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 14px rgba(30,64,175,0.35);
+  }
+  .input-group { margin-bottom: 18px; }
+  .input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .input-group input {
+    width: 100%;
+    height: 50px;
+    padding: 0 16px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .input-group input:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    background: white;
+  }
+  .btn-login {
+    width: 100%;
+    height: 52px;
+    background: linear-gradient(135deg, #1E40AF, #3B82F6);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-login:active { opacity: 0.9; transform: scale(0.99); }
+  #loginError {
+    color: var(--red);
+    text-align: center;
+    font-size: 13px;
+    margin-top: 12px;
+    padding: 10px;
+    background: #FEF2F2;
+    border-radius: 8px;
+    display: none;
+  }
   #loginError.visible { display: block; }
-  h1 { text-align: center; color: #0055cc; margin:0; }
-  h2 { color: #0055cc; border-bottom: 2px solid #0055cc; padding-bottom: 5px; }
+
+  /* ── TOPNAV ── */
+  .topnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--sidebar);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 56px;
+    gap: 8px;
+    z-index: 100;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .topnav button {
+    margin: 0;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    width: auto;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: background 0.15s;
+  }
+  .topnav button:hover { background: rgba(255,255,255,0.14); }
+  .topnav button:active { background: rgba(255,255,255,0.2); }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 220px;
+    background: var(--sidebar);
+    min-height: calc(100vh - 56px);
+    padding: 16px 0;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .sidebar-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 11px 20px;
+    background: transparent;
+    color: rgba(255,255,255,0.65);
+    border: none;
+    border-radius: 0;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    margin: 1px 0;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    letter-spacing: 0.1px;
+  }
+  .sidebar-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.9);
+  }
+  .sidebar-btn.active {
+    background: rgba(59,130,246,0.15);
+    border-left-color: #3B82F6;
+    color: #93C5FD;
+    font-weight: 600;
+  }
+  .sidebar-label {
+    padding: 12px 20px 4px;
+    color: rgba(255,255,255,0.25);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 600;
+  }
+
+  /* ── APP CONTENT ── */
+  .app-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* ── HEADINGS ── */
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+
+  /* ── BUTTONS ── */
   button {
     display: block;
     width: 100%;
-    padding: 15px;
-    margin: 10px 0;
+    padding: 13px 18px;
+    margin: 8px 0;
     border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
   }
-  .btn-blue { background-color: #0055cc; color: white; }
-  .btn-green { background-color: #00aa44; color: white; }
-  .btn-red { background-color: #cc2222; color: white; }
-  .btn-orange { background-color: #cc6600; color: white; }
-  .btn-user {
-    background-color: #f0f0f0;
-    color: #000;
-    text-align: left;
-    border: 1px solid #ccc;
-  }
-  input {
+  button:active { opacity: 0.85; transform: scale(0.99); }
+
+  .btn-blue   { background: var(--accent); color: white; }
+  .btn-green  { background: var(--green); color: white; }
+  .btn-red    { background: var(--red); color: white; }
+  .btn-orange { background: var(--orange); color: white; }
+
+  /* ── INPUTS ── */
+  input, select {
     display: block;
     width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 16px;
+    padding: 11px 14px;
+    margin: 6px 0 14px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
     box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
   }
+  input:focus, select:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    background: white;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  /* ── CARDS ── */
   .card {
-    background-color: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
     margin: 8px 0;
+    box-shadow: var(--shadow);
   }
+
+  /* ── KPI ── */
   .kpi {
     display: inline-block;
-    background-color: #e8f0ff;
-    border-radius: 8px;
-    padding: 10px 20px;
-    margin: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    margin: 4px;
     font-size: 18px;
-    font-weight: bold;
-    color: #0055cc;
+    font-weight: 700;
+    color: var(--accent);
+    box-shadow: var(--shadow);
   }
+
+  /* ── MODALS ── */
   .modal {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: white;
-    padding: 20px;
+    background: var(--surface);
+    padding: 24px 20px;
     overflow-y: auto;
     z-index: 999;
   }
-  /* BARRE DE NAVIGATION EN HAUT */
-  .topnav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    background-color: #0055cc;
-    display: flex;
-    align-items: center;
-    padding: 6px 8px;
-    gap: 4px;
-    z-index: 100;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  }
-  .topnav .nav-left {
-    display: flex;
-    gap: 4px;
-    flex: 1;
-    flex-wrap: wrap;
-  }
-  .topnav .nav-right {
-    margin-left: 10px;
-    border-left: 2px solid rgba(255,255,255,0.3);
-    padding-left: 10px;
-  }
-  .topnav button {
-    margin: 0;
-    padding: 8px 10px;
+  .modal h2 { margin-bottom: 20px; }
+
+  /* ── SYNC INDICATOR ── */
+  #syncStatus {
     font-size: 11px;
-    width: auto;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.15);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.3);
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
   }
-  .topnav button:active { background: rgba(255,255,255,0.3); }
-  .topnav .btn-nueva {
-    background-color: #00aa44;
-    border-color: #00aa44;
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-  /* Contenu principal avec marge pour la topnav */
-  .app-content {
-    padding: 70px 16px 20px 16px;
-  }
-  .pindot {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background-color: #ccc;
-    margin: 0 5px;
-  }
-  .pindot.filled { background-color: #0055cc; }
-  .pinkey {
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    color: #0055cc;
-    font-size: 20px;
-    font-weight: bold;
-    padding: 18px;
-    border-radius: 8px;
-    cursor: pointer;
-  }
+  #syncStatus.synced  { background: rgba(5,150,105,0.2); color: #34D399; }
+  #syncStatus.syncing { background: rgba(245,158,11,0.2); color: #FCD34D; }
+  #syncStatus.error   { background: rgba(220,38,38,0.2);  color: #FCA5A5; }
 </style>
 </head>
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div id="login" style="display:flex; flex-wrap:wrap; background:#f4f6f9; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
+<div id="login" style="display:flex; flex-wrap:wrap; background:linear-gradient(135deg,#0F172A 0%,#1E40AF 100%); justify-content:center; align-items:center; min-height:100vh; padding:20px;">
   <div class="login-container">
     <div class="login-header">
-      <h1>🪟 VerreStock Pro</h1>
-      <p>Identifíquese para continuar</p>
+      <div class="login-logo">🪟</div>
+      <h1>VerreStock Pro</h1>
+      <p>Sistema de gestión de almacén</p>
     </div>
     <div class="input-group">
       <label for="usernameInput">Nombre de usuario / Operador</label>
@@ -190,27 +362,26 @@
 <div id="app" style="display:none;">
 
   <!-- BARRE TOP -->
-  <div class="topnav" style="justify-content:space-between;">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <button onclick="toggleSidebar()" style="background:none; border:none; color:white; font-size:22px; width:auto; padding:4px 8px;">☰</button>
-      <span style="color:white; font-weight:bold; font-size:16px;">🪟 VerreStock Pro</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span id="userInfo" style="color:rgba(255,255,255,0.8); font-size:12px;"></span>
-      <button onclick="logout()" style="background:#cc2222; border:none; color:white; border-radius:6px; padding:6px 12px; font-size:12px; width:auto;">Salir</button>
-    </div>
+  <div class="topnav">
+    <button onclick="toggleSidebar()" style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:20px; width:auto; padding:4px 10px; margin:0;">☰</button>
+    <span style="color:white; font-weight:700; font-size:15px; letter-spacing:-0.3px; flex:1;">🪟 VerreStock Pro</span>
+    <span id="syncStatus" class="synced" style="font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500; background:rgba(5,150,105,0.2); color:#34D399; white-space:nowrap;">● Sync</span>
+    <span id="userInfo" style="color:rgba(255,255,255,0.55); font-size:12px; margin:0 8px; white-space:nowrap; overflow:hidden; max-width:120px; text-overflow:ellipsis;"></span>
+    <button onclick="logout()" style="background:rgba(220,38,38,0.18); border:1px solid rgba(220,38,38,0.25); color:#FCA5A5; width:auto; padding:6px 14px; font-size:12px; border-radius:8px; margin:0;">Salir</button>
   </div>
 
   <!-- LAYOUT PRINCIPAL -->
-  <div style="display:flex; padding-top:52px; min-height:100vh;">
+  <div style="display:flex; padding-top:56px; min-height:100vh;">
 
     <!-- MENÚ LATERAL -->
-    <div id="sidebar" style="width:200px; background:#1e293b; min-height:calc(100vh - 52px); padding:16px 0; flex-shrink:0; transition:width 0.2s;">
-      <button onclick="showEntradaOptions()" class="sidebar-btn" id="sb-entrada" style="background:#00aa44; color:white; font-weight:bold; font-size:15px; border-left:3px solid #00cc55; margin-bottom:8px;">📥 Entrada</button>
+    <div id="sidebar" style="width:220px; background:#0F172A; min-height:calc(100vh - 56px); padding:12px 0; flex-shrink:0; transition:width 0.2s; border-right:1px solid rgba(255,255,255,0.05);">
+      <div class="sidebar-label">Operaciones</div>
+      <button onclick="showEntradaOptions()" class="sidebar-btn" id="sb-entrada" style="color:#86EFAC; font-weight:600; border-left-color:#059669;">📥 Entrada</button>
       <button onclick="goto('sorties')" class="sidebar-btn" id="sb-sorties">📤 Salida</button>
-      <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse">💥 Casse</button>
+      <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse" style="color:rgba(255,255,255,0.65);">💥 Casse</button>
+      <div class="sidebar-label" style="margin-top:8px;">Consultas</div>
       <button onclick="goto('stock')" class="sidebar-btn" id="sb-stock">🪟 Stock Global</button>
-      <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">🕓 Historial</button>
+      <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">📒 Historial</button>
       <div id="sbMagasinero" style="display:none;">
         <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Magasinero</div>
         <button onclick="openModal('modalCorreccion')" class="sidebar-btn" style="color:#ffcc44;">⚠️ Corrección Error</button>
@@ -738,8 +909,23 @@ function saveDB() {
 }
 
 let syncTimer = null;
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const states = {
+    synced:  { text: '● Sincronizado', bg: 'rgba(5,150,105,0.2)', color: '#34D399' },
+    syncing: { text: '↻ Sincronizando', bg: 'rgba(245,158,11,0.2)', color: '#FCD34D' },
+    error:   { text: '✕ Sin conexión', bg: 'rgba(220,38,38,0.2)', color: '#FCA5A5' }
+  };
+  const s = states[state] || states.synced;
+  el.textContent = s.text;
+  el.style.background = s.bg;
+  el.style.color = s.color;
+}
+
 function syncToSheets() {
   clearTimeout(syncTimer);
+  setSyncStatus('syncing');
   syncTimer = setTimeout(() => {
     const payload = {
       stock: DB.stock,
@@ -755,7 +941,9 @@ function syncToSheets() {
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload)
-    }).catch(e => console.warn('Sync Sheets echouee:', e));
+    })
+    .then(() => setSyncStatus('synced'))
+    .catch(e => { setSyncStatus('error'); console.warn('Sync Sheets echouee:', e); });
   }, 500);
 }
 

@@ -1627,12 +1627,16 @@ function saveSortie() {
 function getContenantsActifs(prod) {
   return DB.entrees
     .filter(e => e.prod === prod)
-    .filter(e => !DB.sorties.some(s => s.num === e.num)) // exclut ceux déja sortis
+    .filter(e => !DB.sorties.some(s => s.num === e.num))
     .map(e => {
+      const hojasInit = Number(e.feuilles) || 0;
       const casseTotal = DB.casses
         .filter(c => c.num === e.num)
-        .reduce((sum, c) => sum + c.qty, 0);
-      return Object.assign({}, e, { hojas: Math.max(0, e.hojas - casseTotal) });
+        .reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
+      return Object.assign({}, e, {
+        feuilles: hojasInit,
+        hojasConformes: Math.max(0, hojasInit - casseTotal)
+      });
     });
 }
 
@@ -1645,7 +1649,8 @@ function renderStock() {
     '<div class="kpi">' + totC + ' cajas</div>';
 
   // Construire le tableau Excel complet à partir de toutes les entrées
-  const allEntries = DB.entrees;
+  // Tri décroissant : plus récent en premier
+  const allEntries = DB.entrees.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   if (allEntries.length === 0) {
     document.getElementById('stockTableWrap').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Sin stock</p>';
     document.getElementById('stockList').innerHTML = '';
@@ -1670,8 +1675,9 @@ function renderStock() {
     '</tr></thead><tbody>';
 
   allEntries.forEach((e, idx) => {
-    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + c.qty, 0);
-    const hojasConformes = Math.max(0, e.feuilles - casseTotal);
+    const hojasInit = Number(e.feuilles) || 0;
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + (Number(c.qty) || 0), 0);
+    const hojasConformes = Math.max(0, hojasInit - casseTotal);
     const tieneCasse = casseTotal > 0;
     const estSorti = DB.sorties.some(s => s.num === e.num);
     const sortie = DB.sorties.find(s => s.num === e.num);
@@ -1687,7 +1693,7 @@ function renderStock() {
       '<td style="padding:7px 6px; font-family:monospace; font-size:11px;">' + e.num + '</td>' +
       '<td style="padding:7px 6px; white-space:nowrap;">' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
       '<td style="padding:7px 6px;">' + operador + '</td>' +
-      '<td style="padding:7px 6px; text-align:right;">' + e.feuilles + '</td>' +
+      '<td style="padding:7px 6px; text-align:right;">' + hojasInit + '</td>' +
       '<td style="padding:7px 6px; text-align:center;">' + (tieneCasse ? '<span style="color:#cc2222; font-weight:bold;">💥 Sí — ' + casseTotal + ' hj</span>' : '<span style="color:#888;">No</span>') + '</td>' +
       '<td style="padding:7px 6px; text-align:right; font-weight:bold; color:' + (hojasConformes < e.feuilles ? '#cc2222' : '#00aa44') + ';">' + hojasConformes + '</td>' +
       '<td style="padding:7px 6px;">' + (e.emp || '—') + '</td>' +
@@ -1891,7 +1897,7 @@ function exportStockCSV() {
 function exportHistoriqueCSV() {
   const headers = ['Fecha', 'Hora', 'Operador', 'Operación', 'Referencia', 'N° Lote', 'Detalle', 'Cantidad', 'Saldo'];
 
-  let mvts = DB.mouvements.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  let mvts = DB.mouvements.slice().sort((a, b) => new Date(b.date) - new Date(a.date)); // tri décroissant
   let solde = 0;
   const rows = mvts.map(m => {
     const d = new Date(m.date);
@@ -2201,7 +2207,7 @@ function renderGrandLivre() {
   const activeTypes = [...document.querySelectorAll('#glTypeFilters input:checked')].map(i => i.value);
 
   // Filtre les mouvements
-  let mvts = DB.mouvements.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  let mvts = DB.mouvements.slice().sort((a, b) => new Date(b.date) - new Date(a.date)); // tri décroissant
 
   if (dateFrom) mvts = mvts.filter(m => m.date >= dateFrom);
   if (dateTo)   mvts = mvts.filter(m => m.date <= dateTo + 'T23:59:59');

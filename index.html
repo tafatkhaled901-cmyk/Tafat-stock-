@@ -2087,8 +2087,31 @@ function addCorrection(originalMvtIndex, reason, qty) {
 }
 
 // ═══ FILTRES EXCEL PAR COLONNE ═══
-let glColFilters = {}; // { colonne: Set de valeurs sélectionnées }
-let glDropdownOpen = null; // colonne dont le dropdown est ouvert
+let glColFilters = {};
+let glDropdownOpen = null;
+
+// ── Variables filtres Stock ──
+let stockColFilters = {};
+let stockDropdownOpen = null;
+
+function stockToggleDropdown(col, event) {
+  event.stopPropagation();
+  stockDropdownOpen = stockDropdownOpen === col ? null : col;
+  renderStock();
+}
+
+function stockToggleVal(col, val) {
+  if (!stockColFilters[col]) stockColFilters[col] = new Set();
+  if (stockColFilters[col].has(val)) stockColFilters[col].delete(val);
+  else stockColFilters[col].add(val);
+  renderStock();
+}
+
+function stockSelectAll(col) {
+  delete stockColFilters[col];
+  stockDropdownOpen = null;
+  renderStock();
+}
 
 // ═══════════════════════════════════════════════════════════
 // EXPORT EXCEL (CSV) ET PDF

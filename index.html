@@ -664,7 +664,22 @@
     <div style="font-size:12px; color:#888; margin-top:6px;">Escanee cada lote uno a uno</div>
   </div>
 
-  <!-- Liste des conteneurs scannés -->
+  <!-- Informations auto-remplies après scan -->
+  <div id="ventaInfoAuto" style="display:none; background:#f0f9ff; border:2px solid #0055cc; border-radius:10px; padding:12px; margin:8px 0;">
+    <div style="font-size:12px; color:#0055cc; font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">📦 Información del producto escaneado</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <div>
+        <div style="font-size:11px; color:#888; margin-bottom:2px;">Referencia</div>
+        <input type="text" id="ventaRefProd" placeholder="Auto" style="background:white; font-weight:600; color:#0055cc;" readonly>
+      </div>
+      <div>
+        <div style="font-size:11px; color:#888; margin-bottom:2px;">N° Lote</div>
+        <input type="text" id="ventaLoteInfo" placeholder="Auto" style="background:white; font-family:monospace; font-size:12px;" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des lotes scannés -->
   <div id="ventaScannedList" style="margin:8px 0;"></div>
 
   <!-- Bouton scan -->
@@ -740,15 +755,24 @@
 <!-- ═══ MODAL TRASPASO DE ALMACÉN ═══ -->
 <div class="modal" id="modalTraspaso">
   <h2>🚛 Traspaso de Almacén</h2>
+
   <label>Almacén destino (ciudad)</label>
   <input type="text" id="traspasoDest" placeholder="ej: Madrid, Barcelona, Sevilla...">
+
   <label>N° Lote</label>
   <div style="display:flex; gap:8px">
-    <input type="text" id="traspasoNum" placeholder="ej: 22325100518C" style="flex:1">
+    <input type="text" id="traspasoNum" placeholder="ej: 22325100518C" style="flex:1" oninput="autofillTraspasoProd()">
     <button onclick="openScanner('traspasoNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
   </div>
+
+  <!-- Référence auto-remplie -->
+  <label>Referencia del producto <span style="color:#0055cc; font-size:11px; font-weight:normal;">(auto)</span></label>
+  <input type="text" id="traspasoProd" placeholder="Se rellena automáticamente al escanear" style="background:#f0f9ff; font-weight:600; color:#0055cc;" readonly>
+  <div id="traspasoProdHint" style="font-size:12px; color:#0055cc; margin-top:-10px; margin-bottom:8px;"></div>
+
   <label>Número de cajas a transferir</label>
   <input type="number" id="traspasoCajas" value="1" min="1">
+
   <div id="traspasoWarning" style="color:#cc6600; font-size:13px; margin:8px 0; display:none;"></div>
   <button class="btn-blue" onclick="saveTraspaso()">✓ Confirmar Traspaso</button>
   <button class="btn-red" onclick="closeModal('modalTraspaso')">Cancelar</button>
@@ -1197,6 +1221,12 @@ function resetVentaCounter() {
   document.getElementById('ventaBtnConfirm').style.display = 'none';
   document.getElementById('ventaBtnIniciar').style.display = 'block';
   document.getElementById('ventaScannedList').innerHTML = '';
+  const infoDiv = document.getElementById('ventaInfoAuto');
+  if (infoDiv) infoDiv.style.display = 'none';
+  const refEl = document.getElementById('ventaRefProd');
+  const loteEl = document.getElementById('ventaLoteInfo');
+  if (refEl) refEl.value = '';
+  if (loteEl) loteEl.value = '';
 }
 
 function iniciarVenta() {
@@ -1243,20 +1273,17 @@ function openScannerVenta() {
 }
 
 function ventaOnCodeScanned(code) {
-  // Vérifier que ce conteneur existe en stock
   const entry = DB.entrees.slice().reverse().find(e => e.num === code);
   if (!entry) {
     alert('⚠️ Lote ' + code + ' no encontrado en recepciones.');
     return;
   }
 
-  // Vérifier que ce conteneur n'a pas déjà été scanné dans cette vente
   if (ventaScannedNums.includes(code)) {
     alert('⛔ El lote ' + code + ' ya fue escaneado en esta venta.');
     return;
   }
 
-  // Vérifier qu'il est en stock
   const dejaSorti = DB.sorties.some(s => s.num === code);
   if (dejaSorti) {
     alert('⛔ El lote ' + code + ' ya fue RETIRADO del stock.');
@@ -1267,14 +1294,24 @@ function ventaOnCodeScanned(code) {
   ventaRestantes--;
   document.getElementById('ventaContadorNum').textContent = ventaRestantes;
 
-  // Mise à jour de la liste des conteneurs scannés
+  // Affiche les infos du produit scanné (référence + lote)
+  const infoDiv = document.getElementById('ventaInfoAuto');
+  const refEl = document.getElementById('ventaRefProd');
+  const loteEl = document.getElementById('ventaLoteInfo');
+  if (infoDiv) infoDiv.style.display = 'block';
+  if (refEl) refEl.value = entry.prod || '—';
+  if (loteEl) loteEl.value = code;
+
+  // Liste des lotes scannés
   const list = document.getElementById('ventaScannedList');
-  list.innerHTML += '<div style="padding:6px 10px; background:#e8f5e9; border-radius:6px; margin:4px 0; font-size:13px;">✅ ' + code + ' · ' + entry.prod + ' · ' + entry.feuilles + ' hojas</div>';
+  list.innerHTML += '<div style="padding:8px 12px; background:#D1FAE5; border-left:3px solid #059669; border-radius:6px; margin:4px 0; font-size:13px;">' +
+    '✅ <strong style="color:#065F46;">' + (entry.prod || '—') + '</strong> · ' +
+    '<span style="font-family:monospace;">' + code + '</span> · ' +
+    (entry.feuilles || 0) + ' hojas</div>';
 
   if (ventaRestantes <= 0) {
-    // Tous scannés — on peut confirmer
     document.getElementById('ventaContadorNum').textContent = '✓';
-    document.getElementById('ventaContadorNum').style.color = '#00aa44';
+    document.getElementById('ventaContadorNum').style.color = '#059669';
     document.getElementById('ventaBtnScan').style.display = 'none';
     document.getElementById('ventaBtnConfirm').style.display = 'block';
   }
@@ -1364,6 +1401,11 @@ function saveTraspaso() {
   closeModal('modalTraspaso');
   document.getElementById('traspasoNum').value = '';
   document.getElementById('traspasoDest').value = '';
+  document.getElementById('traspasoCajas').value = '1';
+  const tpEl = document.getElementById('traspasoProd');
+  const thEl = document.getElementById('traspasoProdHint');
+  if (tpEl) tpEl.value = '';
+  if (thEl) thEl.innerHTML = '';
   document.getElementById('traspasoCajas').value = '1';
 
   renderSorties();
@@ -1464,6 +1506,22 @@ function saveCorreccion() {
   document.getElementById('corrQty').value = '1';
 
   alert('✓ Corrección registrada\n' + (tipo === '+' ? '+' : '-') + qty + ' hojas · ' + motivo + '\n\nEl registro original NO ha sido modificado.');
+}
+
+// Auto-remplit la référence produit dans Traspaso depuis le N° Lote
+function autofillTraspasoProd() {
+  const num = document.getElementById('traspasoNum').value.trim();
+  const prodEl = document.getElementById('traspasoProd');
+  const hintEl = document.getElementById('traspasoProdHint');
+  if (!num || !prodEl) return;
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (entry && entry.prod) {
+    prodEl.value = entry.prod;
+    if (hintEl) hintEl.innerHTML = '<span style="color:#059669;">✓ ' + entry.feuilles + ' hojas · ' + entry.nb + ' caja(s)</span>';
+  } else {
+    prodEl.value = '';
+    if (hintEl) hintEl.innerHTML = '<span style="color:#D97706;">⚠️ Lote no encontrado en recepciones</span>';
+  }
 }
 
 function autofillCasseProd() {
@@ -2860,6 +2918,7 @@ function acceptCode(field, code) {
   if (el) el.value = code;
   if (field === 'recProd') onProdChange();
   if (field === 'casseNum') autofillCasseProd();
+  if (field === 'traspasoNum') autofillTraspasoProd();
   if (field === 'histNum' || field === 'glLote') renderGrandLivre();
   if (field === 'stockLoteSearch') searchStockByLote();
 

@@ -1797,24 +1797,64 @@ function renderSorties() {
     document.getElementById('sortieList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay salidas registradas</p>';
     return;
   }
-  let html = '';
+
+  // Regroupe les sorties Venta par pedido, les autres restent individuelles
+  const groupes = [];
+  const pedidosVus = new Set();
+
   DB.sorties.slice().reverse().forEach((s, idx) => {
     const realIdx = DB.sorties.length - 1 - idx;
-    const tipo = s.tipo || 'Salida';
-    const colorTipo = tipo === 'Venta' ? '#cc6600' : tipo === 'Traspaso' ? '#0055cc' : tipo === 'Retorno' ? '#9c27b0' : '#555';
-    html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
-      '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
-      '<div>' +
-      '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + tipo + '</span> ' +
-      '<strong style="color:#0055cc;">' + (s.prod || '—') + '</strong><br>' +
-      '<span style="font-family:monospace; font-size:12px;">N° ' + s.num + '</span> · -' + (s.feuilles || 0) + ' hojas<br>';
-    if (s.pedido) html += '📋 <strong>' + s.pedido + '</strong><br>';
-    if (s.client) html += '<span style="color:#888;">👤 ' + s.client + '</span><br>';
-    html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(s.date).toLocaleString('es-ES') + '</span>' +
-      '</div>' +
-      '<button onclick="imprimirFichaSalida(' + realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px;">🖨️ Fiche</button>' +
-      '</div></div>';
+    if (s.tipo === 'Venta' && s.pedido) {
+      if (!pedidosVus.has(s.pedido)) {
+        pedidosVus.add(s.pedido);
+        const toutes = DB.sorties.filter(x => x.pedido === s.pedido);
+        const totalHojas = toutes.reduce((sum, x) => sum + (Number(x.feuilles)||Number(x.hojas)||0), 0);
+        const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
+        groupes.push({ type: 'groupe', sorties: toutes, pedido: s.pedido, client: s.client, date: s.date, totalHojas, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
+      }
+    } else {
+      groupes.push({ type: 'simple', s, realIdx });
+    }
   });
+
+  let html = '';
+  groupes.forEach(g => {
+    if (g.type === 'groupe') {
+      const colorTipo = '#D97706';
+      html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+        '<div style="flex:1;">' +
+        '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">Venta</span> ' +
+        '<strong>📋 Pedido: ' + g.pedido + '</strong><br>';
+      // Liste des produits
+      g.sorties.forEach(x => {
+        const f = Number(x.feuilles)||Number(x.hojas)||0;
+        html += '<span style="font-size:12px; color:#475569;">• <strong style="color:#1E40AF;">' + (x.prod||'—') + '</strong> · <span style="font-family:monospace;">' + x.num + '</span> · <strong style="color:#D97706;">' + f + ' hojas</strong></span><br>';
+      });
+      html += '<span style="font-size:13px; font-weight:bold; color:#D97706;">Total: ' + g.totalCajas + ' cajas · ' + g.totalHojas + ' hojas</span><br>';
+      if (g.client) html += '<span style="color:#888; font-size:12px;">👤 ' + g.client + '</span><br>';
+      html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(g.date).toLocaleString('es-ES') + '</span>' +
+        '</div>' +
+        '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px; flex-shrink:0;">🖨️ Fiche</button>' +
+        '</div></div>';
+    } else {
+      const s = g.s;
+      const tipo = s.tipo || 'Salida';
+      const colorTipo = tipo === 'Traspaso' ? '#1E40AF' : tipo === 'Retorno' ? '#7C3AED' : '#555';
+      html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+        '<div>' +
+        '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + tipo + '</span> ' +
+        '<strong style="color:#1E40AF;">' + (s.prod || '—') + '</strong><br>' +
+        '<span style="font-family:monospace; font-size:12px;">' + s.num + '</span> · <strong style="color:#D97706;">-' + (Number(s.feuilles)||Number(s.hojas)||0) + ' hojas</strong><br>';
+      if (s.client) html += '<span style="color:#888;">👤 ' + s.client + '</span><br>';
+      html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(s.date).toLocaleString('es-ES') + '</span>' +
+        '</div>' +
+        '<button onclick="imprimirFichaSalida(' + g.realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px;">🖨️ Fiche</button>' +
+        '</div></div>';
+    }
+  });
+
   document.getElementById('sortieList').innerHTML = html;
 }
 

@@ -1960,9 +1960,10 @@ function renderSorties() {
     return;
   }
 
-  // Regroupe les sorties Venta par pedido, les autres restent individuelles
+  // Regroupe Venta par pedido ET Traspaso par destination+minute
   const groupes = [];
   const pedidosVus = new Set();
+  const traspasosVus = new Set();
 
   DB.sorties.slice().reverse().forEach((s, idx) => {
     const realIdx = DB.sorties.length - 1 - idx;
@@ -1973,6 +1974,16 @@ function renderSorties() {
         const totalHojas = toutes.reduce((sum, x) => sum + (Number(x.feuilles)||Number(x.hojas)||0), 0);
         const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
         groupes.push({ type: 'groupe', sorties: toutes, pedido: s.pedido, client: s.client, date: s.date, totalHojas, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
+      }
+    } else if (s.tipo === 'Traspaso' && s.client) {
+      const key = s.client + '_' + (s.date || '').slice(0, 16);
+      if (!traspasosVus.has(key)) {
+        traspasosVus.add(key);
+        const dateMin = (s.date || '').slice(0, 16);
+        const toutes = DB.sorties.filter(x => x.tipo === 'Traspaso' && x.client === s.client && (x.date||'').slice(0,16) === dateMin);
+        const totalHojas = toutes.reduce((sum, x) => sum + (Number(x.feuilles)||Number(x.hojas)||0), 0);
+        const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
+        groupes.push({ type: 'traspaso', sorties: toutes, dest: s.client, date: s.date, totalHojas, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
       }
     } else {
       groupes.push({ type: 'simple', s, realIdx });
@@ -1988,7 +1999,6 @@ function renderSorties() {
         '<div style="flex:1;">' +
         '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">Venta</span> ' +
         '<strong>📋 Pedido: ' + g.pedido + '</strong><br>';
-      // Liste des produits
       g.sorties.forEach(x => {
         const f = Number(x.feuilles)||Number(x.hojas)||0;
         html += '<span style="font-size:12px; color:#475569;">• <strong style="color:#1E40AF;">' + (x.prod||'—') + '</strong> · <span style="font-family:monospace;">' + x.num + '</span> · <strong style="color:#D97706;">' + f + ' hojas</strong></span><br>';
@@ -1999,10 +2009,25 @@ function renderSorties() {
         '</div>' +
         '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px; flex-shrink:0;">🖨️ Fiche</button>' +
         '</div></div>';
+    } else if (g.type === 'traspaso') {
+      html += '<div class="card" style="border-left:3px solid #1E40AF;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+        '<div style="flex:1;">' +
+        '<span style="background:#1E40AF; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">Traspaso</span> ' +
+        '<strong>🚛 Destino: ' + g.dest + '</strong><br>';
+      g.sorties.forEach(x => {
+        const f = Number(x.feuilles)||Number(x.hojas)||0;
+        html += '<span style="font-size:12px; color:#475569;">• <strong style="color:#1E40AF;">' + (x.prod||'—') + '</strong> · <span style="font-family:monospace;">' + x.num + '</span> · <strong style="color:#1E40AF;">' + f + ' hojas</strong></span><br>';
+      });
+      html += '<span style="font-size:13px; font-weight:bold; color:#1E40AF;">Total: ' + g.totalCajas + ' cajas · ' + g.totalHojas + ' hojas</span><br>';
+      html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(g.date).toLocaleString('es-ES') + '</span>' +
+        '</div>' +
+        '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px; flex-shrink:0;">🖨️ Fiche</button>' +
+        '</div></div>';
     } else {
       const s = g.s;
       const tipo = s.tipo || 'Salida';
-      const colorTipo = tipo === 'Traspaso' ? '#1E40AF' : tipo === 'Retorno' ? '#7C3AED' : '#555';
+      const colorTipo = tipo === 'Retorno' ? '#7C3AED' : '#555';
       html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
         '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
         '<div>' +
@@ -2501,15 +2526,32 @@ function imprimirFichaSalida(idx) {
   const tipo = s.tipo || 'Salida';
   const fecha = new Date(s.date).toLocaleString('es-ES');
 
-  // Regroupe toutes les sorties du même pedido (Salida Venta multi-caisses)
   let lignes = [];
   let totalHojas = 0;
   let totalCajas = 0;
+  let docRef = '';
 
   if (s.pedido) {
-    // Toutes les sorties avec le même pedido = même bon de sortie
-    const mismoPedido = DB.sorties.filter(x => x.pedido === s.pedido);
-    mismoPedido.forEach(x => {
+    // Salida Venta — regroupe par pedido
+    docRef = 'N° Pedido : ' + s.pedido;
+    const groupe = DB.sorties.filter(x => x.pedido === s.pedido);
+    groupe.forEach(x => {
+      const f = Number(x.feuilles) || Number(x.hojas) || 0;
+      const n = Number(x.nb) || 1;
+      lignes.push({ prod: x.prod, num: x.num, feuilles: f, nb: n });
+      totalHojas += f;
+      totalCajas += n;
+    });
+  } else if (tipo === 'Traspaso' && s.client) {
+    // Traspaso — regroupe par destination + date (même minute)
+    docRef = 'Destino : ' + s.client;
+    const dateMin = s.date.slice(0, 16); // YYYY-MM-DDTHH:MM
+    const groupe = DB.sorties.filter(x =>
+      x.tipo === 'Traspaso' &&
+      x.client === s.client &&
+      x.date && x.date.slice(0, 16) === dateMin
+    );
+    groupe.forEach(x => {
       const f = Number(x.feuilles) || Number(x.hojas) || 0;
       const n = Number(x.nb) || 1;
       lignes.push({ prod: x.prod, num: x.num, feuilles: f, nb: n });
@@ -2517,10 +2559,10 @@ function imprimirFichaSalida(idx) {
       totalCajas += n;
     });
   } else {
-    // Sortie simple (Traspaso ou autre)
-    lignes.push({ prod: s.prod, num: s.num, feuilles: s.feuilles || 0, nb: s.nb || 1 });
-    totalHojas = s.feuilles || 0;
-    totalCajas = s.nb || 1;
+    // Autre sortie simple
+    lignes.push({ prod: s.prod, num: s.num, feuilles: Number(s.feuilles)||0, nb: Number(s.nb)||1 });
+    totalHojas = Number(s.feuilles) || 0;
+    totalCajas = Number(s.nb) || 1;
   }
 
   // Tableau des lignes produits
@@ -2568,8 +2610,8 @@ function imprimirFichaSalida(idx) {
     </div>
 
     <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
-      ${s.pedido ? `<tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; width:35%; border:1px solid #ddd;">N° Pedido</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; font-weight:bold;">${s.pedido}</td></tr>` : ''}
-      ${s.client ? `<tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Cliente / Destino</td><td style="padding:10px; border:1px solid #ddd;">${s.client}</td></tr>` : ''}
+      ${docRef ? `<tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; width:35%; border:1px solid #ddd;">${tipo === 'Traspaso' ? 'Almacén Destino' : 'N° Pedido'}</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; font-weight:bold;">${tipo === 'Traspaso' ? s.client : s.pedido}</td></tr>` : ''}
+      ${s.client && tipo !== 'Traspaso' ? `<tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Cliente</td><td style="padding:10px; border:1px solid #ddd;">${s.client}</td></tr>` : ''}
       <tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Operador</td><td style="padding:10px; border:1px solid #ddd;">${currentUser ? currentUser.nom : '—'}</td></tr>
       <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Fecha y Hora</td><td style="padding:10px; border:1px solid #ddd;">${fecha}</td></tr>
     </table>

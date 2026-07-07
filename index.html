@@ -367,7 +367,7 @@
     <span style="color:white; font-weight:700; font-size:15px; letter-spacing:-0.3px; flex:1;">🪟 VerreStock Pro</span>
     <span id="syncStatus" class="synced" style="font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500; background:rgba(5,150,105,0.2); color:#34D399; white-space:nowrap;">● Sync</span>
     <span id="userInfo" style="color:rgba(255,255,255,0.55); font-size:12px; margin:0 8px; white-space:nowrap; overflow:hidden; max-width:120px; text-overflow:ellipsis;"></span>
-    <button onclick="logout()" style="background:rgba(220,38,38,0.18); border:1px solid rgba(220,38,38,0.25); color:#FCA5A5; width:auto; padding:6px 14px; font-size:12px; border-radius:8px; margin:0;">Salir</button>
+    <button onclick="logout()" style="background:rgba(220,38,38,0.18); border:1px solid rgba(220,38,38,0.25); color:#FCA5A5; width:auto; padding:6px 14px; font-size:12px; border-radius:8px; margin:0;" title="Cerrar sesión">🔒 Salir</button>
   </div>
 
   <!-- LAYOUT PRINCIPAL -->
@@ -1070,6 +1070,8 @@ function loginSuccess(user) {
 }
 
 function logout() {
+  // Demande confirmation avant de déconnecter
+  if (currentUser && !confirm('¿Desea cerrar la sesión de ' + currentUser.nom + '?')) return;
   currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login').style.display = 'flex';
@@ -1077,6 +1079,33 @@ function logout() {
   document.getElementById('passwordInput').value = '';
   document.getElementById('loginError').classList.remove('visible');
 }
+
+// ─── Protection contre fermeture accidentelle ───
+// Déclenché si l'utilisateur glisse pour fermer, appuie sur retour, ou ferme l'onglet
+window.addEventListener('beforeunload', function(e) {
+  if (currentUser) {
+    const msg = '¿Seguro que desea salir de VerreStock Pro?\n\nCualquier operación no guardada podría perderse.';
+    e.preventDefault();
+    e.returnValue = msg; // requis pour Chrome/Android
+    return msg;
+  }
+});
+
+// Protection touche "Retour" sur Android (history)
+window.history.pushState(null, '', window.location.href);
+window.addEventListener('popstate', function() {
+  if (currentUser) {
+    window.history.pushState(null, '', window.location.href);
+    // Affiche une alerte mobile-friendly
+    if (confirm('¿Desea salir de VerreStock Pro?')) {
+      currentUser = null;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login').style.display = 'flex';
+      document.getElementById('usernameInput').value = '';
+      document.getElementById('passwordInput').value = '';
+    }
+  }
+});
 
 // ═══════════════════════════════════════════════════════════
 // NAVIGATION

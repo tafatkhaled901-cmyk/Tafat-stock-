@@ -883,7 +883,7 @@ function toggleSidebar() {
 }
 
 const USERS = [
-  {id:'u1', nom:'HAMZA MAROC', prenom:'HAMZA', role:'Operador', pin:'1234'},
+  {id:'u1', nom:'MIGUEL', prenom:'MIGUEL', role:'Operador', pin:'1234'},
   {id:'u2', nom:'TAFAT KHALED', prenom:'TAFAT', role:'Operador', pin:'5678'},
   {id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS', role:'Magasinero', pin:'0000'},
 ];
@@ -1960,7 +1960,6 @@ function renderSorties() {
     return;
   }
 
-  // Regroupe Venta par pedido ET Traspaso par destination+minute
   const groupes = [];
   const pedidosVus = new Set();
   const traspasosVus = new Set();
@@ -1971,73 +1970,94 @@ function renderSorties() {
       if (!pedidosVus.has(s.pedido)) {
         pedidosVus.add(s.pedido);
         const toutes = DB.sorties.filter(x => x.pedido === s.pedido);
-        const totalHojas = toutes.reduce((sum, x) => sum + (Number(x.feuilles)||Number(x.hojas)||0), 0);
         const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
-        groupes.push({ type: 'groupe', sorties: toutes, pedido: s.pedido, client: s.client, date: s.date, totalHojas, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
+        groupes.push({ type: 'venta', sorties: toutes, pedido: s.pedido, client: s.client, date: s.date, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
       }
     } else if (s.tipo === 'Traspaso' && s.client) {
-      const key = s.client + '_' + (s.date || '').slice(0, 16);
+      const key = s.client + '_' + (s.date||'').slice(0,16);
       if (!traspasosVus.has(key)) {
         traspasosVus.add(key);
-        const dateMin = (s.date || '').slice(0, 16);
+        const dateMin = (s.date||'').slice(0,16);
         const toutes = DB.sorties.filter(x => x.tipo === 'Traspaso' && x.client === s.client && (x.date||'').slice(0,16) === dateMin);
-        const totalHojas = toutes.reduce((sum, x) => sum + (Number(x.feuilles)||Number(x.hojas)||0), 0);
         const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
-        groupes.push({ type: 'traspaso', sorties: toutes, dest: s.client, date: s.date, totalHojas, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
+        groupes.push({ type: 'traspaso', sorties: toutes, dest: s.client, date: s.date, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
       }
     } else {
       groupes.push({ type: 'simple', s, realIdx });
     }
   });
 
+  // Cherche l'opérateur depuis les mouvements
+  const getOp = (num) => {
+    const m = DB.mouvements.find(x => x.num === num && x.type === 'Sortie');
+    return m ? m.operateur : (currentUser ? currentUser.nom : '—');
+  };
+
   let html = '';
   groupes.forEach(g => {
-    if (g.type === 'groupe') {
-      const colorTipo = '#D97706';
-      html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
-        '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
-        '<div style="flex:1;">' +
-        '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">Venta</span> ' +
-        '<strong>📋 Pedido: ' + g.pedido + '</strong><br>';
-      g.sorties.forEach(x => {
+
+    if (g.type === 'venta') {
+      const op = getOp(g.sorties[0].num);
+      // Produits : référence + quantité hojas (compact)
+      const refs = g.sorties.map(x => {
         const f = Number(x.feuilles)||Number(x.hojas)||0;
-        html += '<span style="font-size:12px; color:#475569;">• <strong style="color:#1E40AF;">' + (x.prod||'—') + '</strong> · <span style="font-family:monospace;">' + x.num + '</span> · <strong style="color:#D97706;">' + f + ' hojas</strong></span><br>';
-      });
-      html += '<span style="font-size:13px; font-weight:bold; color:#D97706;">Total: ' + g.totalCajas + ' cajas · ' + g.totalHojas + ' hojas</span><br>';
-      if (g.client) html += '<span style="color:#888; font-size:12px;">👤 ' + g.client + '</span><br>';
-      html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(g.date).toLocaleString('es-ES') + '</span>' +
+        return '<span style="background:#FEF3C7; color:#92400E; padding:1px 6px; border-radius:4px; font-size:11px; margin:1px; display:inline-block;">' + (x.prod||'—') + ' · ' + f + ' hj</span>';
+      }).join(' ');
+
+      html += '<div class="card" style="border-left:3px solid #D97706; padding:10px 12px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">' +
+        '<div style="flex:1; min-width:0;">' +
+        // Ligne 1 : badge + pedido + cajas
+        '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
+        '<span style="background:#D97706; color:white; padding:1px 7px; border-radius:4px; font-size:11px; font-weight:600; white-space:nowrap;">Venta</span>' +
+        '<strong style="font-size:13px;">📋 ' + g.pedido + '</strong>' +
+        '<span style="color:#888; font-size:12px;">· ' + g.totalCajas + ' cajas</span>' +
+        (g.client ? '<span style="color:#888; font-size:12px;">· 👤 ' + g.client + '</span>' : '') +
         '</div>' +
-        '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px; flex-shrink:0;">🖨️ Fiche</button>' +
+        // Ligne 2 : opérateur + date
+        '<div style="font-size:11px; color:#94A3B8; margin-bottom:5px;">👤 ' + op + ' · 📅 ' + new Date(g.date).toLocaleDateString('es-ES') + '</div>' +
+        // Ligne 3 : références
+        '<div>' + refs + '</div>' +
+        '</div>' +
+        '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; margin:0;">🖨️</button>' +
         '</div></div>';
+
     } else if (g.type === 'traspaso') {
-      html += '<div class="card" style="border-left:3px solid #1E40AF;">' +
-        '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
-        '<div style="flex:1;">' +
-        '<span style="background:#1E40AF; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">Traspaso</span> ' +
-        '<strong>🚛 Destino: ' + g.dest + '</strong><br>';
-      g.sorties.forEach(x => {
+      const op = getOp(g.sorties[0].num);
+      const refs = g.sorties.map(x => {
         const f = Number(x.feuilles)||Number(x.hojas)||0;
-        html += '<span style="font-size:12px; color:#475569;">• <strong style="color:#1E40AF;">' + (x.prod||'—') + '</strong> · <span style="font-family:monospace;">' + x.num + '</span> · <strong style="color:#1E40AF;">' + f + ' hojas</strong></span><br>';
-      });
-      html += '<span style="font-size:13px; font-weight:bold; color:#1E40AF;">Total: ' + g.totalCajas + ' cajas · ' + g.totalHojas + ' hojas</span><br>';
-      html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(g.date).toLocaleString('es-ES') + '</span>' +
+        return '<span style="background:#DBEAFE; color:#1E40AF; padding:1px 6px; border-radius:4px; font-size:11px; margin:1px; display:inline-block;">' + (x.prod||'—') + ' · ' + f + ' hj</span>';
+      }).join(' ');
+
+      html += '<div class="card" style="border-left:3px solid #1E40AF; padding:10px 12px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">' +
+        '<div style="flex:1; min-width:0;">' +
+        '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">' +
+        '<span style="background:#1E40AF; color:white; padding:1px 7px; border-radius:4px; font-size:11px; font-weight:600; white-space:nowrap;">Traspaso</span>' +
+        '<strong style="font-size:13px;">🚛 ' + g.dest + '</strong>' +
+        '<span style="color:#888; font-size:12px;">· ' + g.totalCajas + ' cajas</span>' +
         '</div>' +
-        '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px; flex-shrink:0;">🖨️ Fiche</button>' +
+        '<div style="font-size:11px; color:#94A3B8; margin-bottom:5px;">👤 ' + op + ' · 📅 ' + new Date(g.date).toLocaleDateString('es-ES') + '</div>' +
+        '<div>' + refs + '</div>' +
+        '</div>' +
+        '<button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; margin:0;">🖨️</button>' +
         '</div></div>';
+
     } else {
       const s = g.s;
       const tipo = s.tipo || 'Salida';
-      const colorTipo = tipo === 'Retorno' ? '#7C3AED' : '#555';
-      html += '<div class="card" style="border-left:3px solid ' + colorTipo + ';">' +
-        '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
-        '<div>' +
-        '<span style="background:' + colorTipo + '; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">' + tipo + '</span> ' +
-        '<strong style="color:#1E40AF;">' + (s.prod || '—') + '</strong><br>' +
-        '<span style="font-family:monospace; font-size:12px;">' + s.num + '</span> · <strong style="color:#D97706;">-' + (Number(s.feuilles)||Number(s.hojas)||0) + ' hojas</strong><br>';
-      if (s.client) html += '<span style="color:#888;">👤 ' + s.client + '</span><br>';
-      html += '<span style="color:#888; font-size:12px;">📅 ' + new Date(s.date).toLocaleString('es-ES') + '</span>' +
+      const color = tipo === 'Retorno' ? '#7C3AED' : '#64748B';
+      const f = Number(s.feuilles)||Number(s.hojas)||0;
+      html += '<div class="card" style="border-left:3px solid ' + color + '; padding:10px 12px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+        '<div style="flex:1; min-width:0;">' +
+        '<span style="background:' + color + '; color:white; padding:1px 7px; border-radius:4px; font-size:11px;">' + tipo + '</span> ' +
+        '<strong style="font-size:12px; color:#1E40AF;">' + (s.prod||'—') + '</strong>' +
+        '<span style="color:#888; font-size:11px;"> · ' + f + ' hj</span><br>' +
+        '<span style="font-size:11px; color:#94A3B8; font-family:monospace;">' + s.num + '</span>' +
+        (s.client ? '<span style="font-size:11px; color:#888;"> · 👤 ' + s.client + '</span>' : '') +
         '</div>' +
-        '<button onclick="imprimirFichaSalida(' + g.realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px;">🖨️ Fiche</button>' +
+        '<button onclick="imprimirFichaSalida(' + g.realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:5px 8px; font-size:11px; cursor:pointer; white-space:nowrap; margin:0;">🖨️</button>' +
         '</div></div>';
     }
   });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VerreStock Pro</title>
+<title>ALMACEN GPS BENICARLO</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -342,7 +342,7 @@
   <div class="login-container">
     <div class="login-header">
       <div class="login-logo">🪟</div>
-      <h1>VerreStock Pro</h1>
+      <h1>ALMACEN GPS BENICARLO</h1>
       <p>Sistema de gestión de almacén</p>
     </div>
     <div class="input-group">
@@ -364,7 +364,7 @@
   <!-- BARRE TOP -->
   <div class="topnav">
     <button onclick="toggleSidebar()" style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:20px; width:auto; padding:4px 10px; margin:0;">☰</button>
-    <span style="color:white; font-weight:700; font-size:15px; letter-spacing:-0.3px; flex:1;">🪟 VerreStock Pro</span>
+    <span style="color:white; font-weight:700; font-size:15px; letter-spacing:-0.3px; flex:1;">🪟 ALMACEN GPS BENICARLO</span>
     <span id="syncStatus" class="synced" style="font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500; background:rgba(5,150,105,0.2); color:#34D399; white-space:nowrap;">● Sync</span>
     <span id="userInfo" style="color:rgba(255,255,255,0.55); font-size:12px; margin:0 8px; white-space:nowrap; overflow:hidden; max-width:120px; text-overflow:ellipsis;"></span>
     <button onclick="logout()" style="background:rgba(220,38,38,0.18); border:1px solid rgba(220,38,38,0.25); color:#FCA5A5; width:auto; padding:6px 14px; font-size:12px; border-radius:8px; margin:0;" title="Cerrar sesión">🔒 Salir</button>
@@ -581,7 +581,7 @@
   <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
     <div style="font-size:40px; margin-bottom:12px;">⚠️</div>
     <div style="font-size:17px; font-weight:700; color:#0F172A; margin-bottom:8px;">¿Salir de la aplicación?</div>
-    <div style="font-size:14px; color:#475569; margin-bottom:24px;">¿Desea abandonar VerreStock Pro?</div>
+    <div style="font-size:14px; color:#475569; margin-bottom:24px;">¿Desea abandonar ALMACEN GPS BENICARLO?</div>
     <div style="display:flex; gap:10px;">
       <button onclick="cancelarRetour()" style="flex:1; padding:12px; background:#F1F5F9; color:#475569; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Quedarse</button>
       <button onclick="confirmarRetour()" style="flex:1; padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Salir</button>
@@ -1808,7 +1808,7 @@ function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
 
   const subject = '💥 Declaración de Rotura - ' + produit;
   const body =
-    'DECLARACIÓN DE ROTURA - VerreStock Pro\n\n' +
+    'DECLARACIÓN DE ROTURA - ALMACEN GPS BENICARLO\n\n' +
     'Producto : ' + produit + '\n' +
     'N° Lote : ' + contenant + '\n' +
     'Hojas rotas : ' + hojasCassees + '\n' +
@@ -1835,7 +1835,7 @@ function envoyerEmailSortie(produit, contenant, hojas, client) {
 
   const subject = '📤 Salida de Stock - ' + produit;
   const body =
-    'SALIDA DE STOCK - VerreStock Pro\n\n' +
+    'SALIDA DE STOCK - ALMACEN GPS BENICARLO\n\n' +
     'Producto : ' + produit + '\n' +
     'N° Lote : ' + contenant + '\n' +
     'Hojas salidas : ' + hojas + '\n' +
@@ -2329,7 +2329,7 @@ function exportStockCSV() {
   });
 
   const now = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
-  downloadXLSX('VerreStock_Stock_' + now + '.xls', rows, headers);
+  downloadXLSX('GPS_BENICARLO_Stock_' + now + '.xls', rows, headers);
 }
 
 // ── Export Historique ──
@@ -2358,7 +2358,7 @@ function exportHistoriqueCSV() {
   });
 
   const now = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
-  downloadXLSX('VerreStock_Historial_' + now + '.xls', rows, headers);
+  downloadXLSX('GPS_BENICARLO_Historial_' + now + '.xls', rows, headers);
 }
 
 // ── Export PDF via impression navigateur ──
@@ -2377,7 +2377,7 @@ function imprimirFichaEntrada(idx) {
 
   const html = `
     <div style="text-align:center; margin-bottom:20px;">
-      <div style="font-size:28px; font-weight:bold; color:#0055cc;">🪟 VerreStock Pro</div>
+      <div style="font-size:28px; font-weight:bold; color:#0055cc;">🪟 ALMACEN GPS BENICARLO</div>
       <div style="font-size:18px; font-weight:bold; margin-top:8px; color:#1e293b;">FICHE DE RÉCEPTION</div>
       <div style="color:#888; font-size:13px; margin-top:4px;">N° Fiche: REC-${String(idx+1).padStart(4,'0')}</div>
     </div>
@@ -2466,7 +2466,7 @@ function imprimirFichaSalida(idx) {
 
   const html = `
     <div style="text-align:center; margin-bottom:20px;">
-      <div style="font-size:28px; font-weight:bold; color:#cc6600;">🪟 VerreStock Pro</div>
+      <div style="font-size:28px; font-weight:bold; color:#cc6600;">🪟 ALMACEN GPS BENICARLO</div>
       <div style="font-size:20px; font-weight:bold; margin-top:8px; color:#1e293b;">BON DE SORTIE — ${tipo.toUpperCase()}</div>
       <div style="color:#888; font-size:13px; margin-top:4px;">N° Fiche: SAL-${String(idx+1).padStart(4,'0')} · ${fecha}</div>
     </div>
@@ -2510,7 +2510,7 @@ function exportPDF(title, tableHTML) {
       </style>
     </head>
     <body>
-      <h1>🪟 VerreStock Pro — ${title}</h1>
+      <h1>🪟 ALMACEN GPS BENICARLO — ${title}</h1>
       <p>Generado: ${now} | Operador: ${currentUser ? currentUser.nom : '—'}</p>
       <button onclick="window.print()" style="background:#0055cc;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:12px;">🖨️ Imprimir / Guardar PDF</button>
       ${tableHTML}

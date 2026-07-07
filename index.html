@@ -2586,57 +2586,54 @@ function clearStockSearch() {
 // Acción ÚNICAMENTE VISUAL — no modifica ningún dato
 // ═══════════════════════════════════════════════════════════
 function resetVisualizacion() {
-  if (!currentUser || currentUser.id !== 'u2') return; // sécurité double
+  // Sécurité : uniquement pour TAFAT KHALED
+  if (!currentUser || currentUser.id !== 'u2') {
+    alert('⛔ Acceso denegado');
+    return;
+  }
 
-  // 1. Réinitialise les filtres dropdown du Grand Livre
+  // ── 1. Filtres Grand Livre ──
   glColFilters = {};
   glDropdownOpen = null;
 
-  // 2. Réinitialise les filtres dropdown du Stock
-  stockColFilters = {};
-  stockDropdownOpen = null;
+  // Dates
+  ['glDateFrom','glDateTo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
 
-  // 3. Réinitialise les filtres de date et type du Grand Livre
-  const dateFrom = document.getElementById('glDateFrom');
-  const dateTo = document.getElementById('glDateTo');
-  if (dateFrom) dateFrom.value = '';
-  if (dateTo) dateTo.value = '';
-
-  // Remet "Todo" actif sur les périodes
+  // Période "Todo"
   document.querySelectorAll('.gl-period-btn').forEach(b => b.classList.remove('active'));
   const allBtn = document.getElementById('glp-all');
   if (allBtn) allBtn.classList.add('active');
 
-  // Remet toutes les checkboxes de types cochées
+  // Checkboxes types
   document.querySelectorAll('#glTypeFilters input[type="checkbox"]').forEach(cb => cb.checked = true);
 
-  // 4. Vide le champ de recherche N° Lote dans le Grand Livre
+  // Champ N° Lote
   const glLote = document.getElementById('glLote');
   if (glLote) glLote.value = '';
 
-  // 5. Vide la recherche rapide dans le Stock
-  clearStockSearch();
+  // ── 2. Filtres Stock ──
+  stockColFilters = {};
+  stockDropdownOpen = null;
 
-  // 6. Rafraîchit l'affichage de la page active
-  const activePage = document.querySelector('#app .page.active');
-  if (activePage) {
-    const id = activePage.id.replace('page-', '');
-    if (id === 'stock') renderStock();
-    else if (id === 'historique') renderGrandLivre();
-    else if (id === 'entrees') renderEntrees();
-    else if (id === 'sorties') renderSorties();
-    else if (id === 'casse') renderCasse();
-    else if (id === 'dashboard') renderDashboard();
-  }
+  // Recherche rapide stock
+  const slEl = document.getElementById('stockLoteSearch');
+  const srEl = document.getElementById('stockSearchResult');
+  if (slEl) slEl.value = '';
+  if (srEl) srEl.innerHTML = '';
 
-  // Feedback visuel discret
-  const btn = document.querySelector('#sbTafat button');
-  if (btn) {
-    const orig = btn.textContent;
-    btn.textContent = '✓ Pantalla reiniciada';
-    btn.style.color = '#34D399';
-    setTimeout(() => { btn.textContent = orig; btn.style.color = '#A78BFA'; }, 2000);
-  }
+  // ── 3. Rafraîchit toutes les pages visibles ──
+  try { renderStock(); } catch(e) {}
+  try { renderGrandLivre(); } catch(e) {}
+  try { renderEntrees(); } catch(e) {}
+  try { renderSorties(); } catch(e) {}
+  try { renderCasse(); } catch(e) {}
+  try { renderDashboard(); } catch(e) {}
+
+  // ── 4. Feedback visuel ──
+  alert('✅ Pantalla reiniciada.\n\nFiltros, búsquedas y ordenación han sido restablecidos.\nNingún dato ha sido modificado.');
 }
 
 function clearGLColFilters() {

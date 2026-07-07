@@ -563,6 +563,32 @@
   </div>
 </div>
 
+<!-- ═══ MODAL CONFIRMACIÓN SALIDA ═══ -->
+<div id="modalConfirmSalir" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-size:40px; margin-bottom:12px;">🔒</div>
+    <div style="font-size:17px; font-weight:700; color:#0F172A; margin-bottom:8px;">Cerrar sesión</div>
+    <div style="font-size:14px; color:#475569; margin-bottom:24px;">¿Desea salir de su sesión actual?</div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="cancelarSalir()" style="flex:1; padding:12px; background:#F1F5F9; color:#475569; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Cancelar</button>
+      <button onclick="confirmarSalir()" style="flex:1; padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Salir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRMACIÓN RETOUR ANDROID ═══ -->
+<div id="modalConfirmRetour" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-size:40px; margin-bottom:12px;">⚠️</div>
+    <div style="font-size:17px; font-weight:700; color:#0F172A; margin-bottom:8px;">¿Salir de la aplicación?</div>
+    <div style="font-size:14px; color:#475569; margin-bottom:24px;">¿Desea abandonar VerreStock Pro?</div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="cancelarRetour()" style="flex:1; padding:12px; background:#F1F5F9; color:#475569; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Quedarse</button>
+      <button onclick="confirmarRetour()" style="flex:1; padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Salir</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL SORTIE ═══ -->
 <div class="modal" id="modalSortie">
   <h2>📤 Nueva Salida</h2>
@@ -1070,8 +1096,13 @@ function loginSuccess(user) {
 }
 
 function logout() {
-  // Demande confirmation avant de déconnecter
-  if (currentUser && !confirm('¿Desea cerrar la sesión de ' + currentUser.nom + '?')) return;
+  if (!currentUser) return;
+  // Ouvre le modal personnalisé au lieu de confirm()
+  document.getElementById('modalConfirmSalir').style.display = 'flex';
+}
+
+function confirmarSalir() {
+  document.getElementById('modalConfirmSalir').style.display = 'none';
   currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login').style.display = 'flex';
@@ -1080,30 +1111,29 @@ function logout() {
   document.getElementById('loginError').classList.remove('visible');
 }
 
-// ─── Protection contre fermeture accidentelle ───
-// Déclenché si l'utilisateur glisse pour fermer, appuie sur retour, ou ferme l'onglet
-window.addEventListener('beforeunload', function(e) {
-  if (currentUser) {
-    const msg = '¿Seguro que desea salir de VerreStock Pro?\n\nCualquier operación no guardada podría perderse.';
-    e.preventDefault();
-    e.returnValue = msg; // requis pour Chrome/Android
-    return msg;
-  }
-});
+function cancelarSalir() {
+  document.getElementById('modalConfirmSalir').style.display = 'none';
+}
+
+function cancelarRetour() {
+  document.getElementById('modalConfirmRetour').style.display = 'none';
+}
+
+function confirmarRetour() {
+  document.getElementById('modalConfirmRetour').style.display = 'none';
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('usernameInput').value = '';
+  document.getElementById('passwordInput').value = '';
+}
 
 // Protection touche "Retour" sur Android (history)
 window.history.pushState(null, '', window.location.href);
 window.addEventListener('popstate', function() {
   if (currentUser) {
     window.history.pushState(null, '', window.location.href);
-    // Affiche une alerte mobile-friendly
-    if (confirm('¿Desea salir de VerreStock Pro?')) {
-      currentUser = null;
-      document.getElementById('app').style.display = 'none';
-      document.getElementById('login').style.display = 'flex';
-      document.getElementById('usernameInput').value = '';
-      document.getElementById('passwordInput').value = '';
-    }
+    document.getElementById('modalConfirmRetour').style.display = 'flex';
   }
 });
 

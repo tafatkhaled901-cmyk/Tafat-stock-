@@ -388,7 +388,7 @@
       </div>
       <div id="sbTafat" style="display:none;">
         <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Administración</div>
-        <button onclick="resetVisualizacion()" class="sidebar-btn" style="color:#A78BFA;">🔄 Reiniciar Pantalla</button>
+        <button onclick="resetVisualizacion()" class="sidebar-btn" style="color:#F87171;">🗑️ Reiniciar Aplicación</button>
       </div>
     </div>
 
@@ -2586,45 +2586,56 @@ function clearStockSearch() {
 // Acción ÚNICAMENTE VISUAL — no modifica ningún dato
 // ═══════════════════════════════════════════════════════════
 function resetVisualizacion() {
-  // Sécurité : uniquement pour TAFAT KHALED
   if (!currentUser || currentUser.id !== 'u2') {
     alert('⛔ Acceso denegado');
     return;
   }
 
-  // ── 1. Filtres Grand Livre ──
+  const confirm1 = confirm(
+    '⚠️ ATENCIÓN — REINICIO COMPLETO\n\n' +
+    'Esta acción eliminará TODOS los datos:\n' +
+    '• Todas las entradas\n' +
+    '• Todas las salidas\n' +
+    '• Todo el stock\n' +
+    '• Todas las roturas\n' +
+    '• Todo el historial\n\n' +
+    '¿Está seguro de continuar?'
+  );
+  if (!confirm1) return;
+
+  const confirm2 = confirm(
+    '🔴 CONFIRMACIÓN FINAL\n\n' +
+    'Esta acción es IRREVERSIBLE.\n' +
+    'Todos los datos serán borrados definitivamente.\n\n' +
+    '¿Confirma el reinicio completo?'
+  );
+  if (!confirm2) return;
+
+  // Efface toutes les données
+  DB.stock = {};
+  DB.entrees = [];
+  DB.casses = [];
+  DB.sorties = [];
+  DB.mouvements = [];
+
+  // Efface le localStorage
+  localStorage.removeItem('vs_stock');
+  localStorage.removeItem('vs_entrees');
+  localStorage.removeItem('vs_casses');
+  localStorage.removeItem('vs_sorties');
+  localStorage.removeItem('vs_mouvements');
+  localStorage.removeItem('vs_fpc_table');
+
+  // Réinitialise aussi les filtres visuels
   glColFilters = {};
   glDropdownOpen = null;
-
-  // Dates
-  ['glDateFrom','glDateTo'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-
-  // Période "Todo"
-  document.querySelectorAll('.gl-period-btn').forEach(b => b.classList.remove('active'));
-  const allBtn = document.getElementById('glp-all');
-  if (allBtn) allBtn.classList.add('active');
-
-  // Checkboxes types
-  document.querySelectorAll('#glTypeFilters input[type="checkbox"]').forEach(cb => cb.checked = true);
-
-  // Champ N° Lote
-  const glLote = document.getElementById('glLote');
-  if (glLote) glLote.value = '';
-
-  // ── 2. Filtres Stock ──
   stockColFilters = {};
   stockDropdownOpen = null;
 
-  // Recherche rapide stock
-  const slEl = document.getElementById('stockLoteSearch');
-  const srEl = document.getElementById('stockSearchResult');
-  if (slEl) slEl.value = '';
-  if (srEl) srEl.innerHTML = '';
+  // Sync Google Sheets pour effacer aussi là-bas
+  syncToSheets();
 
-  // ── 3. Rafraîchit toutes les pages visibles ──
+  // Rafraîchit toutes les pages
   try { renderStock(); } catch(e) {}
   try { renderGrandLivre(); } catch(e) {}
   try { renderEntrees(); } catch(e) {}
@@ -2632,8 +2643,7 @@ function resetVisualizacion() {
   try { renderCasse(); } catch(e) {}
   try { renderDashboard(); } catch(e) {}
 
-  // ── 4. Feedback visuel ──
-  alert('✅ Pantalla reiniciada.\n\nFiltros, búsquedas y ordenación han sido restablecidos.\nNingún dato ha sido modificado.');
+  alert('✅ Aplicación reiniciada.\n\nTodos los datos han sido eliminados.\nLa aplicación está lista para un nuevo uso.');
 }
 
 function clearGLColFilters() {

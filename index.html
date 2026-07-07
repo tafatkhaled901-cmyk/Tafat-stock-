@@ -1476,7 +1476,7 @@ function saveTraspaso() {
 
   renderSorties();
   alert('✓ Traspaso registrado hacia ' + dest + ' : -' + feuilles + ' hojas');
-  setTimeout(() => envoyerEmailSortie(prod, num, feuilles, 'Traspaso → ' + dest), 300);
+  envoyerEmailSortie(prod, num, feuilles, 'Traspaso → ' + dest);
 }
 
 // ─── Reintegración (solo Magasinero) ───
@@ -1791,12 +1791,13 @@ function saveCasse() {
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
-  alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas rotas: ' + qty + '\nHojas restantes: ' + hojasRestantes);
 
-  // Email avec délai pour laisser l'alert se fermer
-  setTimeout(() => {
-    envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
-  }, 800);
+  // Email déclenché DIRECTEMENT dans l'action utilisateur (pas de setTimeout)
+  // pour éviter le blocage par Chrome mobile
+  envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
+
+  // Confirmation après l'email
+  alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas rotas: ' + qty + '\nHojas restantes: ' + hojasRestantes + '\n\n📧 Email enviado al responsable.');
 }
 
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
@@ -1820,13 +1821,22 @@ function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
 
-  // Utilise un lien temporaire pour éviter de quitter la page
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // Méthode 1 : lien direct (meilleur sur Android)
+  try {
+    window.location.href = url;
+  } catch(e) {
+    // Méthode 2 : fallback avec <a> click
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch(e2) {
+      console.warn('Email non envoyé:', e2);
+    }
+  }
 }
 
 function envoyerEmailSortie(produit, contenant, hojas, client) {

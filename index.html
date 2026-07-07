@@ -386,6 +386,10 @@
         <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Magasinero</div>
         <button onclick="openModal('modalCorreccion')" class="sidebar-btn" style="color:#ffcc44;">⚠️ Corrección Error</button>
       </div>
+      <div id="sbTafat" style="display:none;">
+        <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Administración</div>
+        <button onclick="resetVisualizacion()" class="sidebar-btn" style="color:#A78BFA;">🔄 Reiniciar Pantalla</button>
+      </div>
     </div>
 
     <!-- CONTENIDO PRINCIPAL -->
@@ -1056,9 +1060,12 @@ function loginSuccess(user) {
   document.getElementById('login').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
-  // Affiche section Magasinero dans le sidebar si applicable
+  // Affiche section Magasinero
   const sbMag = document.getElementById('sbMagasinero');
   if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
+  // Affiche bouton Reiniciar uniquement pour TAFAT KHALED
+  const sbTafat = document.getElementById('sbTafat');
+  if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
   goto('dashboard');
 }
 
@@ -2572,6 +2579,64 @@ function clearStockSearch() {
   if (el) el.value = '';
   const res = document.getElementById('stockSearchResult');
   if (res) res.innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// REINICIAR PANTALLA — Solo TAFAT KHALED
+// Acción ÚNICAMENTE VISUAL — no modifica ningún dato
+// ═══════════════════════════════════════════════════════════
+function resetVisualizacion() {
+  if (!currentUser || currentUser.id !== 'u2') return; // sécurité double
+
+  // 1. Réinitialise les filtres dropdown du Grand Livre
+  glColFilters = {};
+  glDropdownOpen = null;
+
+  // 2. Réinitialise les filtres dropdown du Stock
+  stockColFilters = {};
+  stockDropdownOpen = null;
+
+  // 3. Réinitialise les filtres de date et type du Grand Livre
+  const dateFrom = document.getElementById('glDateFrom');
+  const dateTo = document.getElementById('glDateTo');
+  if (dateFrom) dateFrom.value = '';
+  if (dateTo) dateTo.value = '';
+
+  // Remet "Todo" actif sur les périodes
+  document.querySelectorAll('.gl-period-btn').forEach(b => b.classList.remove('active'));
+  const allBtn = document.getElementById('glp-all');
+  if (allBtn) allBtn.classList.add('active');
+
+  // Remet toutes les checkboxes de types cochées
+  document.querySelectorAll('#glTypeFilters input[type="checkbox"]').forEach(cb => cb.checked = true);
+
+  // 4. Vide le champ de recherche N° Lote dans le Grand Livre
+  const glLote = document.getElementById('glLote');
+  if (glLote) glLote.value = '';
+
+  // 5. Vide la recherche rapide dans le Stock
+  clearStockSearch();
+
+  // 6. Rafraîchit l'affichage de la page active
+  const activePage = document.querySelector('#app .page.active');
+  if (activePage) {
+    const id = activePage.id.replace('page-', '');
+    if (id === 'stock') renderStock();
+    else if (id === 'historique') renderGrandLivre();
+    else if (id === 'entrees') renderEntrees();
+    else if (id === 'sorties') renderSorties();
+    else if (id === 'casse') renderCasse();
+    else if (id === 'dashboard') renderDashboard();
+  }
+
+  // Feedback visuel discret
+  const btn = document.querySelector('#sbTafat button');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Pantalla reiniciada';
+    btn.style.color = '#34D399';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = '#A78BFA'; }, 2000);
+  }
 }
 
 function clearGLColFilters() {

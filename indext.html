@@ -1,0 +1,3421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALMACEN GPS BENICARLO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #F0F4F8;
+    --surface:   #FFFFFF;
+    --sidebar:   #0F172A;
+    --sidebar2:  #1E293B;
+    --accent:    #1E40AF;
+    --accent2:   #3B82F6;
+    --green:     #059669;
+    --red:       #DC2626;
+    --orange:    #D97706;
+    --purple:    #7C3AED;
+    --text:      #0F172A;
+    --text2:     #475569;
+    --text3:     #94A3B8;
+    --border:    #E2E8F0;
+    --radius:    10px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── LOGIN ── */
+  #login {
+    background: linear-gradient(135deg, #0F172A 0%, #1E40AF 100%);
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .login-container {
+    background: var(--surface);
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 32px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+  }
+  .login-header { text-align: center; margin-bottom: 32px; }
+  .login-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .login-header p { font-size: 14px; color: var(--text2); }
+  .login-logo {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #1E40AF, #3B82F6);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 14px rgba(30,64,175,0.35);
+  }
+  .input-group { margin-bottom: 18px; }
+  .input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .input-group input {
+    width: 100%;
+    height: 50px;
+    padding: 0 16px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .input-group input:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    background: white;
+  }
+  .btn-login {
+    width: 100%;
+    height: 52px;
+    background: linear-gradient(135deg, #1E40AF, #3B82F6);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-login:active { opacity: 0.9; transform: scale(0.99); }
+  #loginError {
+    color: var(--red);
+    text-align: center;
+    font-size: 13px;
+    margin-top: 12px;
+    padding: 10px;
+    background: #FEF2F2;
+    border-radius: 8px;
+    display: none;
+  }
+  #loginError.visible { display: block; }
+
+  /* ── TOPNAV ── */
+  .topnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--sidebar);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 56px;
+    gap: 8px;
+    z-index: 100;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .topnav button {
+    margin: 0;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    width: auto;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: background 0.15s;
+  }
+  .topnav button:hover { background: rgba(255,255,255,0.14); }
+  .topnav button:active { background: rgba(255,255,255,0.2); }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 220px;
+    background: var(--sidebar);
+    min-height: calc(100vh - 56px);
+    padding: 16px 0;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .sidebar-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 11px 20px;
+    background: transparent;
+    color: rgba(255,255,255,0.65);
+    border: none;
+    border-radius: 0;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    margin: 1px 0;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    letter-spacing: 0.1px;
+  }
+  .sidebar-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.9);
+  }
+  .sidebar-btn.active {
+    background: rgba(59,130,246,0.15);
+    border-left-color: #3B82F6;
+    color: #93C5FD;
+    font-weight: 600;
+  }
+  .sidebar-label {
+    padding: 12px 20px 4px;
+    color: rgba(255,255,255,0.25);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 600;
+  }
+
+  /* ── APP CONTENT ── */
+  .app-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* ── HEADINGS ── */
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+
+  /* ── BUTTONS ── */
+  button {
+    display: block;
+    width: 100%;
+    padding: 13px 18px;
+    margin: 8px 0;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  button:active { opacity: 0.85; transform: scale(0.99); }
+
+  .btn-blue   { background: var(--accent); color: white; }
+  .btn-green  { background: var(--green); color: white; }
+  .btn-red    { background: var(--red); color: white; }
+  .btn-orange { background: var(--orange); color: white; }
+
+  /* ── INPUTS ── */
+  input, select {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    margin: 6px 0 14px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    background: white;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 8px 0;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── KPI ── */
+  .kpi {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    margin: 4px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    box-shadow: var(--shadow);
+  }
+
+  /* ── MODALS ── */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--surface);
+    padding: 24px 20px;
+    overflow-y: auto;
+    z-index: 999;
+  }
+  .modal h2 { margin-bottom: 20px; }
+
+  /* ── SYNC INDICATOR ── */
+  #syncStatus {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  #syncStatus.synced  { background: rgba(5,150,105,0.2); color: #34D399; }
+  #syncStatus.syncing { background: rgba(245,158,11,0.2); color: #FCD34D; }
+  #syncStatus.error   { background: rgba(220,38,38,0.2);  color: #FCA5A5; }
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login" style="display:flex; flex-wrap:wrap; background:linear-gradient(135deg,#0F172A 0%,#1E40AF 100%); justify-content:center; align-items:center; min-height:100vh; padding:20px;">
+  <div class="login-container">
+    <div class="login-header">
+      <div class="login-logo">🪟</div>
+      <h1>ALMACEN GPS BENICARLO</h1>
+      <p>Sistema de gestión de almacén</p>
+    </div>
+    <div class="input-group">
+      <label for="usernameInput">Nombre de usuario / Operador</label>
+      <input type="text" id="usernameInput" placeholder="Ej: HAMZA o TAFAT o LUIS" autocomplete="username">
+    </div>
+    <div class="input-group">
+      <label for="passwordInput">Contraseña (PIN)</label>
+      <input type="password" id="passwordInput" placeholder="••••" autocomplete="current-password" maxlength="4" inputmode="numeric">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Conectarse 🔑</button>
+    <div id="loginError">❌ Usuario o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app" style="display:none;">
+
+  <!-- BARRE TOP -->
+  <div class="topnav">
+    <button onclick="toggleSidebar()" style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:20px; width:auto; padding:4px 10px; margin:0;">☰</button>
+    <span style="color:white; font-weight:700; font-size:15px; letter-spacing:-0.3px; flex:1;">🪟 ALMACEN GPS BENICARLO</span>
+    <span id="syncStatus" class="synced" style="font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500; background:rgba(5,150,105,0.2); color:#34D399; white-space:nowrap;">● Sync</span>
+    <span id="userInfo" style="color:rgba(255,255,255,0.55); font-size:12px; margin:0 8px; white-space:nowrap; overflow:hidden; max-width:120px; text-overflow:ellipsis;"></span>
+    <button onclick="logout()" style="background:rgba(220,38,38,0.18); border:1px solid rgba(220,38,38,0.25); color:#FCA5A5; width:auto; padding:6px 14px; font-size:12px; border-radius:8px; margin:0;" title="Cerrar sesión">🔒 Salir</button>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL -->
+  <div style="display:flex; padding-top:56px; min-height:100vh;">
+
+    <!-- MENÚ LATERAL -->
+    <div id="sidebar" style="width:220px; background:#0F172A; min-height:calc(100vh - 56px); padding:12px 0; flex-shrink:0; transition:width 0.2s; border-right:1px solid rgba(255,255,255,0.05);">
+      <div class="sidebar-label">Operaciones</div>
+      <button onclick="showEntradaOptions()" class="sidebar-btn" id="sb-entrada" style="color:#86EFAC; font-weight:600; border-left-color:#059669;">📥 Entrada</button>
+      <button onclick="goto('sorties')" class="sidebar-btn" id="sb-sorties">📤 Salida</button>
+      <button onclick="goto('casse')" class="sidebar-btn" id="sb-casse" style="color:rgba(255,255,255,0.65);">💥 Casse</button>
+      <div class="sidebar-label" style="margin-top:8px;">Consultas</div>
+      <button onclick="goto('stock')" class="sidebar-btn" id="sb-stock">🪟 Stock Global</button>
+      <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">📒 Historial</button>
+      <div id="sbMagasinero" style="display:none;">
+        <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Magasinero</div>
+        <button onclick="openModal('modalCorreccion')" class="sidebar-btn" style="color:#ffcc44;">⚠️ Corrección Error</button>
+      </div>
+      <div id="sbTafat" style="display:none;">
+        <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Administración</div>
+        <button onclick="resetVisualizacion()" class="sidebar-btn" style="color:#F87171;">🗑️ Reiniciar Aplicación</button>
+      </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="app-content" style="flex:1; padding:20px; overflow-y:auto;">
+
+      <!-- PÁGINA INICIO / KPI -->
+      <div class="page active" id="page-dashboard">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;">📊 Panel de Control</h2>
+          <div id="dashLastUpdate" style="font-size:11px; color:#888;"></div>
+        </div>
+
+        <!-- KPI principales -->
+        <div id="kpiDashboard" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:10px; margin-bottom:16px;"></div>
+
+        <!-- Alertas -->
+        <div id="dashAlertas" style="margin-bottom:16px;"></div>
+
+        <!-- Últimas operaciones + Roturas recientes -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div class="card">
+            <strong>📥 Últimas Entradas</strong>
+            <div id="dashEntradas" style="margin-top:8px; font-size:13px;"></div>
+          </div>
+          <div class="card">
+            <strong>📤 Últimas Salidas</strong>
+            <div id="dashSalidas" style="margin-top:8px; font-size:13px;"></div>
+          </div>
+        </div>
+
+        <!-- Top références en stock -->
+        <div class="card">
+          <strong>🏆 Top Referencias en Stock</strong>
+          <div id="dashTop" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <!-- ENTRADAS -->
+      <div class="page" id="page-entrees">
+        <h2>📥 Flux de Entradas</h2>
+        <div id="entreeList"></div>
+      </div>
+
+      <!-- ROTURAS -->
+      <div class="page" id="page-casse">
+        <h2>💥 Roturas</h2>
+        <button class="btn-red" onclick="openModal('modalCasse')">Declarar una Rotura</button>
+        <div id="casseList"></div>
+      </div>
+
+      <!-- SALIDAS -->
+      <div class="page" id="page-sorties">
+        <h2>📤 Salidas</h2>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="btn-orange" style="flex:1; min-width:120px;" onclick="openModal('modalSortieVenta')">🛒 Salida Venta</button>
+          <button class="btn-blue" style="flex:1; min-width:120px;" onclick="openModal('modalTraspaso')">🚛 Traspaso</button>
+        </div>
+        <div id="sortieList"></div>
+      </div>
+
+      <!-- STOCK GLOBAL - TABLEAU EXCEL -->
+      <div class="page" id="page-stock">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+          <h2 style="margin:0;">🪟 Stock Global</h2>
+          <div style="display:flex; gap:6px;">
+            <button onclick="exportStockCSV()" style="background:#1d6f42; color:white; border:none; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:bold; cursor:pointer;">📊 Excel</button>
+            <button onclick="exportStockPDF()" style="background:#cc2222; color:white; border:none; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:bold; cursor:pointer;">📄 PDF</button>
+          </div>
+        </div>
+
+        <!-- Barre de recherche rapide N° Lote -->
+        <div style="background:#f0f4ff; border-radius:10px; padding:12px; margin-bottom:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span style="font-size:13px; font-weight:bold; color:#0055cc; white-space:nowrap;">🔍 Buscar N° Lote:</span>
+          <div style="display:flex; gap:6px; flex:1; min-width:200px;">
+            <input type="text" id="stockLoteSearch" placeholder="ej: 22325100518C" style="flex:1; padding:8px 12px; border:2px solid #0055cc; border-radius:8px; font-size:14px; font-family:monospace;" oninput="searchStockByLote()" autocomplete="off">
+            <button onclick="openScanner('stockLoteSearch')" style="width:44px; padding:8px; background:#0088ff; color:#fff; border:none; border-radius:8px; font-size:18px; cursor:pointer;">📷</button>
+            <button onclick="clearStockSearch()" style="width:44px; padding:8px; background:#eee; border:none; border-radius:8px; font-size:14px; cursor:pointer;">✕</button>
+          </div>
+        </div>
+
+        <!-- Résultat de la recherche par lote -->
+        <div id="stockSearchResult" style="margin-bottom:12px;"></div>
+
+        <button class="btn-blue" style="background:#6633aa; margin-bottom:12px;" onclick="goto('historique')">🕓 Ver historial de un lote</button>
+        <div id="stockKpis"></div>
+        <div id="stockTableWrap" style="margin:12px 0; overflow-x:auto;"></div>
+        <div id="stockList"></div>
+      </div>
+
+      <!-- MODAL DÉTAIL RÉFÉRENCE -->
+      <div class="modal" id="modalProdDetail">
+        <h2 id="prodDetailTitle">📦 Detalle</h2>
+        <div id="prodDetailList"></div>
+        <button class="btn-blue" onclick="closeModal('modalProdDetail')">Cerrar</button>
+      </div>
+
+      <!-- HISTORIAL -->
+      <!-- GRAND LIVRE DES MOUVEMENTS -->
+      <div class="page" id="page-historique">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <h2 style="margin:0;">📒 Grand Livre des Mouvements</h2>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span style="font-size:11px; color:#888; font-style:italic;">Append-Only</span>
+            <button onclick="exportHistoriqueCSV()" style="background:#1d6f42; color:white; border:none; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:bold; cursor:pointer;">📊 Excel</button>
+            <button onclick="exportHistoriquePDF()" style="background:#cc2222; color:white; border:none; border-radius:6px; padding:8px 12px; font-size:12px; font-weight:bold; cursor:pointer;">📄 PDF</button>
+          </div>
+        </div>
+
+        <!-- FILTRES DATE -->
+        <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#555; margin-bottom:8px; text-transform:uppercase;">📅 Période</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+            <button onclick="setGLPeriod('today')" class="gl-period-btn" id="glp-today">Hoy</button>
+            <button onclick="setGLPeriod('7days')" class="gl-period-btn" id="glp-7days">7 días</button>
+            <button onclick="setGLPeriod('month')" class="gl-period-btn" id="glp-month">Este mes</button>
+            <button onclick="setGLPeriod('all')" class="gl-period-btn active" id="glp-all">Todo</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input type="date" id="glDateFrom" onchange="renderGrandLivre()" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+            <span style="color:#888;">→</span>
+            <input type="date" id="glDateTo" onchange="renderGrandLivre()" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+          </div>
+        </div>
+
+        <!-- FILTRES OPÉRATIONS -->
+        <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#555; margin-bottom:8px; text-transform:uppercase;">🔍 Tipos de operación</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;" id="glTypeFilters">
+            <label class="gl-type-btn" style="background:#00aa4422; border:1px solid #00aa44;"><input type="checkbox" value="Entrée" checked onchange="renderGrandLivre()"> 📥 Entrada</label>
+            <label class="gl-type-btn" style="background:#cc660022; border:1px solid #cc6600;"><input type="checkbox" value="Sortie" checked onchange="renderGrandLivre()"> 📤 Salida</label>
+            <label class="gl-type-btn" style="background:#cc222222; border:1px solid #cc2222;"><input type="checkbox" value="Casse" checked onchange="renderGrandLivre()"> 💥 Rotura</label>
+            <label class="gl-type-btn" style="background:#9c27b022; border:1px solid #9c27b0;"><input type="checkbox" value="Reintegración" checked onchange="renderGrandLivre()"> ↩️ Retorno Cliente</label>
+            <label class="gl-type-btn" style="background:#66330022; border:1px solid #663300;"><input type="checkbox" value="Traspaso" checked onchange="renderGrandLivre()"> 🚛 Traspaso</label>
+            <label class="gl-type-btn" style="background:#66336622; border:1px solid #663366;"><input type="checkbox" value="Suppression" checked onchange="renderGrandLivre()"> 🗑️ Supresión</label>
+            <label class="gl-type-btn" style="background:#88888822; border:1px solid #888;"><input type="checkbox" value="Système" checked onchange="renderGrandLivre()"> 🤖 Sistema/Email</label>
+          </div>
+        </div>
+
+        <!-- FILTRE N° LOTE -->
+        <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#555; margin-bottom:8px; text-transform:uppercase;">🏷️ Filtrar por N° Lote</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="glLote" placeholder="ej: 22325100518C" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" oninput="renderGrandLivre()">
+            <button onclick="openScanner('glLote')" style="width:50px; padding:8px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:18px;">📷</button>
+            <button onclick="document.getElementById('glLote').value=''; renderGrandLivre();" style="width:40px; padding:8px; background:#eee; border:none; border-radius:6px; font-size:14px;">✕</button>
+          </div>
+        </div>
+
+        <!-- RÉSUMÉ KPI -->
+        <div id="glKpis" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+
+        <!-- TABLEAU GRAND LIVRE -->
+        <div id="glTable" style="overflow-x:auto; font-size:12px;"></div>
+      </div>
+
+    </div><!-- fin app-content -->
+  </div><!-- fin layout -->
+</div><!-- fin app -->
+
+<!-- MODAL CHOIX ENTRÉE -->
+<div class="modal" id="modalEntradaOpts" style="background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:12px; padding:24px; max-width:340px; width:100%; margin:20px;">
+    <h2 style="color:#0055cc; margin-bottom:20px;">📥 Tipo de Entrada</h2>
+    <button class="btn-green" style="margin-bottom:12px;" onclick="closeModal('modalEntradaOpts'); openModal('modalRec');">
+      📦 Nuevo Stock<br><small style="font-weight:normal;">Recepción de nueva mercancía</small>
+    </button>
+    <button id="btnRetornoEntrada" style="width:100%; padding:15px; margin-bottom:12px; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; background:#9c27b0; color:white;" onclick="abrirRetornoDesdeEntrada()">
+      ↩️ Retorno Cliente<br><small style="font-weight:normal;">Solo Magasinero</small>
+    </button>
+    <button class="btn-red" onclick="closeModal('modalEntradaOpts')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRMACIÓN SALIDA ═══ -->
+<div id="modalConfirmSalir" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-size:40px; margin-bottom:12px;">🔒</div>
+    <div style="font-size:17px; font-weight:700; color:#0F172A; margin-bottom:8px;">Cerrar sesión</div>
+    <div style="font-size:14px; color:#475569; margin-bottom:24px;">¿Desea salir de su sesión actual?</div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="cancelarSalir()" style="flex:1; padding:12px; background:#F1F5F9; color:#475569; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Cancelar</button>
+      <button onclick="confirmarSalir()" style="flex:1; padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Salir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRMACIÓN RETOUR ANDROID ═══ -->
+<div id="modalConfirmRetour" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-size:40px; margin-bottom:12px;">⚠️</div>
+    <div style="font-size:17px; font-weight:700; color:#0F172A; margin-bottom:8px;">¿Salir de la aplicación?</div>
+    <div style="font-size:14px; color:#475569; margin-bottom:24px;">¿Desea abandonar ALMACEN GPS BENICARLO?</div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="cancelarRetour()" style="flex:1; padding:12px; background:#F1F5F9; color:#475569; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Quedarse</button>
+      <button onclick="confirmarRetour()" style="flex:1; padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Salir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SORTIE ═══ -->
+<div class="modal" id="modalSortie">
+  <h2>📤 Nueva Salida</h2>
+  <label>N° Lote</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="sortieNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('sortieNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+
+  <label>Clientee (opcional)</label>
+  <input type="text" id="sortieCliente" placeholder="ej: Empresa ABC">
+
+  <button class="btn-green" onclick="saveSortie()">✓ Confirmar salida</button>
+  <button class="btn-red" onclick="closeModal('modalSortie')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL RECEPCIÓN ═══ -->
+<div class="modal" id="modalRec">
+  <h2>📥 Nueva Recepción</h2>
+
+  <button class="btn-blue" onclick="openScanner(['recProd','recNum'])" style="background:#0088ff">📷 Escanear etiqueta (producto + lote)</button>
+
+  <label>Producto (código)</label>
+  <input type="text" id="recProd" placeholder="ej: FLT8-321/214" list="prodList" oninput="onProdChange()">
+  <datalist id="prodList"></datalist>
+
+  <label>Hojas por caja <span id="fpcStatus" style="font-size:12px; font-weight:normal;"></span></label>
+  <input type="number" id="recFpc" min="1" placeholder="ej: 16">
+
+  <label>Número de cajas</label>
+  <input type="number" id="recNb" value="1" min="1">
+
+  <label>N° Lote</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="recNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('recNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+
+  <label>Ubicación (opcional)</label>
+  <input type="text" id="recEmp" placeholder="ej: A1,3">
+
+  <button class="btn-green" onclick="saveRec()">✓ Confirmar</button>
+  <button class="btn-red" onclick="closeModal('modalRec')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL ROTURA ═══ -->
+<div class="modal" id="modalCasse">
+  <h2>💥 Declaración de Rotura</h2>
+
+  <button class="btn-blue" onclick="openScanner(['casseProd','casseNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta (producto + lote)</button>
+
+  <label>Referencia del producto</label>
+  <input type="text" id="casseProd" placeholder="ej: FL8-321/214" oninput="onCasseProdChange()">
+  <div id="casseProdHint" style="font-size:12px; color:#0055cc; margin-top:-4px; margin-bottom:8px;"></div>
+
+  <label>N° Lote</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="casseNum" placeholder="ej: 22325100518C" style="flex:1" oninput="autofillCasseProd()">
+    <button onclick="openScanner('casseNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+
+  <label>Número de hojas rotas</label>
+  <input type="number" id="casseQty" value="1" min="1">
+
+  <button class="btn-red" onclick="saveCasse()">💥 Validar Rotura</button>
+  <button class="btn-blue" onclick="closeModal('modalCasse')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL ESCÁNER ═══ -->
+<div class="modal" id="modalScanner" style="background:#000; padding:0; z-index:9999;">
+  <div style="position:relative; width:100%; height:100vh; display:flex; flex-direction:column">
+    <div style="background:#111; color:#fff; padding:14px; display:flex; justify-content:space-between; align-items:center">
+      <span style="font-weight:bold; font-size:16px">📷 Escáner</span>
+      <button onclick="closeScanner()" style="background:#cc2222; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-weight:bold">✕ Cerrar</button>
+    </div>
+    <video id="scanVideo" autoplay playsinline muted style="width:100%; flex:1; object-fit:cover; background:#000"></video>
+    <canvas id="scanCanvas" style="display:none"></canvas>
+    <div id="scanStatusMsg" style="color:#fff; text-align:center; padding:14px; background:#111; font-size:14px"></div>
+    <div style="background:#111; padding:14px">
+      <input type="text" id="scanManualInp" placeholder="O escriba el código aquí..." style="width:100%; padding:12px; border-radius:8px; border:none; font-size:16px; box-sizing:border-box; margin-bottom:8px">
+      <button onclick="validateManualScan()" style="width:100%; padding:14px; background:#00aa44; color:#fff; border:none; border-radius:8px; font-weight:bold; font-size:15px">✓ Validar este código</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SALIDA VENTA ═══ -->
+<div class="modal" id="modalSortieVenta">
+  <h2>🛒 Salida Venta</h2>
+
+  <label>N° Pedido / Commande</label>
+  <input type="text" id="ventaPedido" placeholder="ej: PED-2024-001">
+
+  <label>Cliente</label>
+  <input type="text" id="ventaCliente" placeholder="ej: Empresa ABC">
+
+  <label>Número de cajas a salir</label>
+  <input type="number" id="ventaCajas" value="1" min="1" oninput="resetVentaCounter()">
+
+  <!-- Compteur visuel -->
+  <div id="ventaContador" style="display:none; text-align:center; margin:16px 0; padding:16px; background:#f0f4ff; border-radius:12px; border:2px solid #0055cc;">
+    <div style="font-size:13px; color:#555; margin-bottom:6px;">Cajas restantes por escanear</div>
+    <div id="ventaContadorNum" style="font-size:52px; font-weight:bold; color:#0055cc; line-height:1;">0</div>
+    <div style="font-size:12px; color:#888; margin-top:6px;">Escanee cada lote uno a uno</div>
+  </div>
+
+  <!-- Informations auto-remplies après scan -->
+  <div id="ventaInfoAuto" style="display:none; background:#f0f9ff; border:2px solid #0055cc; border-radius:10px; padding:12px; margin:8px 0;">
+    <div style="font-size:12px; color:#0055cc; font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">📦 Información del producto escaneado</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <div>
+        <div style="font-size:11px; color:#888; margin-bottom:2px;">Referencia</div>
+        <input type="text" id="ventaRefProd" placeholder="Auto" style="background:white; font-weight:600; color:#0055cc;" readonly>
+      </div>
+      <div>
+        <div style="font-size:11px; color:#888; margin-bottom:2px;">N° Lote</div>
+        <input type="text" id="ventaLoteInfo" placeholder="Auto" style="background:white; font-family:monospace; font-size:12px;" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des lotes scannés -->
+  <div id="ventaScannedList" style="margin:8px 0;"></div>
+
+  <!-- Bouton scan -->
+  <button id="ventaBtnScan" onclick="ventaScanNext()" style="width:100%; padding:14px; background:#0088ff; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0; display:none;">📷 Escanear siguiente caja</button>
+
+  <button class="btn-orange" id="ventaBtnConfirm" onclick="saveSalidaVenta()" style="display:none;">✓ Confirmar Venta</button>
+  <button class="btn-red" onclick="closeModal('modalSortieVenta')">Cancelar</button>
+
+  <button class="btn-blue" onclick="iniciarVenta()" id="ventaBtnIniciar" style="margin-bottom:8px;">▶ Iniciar escaneo de cajas</button>
+</div>
+
+<!-- ═══ MODAL RETORNO CLIENTE ═══ -->
+<div class="modal" id="modalRetorno">
+  <h2>↩️ Retorno de Cliente</h2>
+  <p style="color:#888; font-size:13px; margin-bottom:12px;">El producto vuelve al stock. Se registra en zona de cuarentena hasta validación.</p>
+
+  <button class="btn-blue" onclick="openScanner(['retornoProd','retornoNum'])" style="background:#0088ff; margin-bottom:8px;">📷 Escanear etiqueta (producto + lote)</button>
+
+  <label>Referencia del producto</label>
+  <input type="text" id="retornoProd" placeholder="ej: FL8-321/214">
+
+  <label>N° Lote</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="retornoNum" placeholder="ej: 22325100518C" style="flex:1">
+    <button onclick="openScanner('retornoNum')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+
+  <label>Motivo del retorno</label>
+  <input type="text" id="retornoMotivo" placeholder="ej: Producto defectuoso, error de pedido...">
+
+  <label>Cliente</label>
+  <input type="text" id="retornoCliente" placeholder="ej: Empresa ABC">
+
+  <label>Estado del producto</label>
+  <select id="retornoEstado" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; font-size:16px; margin:8px 0;">
+    <option value="cuarentena">⚠️ Cuarentena (pendiente de revisión)</option>
+    <option value="bueno">✅ Buen estado — vuelve al stock</option>
+    <option value="destruir">❌ A destruir</option>
+  </select>
+
+  <button style="width:100%; padding:15px; background:#9c27b0; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0;" onclick="saveRetorno()">↩️ Confirmar Retorno</button>
+  <button class="btn-red" onclick="closeModal('modalRetorno')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL CORRECCIÓN (Append-Only) ═══ -->
+<div class="modal" id="modalCorreccion">
+  <h2>⚠️ Corrección de Error</h2>
+  <p style="color:#888; font-size:13px; margin-bottom:12px;">Solo el Magasinero puede añadir una línea correctiva.<br>El registro original NO se modifica (Append-Only).</p>
+
+  <label>N° Lote a corregir</label>
+  <div style="display:flex; gap:8px">
+    <input type="text" id="corrLote" placeholder="ej: 22325100518C" style="flex:1" oninput="onCorrLoteChange()">
+    <button onclick="openScanner('corrLote')" style="width:60px; padding:12px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:20px">📷</button>
+  </div>
+  <div id="corrLoteInfo" style="font-size:12px; color:#0055cc; margin:4px 0;"></div>
+
+  <label>Tipo de corrección</label>
+  <select id="corrTipo" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; font-size:16px; margin:8px 0;">
+    <option value="+">➕ Añadir hojas (error de menos)</option>
+    <option value="-">➖ Quitar hojas (error de más)</option>
+  </select>
+
+  <label>Cantidad a corregir (hojas)</label>
+  <input type="number" id="corrQty" value="1" min="1">
+
+  <label>Motivo de la corrección</label>
+  <input type="text" id="corrMotivo" placeholder="ej: Error de saisie — se marcaron 100 en lugar de 10">
+
+  <button style="width:100%; padding:15px; background:#cc6600; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0;" onclick="saveCorreccion()">⚠️ Registrar Corrección</button>
+  <button class="btn-red" onclick="closeModal('modalCorreccion')">Cancelar</button>
+</div>
+
+<!-- ═══ MODAL TRASPASO DE ALMACÉN ═══ -->
+<div class="modal" id="modalTraspaso">
+  <h2>🚛 Traspaso de Almacén</h2>
+
+  <label>Almacén destino (ciudad)</label>
+  <input type="text" id="traspasoDest" placeholder="ej: Madrid, Barcelona, Sevilla...">
+
+  <label>Número de cajas a transferir</label>
+  <input type="number" id="traspasoCajas" value="1" min="1" oninput="resetTraspasoCounter()">
+
+  <!-- Compteur visuel -->
+  <div id="traspasoContador" style="display:none; text-align:center; margin:16px 0; padding:16px; background:#e0f2fe; border-radius:12px; border:2px solid #0055cc;">
+    <div style="font-size:13px; color:#555; margin-bottom:6px;">Cajas restantes por escanear</div>
+    <div id="traspasoContadorNum" style="font-size:52px; font-weight:bold; color:#0055cc; line-height:1;">0</div>
+    <div style="font-size:12px; color:#888; margin-top:6px;">Escanee cada lote uno a uno</div>
+  </div>
+
+  <!-- Info auto-remplie après scan -->
+  <div id="traspasoInfoAuto" style="display:none; background:#f0f9ff; border:2px solid #0055cc; border-radius:10px; padding:12px; margin:8px 0;">
+    <div style="font-size:12px; color:#0055cc; font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">📦 Último lote escaneado</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <div>
+        <div style="font-size:11px; color:#888; margin-bottom:2px;">Referencia</div>
+        <input type="text" id="traspasoRefProd" placeholder="Auto" style="background:white; font-weight:600; color:#0055cc;" readonly>
+      </div>
+      <div>
+        <div style="font-size:11px; color:#888; margin-bottom:2px;">N° Lote</div>
+        <input type="text" id="traspasoLoteInfo" placeholder="Auto" style="background:white; font-family:monospace; font-size:12px;" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des lotes scannés -->
+  <div id="traspasoScannedList" style="margin:8px 0;"></div>
+
+  <!-- Bouton scan -->
+  <button id="traspasoBtnScan" onclick="traspasoScanNext()" style="width:100%; padding:14px; background:#0055cc; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; margin:8px 0; display:none;">📷 Escanear siguiente caja</button>
+
+  <button class="btn-blue" id="traspasoBtnConfirm" onclick="saveTraspaso()" style="display:none;">✓ Confirmar Traspaso</button>
+  <button class="btn-red" onclick="closeModal('modalTraspaso')">Cancelar</button>
+
+  <button style="width:100%; padding:13px; background:#0055cc; color:white; border:none; border-radius:8px; font-size:14px; font-weight:600; margin-bottom:8px;" onclick="iniciarTraspaso()" id="traspasoBtnIniciar">▶ Iniciar escaneo de cajas</button>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR CSS injected via JS for sidebar-btn
+// ═══════════════════════════════════════════════════════════
+const sidebarStyle = document.createElement('style');
+sidebarStyle.textContent = `
+  .sidebar-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    background: transparent;
+    color: rgba(255,255,255,0.85);
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: normal;
+    cursor: pointer;
+    margin: 2px 0;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-btn:hover { background: rgba(255,255,255,0.08); }
+  .sidebar-btn.active {
+    background: rgba(255,255,255,0.12);
+    border-left-color: #00aa44;
+    color: white;
+    font-weight: bold;
+  }
+  /* Grand Livre */
+  .gl-period-btn {
+    padding: 5px 10px; border:1px solid #ddd; border-radius:6px;
+    background:white; font-size:12px; cursor:pointer; color:#555;
+  }
+  .gl-period-btn.active { background:#0055cc; color:white; border-color:#0055cc; }
+  .gl-type-btn {
+    padding: 4px 10px; border-radius:6px; font-size:12px;
+    cursor:pointer; display:flex; align-items:center; gap:5px;
+  }
+  .gl-type-btn input { cursor:pointer; }
+  .gl-row-entree { border-left: 3px solid #00aa44; }
+  .gl-row-sortie { border-left: 3px solid #cc6600; }
+  .gl-row-casse { border-left: 3px solid #cc2222; }
+  .gl-row-autre { border-left: 3px solid #888; }
+  .gl-badge {
+    display:inline-block; padding:2px 7px; border-radius:10px;
+    font-size:11px; font-weight:bold; white-space:nowrap;
+  }
+`;
+document.head.appendChild(sidebarStyle);
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
+}
+
+const USERS = [
+  {id:'u1', nom:'MIGUEL', prenom:'MIGUEL', role:'Operador', pin:'1234'},
+  {id:'u2', nom:'TAFAT KHALED', prenom:'TAFAT', role:'Operador', pin:'5678'},
+  {id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS', role:'Magasinero', pin:'0000'},
+];
+
+// Table précise : hojas par caja selon la référence EXACTE (épaisseur + dimensions)
+// Clé = "épaisseur-dimensions" tel qu'extrait du code produit (ex: "8-321/214")
+// Complétée automatiquement quand l'utilisateur saisit une quantité pour une nouvelle référence.
+const FPC_TABLE_DEFAULT = {
+  // FLOAT incolore (FL, FLT)
+  '4-366/214': 34,
+  '4-321/214': 32,
+  '8-321/214': 16,
+  '10-300/200': 13,
+  '10-321/214': 13,
+  '10-225/214': 13,
+  '12-300/200': 11,
+  '12-321/214': 11,
+  '12-225/214': 11,
+  // FLOAT SuperClear (M)
+  '8M-321/200': 16,
+  '4M-321/255': 28,
+  // PARSOL GRIS (GR)
+  '4GR-330/225': 29,
+  '5GR-330/225': 23,
+  // PARSOL BRONCE (BR)
+  '4BR-321/225': 29,
+  '6BR-321/225': 19,
+  // CARGLASS (CG, sans suffixe)
+  '4-250/200': 43,
+  // FLOAT TREMPÉ avec trous (TR + nb trous + T)
+  '12TR6T-299/199': 18,
+  '12TR8T-299/199': 18,
+  // LAMINADO (verre feuilleté, épaisseur décimale)
+  '88.1-366/255': 0, // à renseigner selon étiquette CANTIDAD
+};
+let FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, JSON.parse(localStorage.getItem('vs_fpc_table') || '{}'));
+
+function saveFpcTable() {
+  localStorage.setItem('vs_fpc_table', JSON.stringify(FPC_TABLE));
+}
+
+// Extrait {ep, dims, key} d'un code produit de tout format :
+// FL8-321/214, FLT4-366/214, FL4GR-330/225, FL6BR-321/225, FL8M-321/200,
+// CG4-250/200, FL12TR6T-299/199, FL4M-321/255...
+// La clé inclut tout suffixe après les chiffres d'épaisseur (TR6T, M, GR, BR...)
+// pour distinguer des variantes qui ont la même épaisseur/dimensions mais des
+// caractéristiques différentes (ex: nombre de trous de perçage, type de verre).
+function parseProductCode(prod) {
+  // Accepte : FL8-321/214, FL4GR-330/225, F88.1-366/255, FL12TR6T-299/199...
+  const m = prod.match(/^([A-Z]+)(\d+(?:\.\d+)?)([A-Z0-9]*)-(\d+\/\d+)$/i);
+  if (!m) return null;
+  const ep = parseFloat(m[2]);
+  const suffix = m[3] || '';
+  const dims = m[4];
+  return { ep, dims, key: m[2] + suffix + '-' + dims };
+}
+
+// Dimensions réelles connues (hauteur/largeur, format des étiquettes)
+const DIMS = ['199/299','225/214','250/200','255/321','300/200','321/200','321/214','321/225','330/214','330/225','366/214'];
+const EPS = [3,4,5,6,8,10,12];
+
+const PRODS = [];
+EPS.forEach(ep => DIMS.forEach(d => PRODS.push('FLT'+ep+'-'+d)));
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let DB = {
+  stock: JSON.parse(localStorage.getItem('vs_stock') || '{}'),
+  entrees: JSON.parse(localStorage.getItem('vs_entrees') || '[]'),
+  casses: JSON.parse(localStorage.getItem('vs_casses') || '[]'),
+  sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
+  mouvements: JSON.parse(localStorage.getItem('vs_mouvements') || '[]'),
+};
+
+let currentUser = null;
+
+// URL du Google Apps Script de synchronisation
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwva6-Ugbh9icmKJOZVg5Dyj3NPgC0-Px-m0VO9lOW1E9Kd3r6p_CyZ77JY6pUUJmyJ/exec';
+
+function saveDB() {
+  localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
+  localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
+  localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
+  localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
+  localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+  syncToSheets();
+  // Rafraîchit le dashboard si on y est, sinon met à jour en arrière-plan
+  if (typeof renderDashboard === 'function') {
+    setTimeout(() => {
+      const dash = document.getElementById('page-dashboard');
+      if (dash && dash.classList.contains('active')) renderDashboard();
+    }, 100);
+  }
+}
+
+let syncTimer = null;
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const states = {
+    synced:  { text: '● Sincronizado', bg: 'rgba(5,150,105,0.2)', color: '#34D399' },
+    syncing: { text: '↻ Sincronizando', bg: 'rgba(245,158,11,0.2)', color: '#FCD34D' },
+    error:   { text: '✕ Sin conexión', bg: 'rgba(220,38,38,0.2)', color: '#FCA5A5' }
+  };
+  const s = states[state] || states.synced;
+  el.textContent = s.text;
+  el.style.background = s.bg;
+  el.style.color = s.color;
+}
+
+function syncToSheets() {
+  clearTimeout(syncTimer);
+  setSyncStatus('syncing');
+  syncTimer = setTimeout(() => {
+    const payload = {
+      stock: DB.stock,
+      entrees: DB.entrees,
+      casses: DB.casses,
+      sorties: DB.sorties,
+      mouvements: DB.mouvements,
+      fpcTable: FPC_TABLE,
+      updatedAt: new Date().toISOString()
+    };
+    fetch(SYNC_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    })
+    .then(() => setSyncStatus('synced'))
+    .catch(e => { setSyncStatus('error'); console.warn('Sync Sheets echouee:', e); });
+  }, 500);
+}
+
+function loadFromSheets() {
+  fetch(SYNC_URL + '?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.entrees) return;
+      DB.stock = data.stock || {};
+      DB.entrees = data.entrees || [];
+      DB.casses = data.casses || [];
+      DB.sorties = data.sorties || [];
+      DB.mouvements = data.mouvements || [];
+      if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
+      localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
+      localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
+      localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
+      localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
+      localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+      if (currentUser) {
+        const activePage = document.querySelector('#app .page.active');
+        if (activePage) {
+          const id = activePage.id.replace('page-', '');
+          if (id === 'entrees') renderEntrees();
+          else if (id === 'casse') renderCasse();
+          else if (id === 'sorties') renderSorties();
+          else if (id === 'stock') renderStock();
+          else if (id === 'historique') renderHistorique();
+        }
+      }
+    })
+    .catch(e => console.warn('Chargement Sheets echoue:', e));
+}
+
+// Charge les données au démarrage puis toutes les 30 secondes
+loadFromSheets();
+setInterval(loadFromSheets, 30000);
+
+// Journal centralisé : enregistre TOUTE opération liée a un contenant.
+// type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)
+function logMouvement(type, num, detail) {
+  DB.mouvements.push({
+    type, num, detail,
+    operateur: currentUser ? currentUser.nom : '—',
+    date: new Date().toISOString()
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// LOGIN — Formulaire username + password
+// ═══════════════════════════════════════════════════════════
+function doLogin() {
+  const username = document.getElementById('usernameInput').value.trim().toUpperCase();
+  const password = document.getElementById('passwordInput').value.trim();
+  const errorEl = document.getElementById('loginError');
+
+  // Accepte le prénom seul (HAMZA, TAFAT, LUIS) OU le nom complet
+  const user = USERS.find(u =>
+    (u.nom.toUpperCase() === username ||
+     u.prenom.toUpperCase() === username) &&
+    u.pin === password
+  );
+
+  if (user) {
+    document.getElementById('loginError').classList.remove('visible');
+    loginSuccess(user);
+  } else {
+    document.getElementById('loginError').classList.add('visible');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+// Permet de se connecter en appuyant sur Entrée
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('login').classList.contains('active')) {
+    doLogin();
+  }
+});
+
+function loginSuccess(user) {
+  currentUser = user;
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
+  // Affiche section Magasinero
+  const sbMag = document.getElementById('sbMagasinero');
+  if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
+  // Affiche bouton Reiniciar uniquement pour TAFAT KHALED
+  const sbTafat = document.getElementById('sbTafat');
+  if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
+  goto('dashboard');
+}
+
+function logout() {
+  if (!currentUser) return;
+  // Ouvre le modal personnalisé au lieu de confirm()
+  document.getElementById('modalConfirmSalir').style.display = 'flex';
+}
+
+function confirmarSalir() {
+  document.getElementById('modalConfirmSalir').style.display = 'none';
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('usernameInput').value = '';
+  document.getElementById('passwordInput').value = '';
+  document.getElementById('loginError').classList.remove('visible');
+}
+
+function cancelarSalir() {
+  document.getElementById('modalConfirmSalir').style.display = 'none';
+}
+
+function cancelarRetour() {
+  document.getElementById('modalConfirmRetour').style.display = 'none';
+}
+
+function confirmarRetour() {
+  document.getElementById('modalConfirmRetour').style.display = 'none';
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('usernameInput').value = '';
+  document.getElementById('passwordInput').value = '';
+}
+
+// Protection touche "Retour" sur Android (history)
+window.history.pushState(null, '', window.location.href);
+window.addEventListener('popstate', function() {
+  if (currentUser) {
+    window.history.pushState(null, '', window.location.href);
+    document.getElementById('modalConfirmRetour').style.display = 'flex';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function goto(page) {
+  document.querySelectorAll('#app .page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  // Highlight sidebar button
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  const sb = document.getElementById('sb-' + page);
+  if (sb) sb.classList.add('active');
+  if (page === 'dashboard') renderDashboard();
+  else if (page === 'entrees') renderEntrees();
+  else if (page === 'casse') renderCasse();
+  else if (page === 'sorties') renderSorties();
+  else if (page === 'stock') renderStock();
+  else if (page === 'historique') { renderGrandLivre(); }
+}
+
+// ─── Dashboard / KPI ───
+function renderDashboard() {
+  const now = new Date();
+
+  // ── KPI totaux ──
+  let totF = 0, totC = 0, totCasseF = 0, totSortiesF = 0, totRefs = 0;
+  Object.values(DB.stock).forEach(v => { if (v.f > 0) { totF += v.f; totC += v.c; totRefs++; } });
+  DB.casses.forEach(c => totCasseF += c.qty);
+  DB.sorties.forEach(s => totSortiesF += (s.feuilles || 0));
+
+  // ── KPI du jour ──
+  const todayStr = now.toISOString().slice(0, 10);
+  const entHoy = DB.entrees.filter(e => e.date && e.date.startsWith(todayStr)).length;
+  const salHoy = DB.sorties.filter(s => s.date && s.date.startsWith(todayStr)).length;
+  const casseHoy = DB.casses.filter(c => c.date && c.date.startsWith(todayStr)).reduce((s,c) => s + c.qty, 0);
+
+  document.getElementById('kpiDashboard').innerHTML =
+    kpiCard('🪟 Hojas en Stock', totF, '#0055cc') +
+    kpiCard('📦 Cajas en Stock', totC, '#0055cc') +
+    kpiCard('📋 Referencias', totRefs, '#334155') +
+    kpiCard('📥 Entradas Hoy', entHoy, '#00aa44') +
+    kpiCard('📤 Salidas Hoy', salHoy, '#cc6600') +
+    kpiCard('💥 Roturas Hoy', casseHoy + ' hj', '#cc2222') +
+    kpiCard('📤 Total Salidas', totSortiesF + ' hj', '#cc6600') +
+    kpiCard('💥 Total Roturas', totCasseF + ' hj', '#cc2222');
+
+  // ── Alertas ──
+  let alertas = '';
+  // Stock faible : produits avec moins de 20 hojas
+  Object.entries(DB.stock).forEach(([prod, v]) => {
+    if (v.f > 0 && v.f < 20) {
+      alertas += '<div style="background:#fff3e0; border-left:4px solid #ff9800; border-radius:6px; padding:10px 12px; margin-bottom:6px; font-size:13px;">⚠️ <strong>' + prod + '</strong> — Solo <strong>' + v.f + ' hojas</strong> en stock</div>';
+    }
+  });
+  // Casses récentes (dernières 24h)
+  const hier = new Date(now - 86400000).toISOString();
+  const cassesRecientes = DB.casses.filter(c => c.date > hier);
+  if (cassesRecientes.length > 0) {
+    alertas += '<div style="background:#ffebee; border-left:4px solid #cc2222; border-radius:6px; padding:10px 12px; margin-bottom:6px; font-size:13px;">💥 <strong>' + cassesRecientes.length + ' rotura(s)</strong> declarada(s) en las últimas 24h</div>';
+  }
+  document.getElementById('dashAlertas').innerHTML = alertas ||
+    '<div style="background:#e8f5e9; border-left:4px solid #00aa44; border-radius:6px; padding:10px 12px; font-size:13px;">✅ Sin alertas — Todo en orden</div>';
+
+  // ── Últimas entradas ──
+  const ent = DB.entrees.slice(-5).reverse().map(e =>
+    '<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">' +
+    '<span><strong>' + (e.prod || '—') + '</strong><br><small style="color:#888;">' + e.num + '</small></span>' +
+    '<span style="text-align:right;"><strong style="color:#00aa44;">+' + e.feuilles + ' hj</strong><br><small style="color:#888;">' + new Date(e.date).toLocaleDateString('es-ES') + '</small></span>' +
+    '</div>'
+  ).join('') || '<p style="color:#999; font-size:13px;">Sin entradas</p>';
+
+  // ── Últimas salidas ──
+  const sal = DB.sorties.slice(-5).reverse().map(s =>
+    '<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">' +
+    '<span><strong>' + (s.prod || '—') + '</strong><br><small style="color:#888;">' + (s.tipo || 'Salida') + (s.pedido ? ' · ' + s.pedido : '') + '</small></span>' +
+    '<span style="text-align:right;"><strong style="color:#cc6600;">-' + (s.feuilles || 0) + ' hj</strong><br><small style="color:#888;">' + new Date(s.date).toLocaleDateString('es-ES') + '</small></span>' +
+    '</div>'
+  ).join('') || '<p style="color:#999; font-size:13px;">Sin salidas</p>';
+
+  document.getElementById('dashEntradas').innerHTML = ent;
+  document.getElementById('dashSalidas').innerHTML = sal;
+
+  // ── Top références en stock ──
+  const topEl = document.getElementById('dashTop');
+  if (topEl) {
+    const sorted = Object.entries(DB.stock)
+      .filter(([,v]) => v.f > 0)
+      .sort((a,b) => b[1].f - a[1].f)
+      .slice(0, 5);
+    topEl.innerHTML = sorted.map(([prod, v], i) =>
+      '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #eee;">' +
+      '<span style="background:#0055cc; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; flex-shrink:0;">' + (i+1) + '</span>' +
+      '<span style="flex:1; font-weight:bold; font-size:13px;">' + prod + '</span>' +
+      '<span style="color:#0055cc; font-weight:bold;">' + v.f + ' hj</span>' +
+      '<span style="color:#888; font-size:12px;">· ' + v.c + ' cj</span>' +
+      '</div>'
+    ).join('') || '<p style="color:#999; font-size:13px;">Sin stock</p>';
+  }
+
+  // ── Horodatage ──
+  const lastUpEl = document.getElementById('dashLastUpdate');
+  if (lastUpEl) lastUpEl.textContent = 'Actualizado: ' + now.toLocaleTimeString('es-ES');
+}
+
+// Rafraîchit le dashboard automatiquement toutes les 30 secondes si on y est
+setInterval(() => {
+  if (currentUser && document.getElementById('page-dashboard').classList.contains('active')) {
+    renderDashboard();
+  }
+}, 30000);
+
+function kpiCard(label, value, color) {
+  return '<div style="background:' + color + '18; border-left:4px solid ' + color + '; border-radius:8px; padding:12px 10px; text-align:center;">' +
+    '<div style="font-size:20px; font-weight:bold; color:' + color + ';">' + value + '</div>' +
+    '<div style="font-size:11px; color:#555; margin-top:4px;">' + label + '</div>' +
+    '</div>';
+}
+
+// ─── Mostrar opciones de entrada ───
+function showEntradaOptions() {
+  const isMagasinero = currentUser && currentUser.role === 'Magasinero';
+  const btn = document.getElementById('btnRetornoEntrada');
+  if (btn) {
+    btn.style.opacity = isMagasinero ? '1' : '0.4';
+    btn.title = isMagasinero ? '' : 'Solo Magasinero';
+  }
+  document.getElementById('modalEntradaOpts').style.display = 'flex';
+}
+
+function abrirRetornoDesdeEntrada() {
+  const isMagasinero = currentUser && currentUser.role === 'Magasinero';
+  if (!isMagasinero) {
+    alert('⛔ Retorno Cliente: Solo el Magasinero (LUIS MIGUEL SOLERA) puede realizar esta operación.');
+    return;
+  }
+  closeModal('modalEntradaOpts');
+  openModal('modalRetorno');
+}
+
+// ─── Salida Venta ───
+// ─── Salida Venta avec compteur de scans ───
+let ventaScannedNums = []; // conteneurs déjà scannés dans cette vente
+let ventaRestantes = 0;
+
+function resetVentaCounter() {
+  ventaScannedNums = [];
+  ventaRestantes = 0;
+  document.getElementById('ventaContador').style.display = 'none';
+  document.getElementById('ventaBtnScan').style.display = 'none';
+  document.getElementById('ventaBtnConfirm').style.display = 'none';
+  document.getElementById('ventaBtnIniciar').style.display = 'block';
+  document.getElementById('ventaScannedList').innerHTML = '';
+  const infoDiv = document.getElementById('ventaInfoAuto');
+  if (infoDiv) infoDiv.style.display = 'none';
+  const refEl = document.getElementById('ventaRefProd');
+  const loteEl = document.getElementById('ventaLoteInfo');
+  if (refEl) refEl.value = '';
+  if (loteEl) loteEl.value = '';
+}
+
+function iniciarVenta() {
+  const pedido = document.getElementById('ventaPedido').value.trim();
+  const cajas = parseInt(document.getElementById('ventaCajas').value) || 0;
+  if (!pedido) { alert('⛔ Ingrese primero el N° de pedido.'); return; }
+  if (cajas < 1) { alert('⛔ Indique el número de cajas a salir.'); return; }
+
+  ventaScannedNums = [];
+  ventaRestantes = cajas;
+  document.getElementById('ventaContadorNum').textContent = ventaRestantes;
+  document.getElementById('ventaContador').style.display = 'block';
+  document.getElementById('ventaBtnScan').style.display = 'block';
+  document.getElementById('ventaBtnIniciar').style.display = 'none';
+  document.getElementById('ventaBtnConfirm').style.display = 'none';
+  document.getElementById('ventaScannedList').innerHTML = '';
+}
+
+function ventaScanNext() {
+  if (ventaRestantes <= 0) return;
+  // On ouvre le scanner avec un champ temporaire virtuel traité par callback
+  openScannerVenta();
+}
+
+function openScannerVenta() {
+  // Utilise le scanner standard mais avec un callback personnalisé
+  scanTargetQueue = ['ventaNumTemp'];
+  scanFoundCodes = {};
+  scanCooldownUntil = 0;
+  scanRejectUntil = 0;
+
+  // Passe le modal parent derrière le scanner (z-index) sans le cacher
+  scanParentModalId = 'modalSortieVenta';
+  const parentEl = document.getElementById('modalSortieVenta');
+  if (parentEl) parentEl.style.zIndex = '1';
+
+  const scannerEl = document.getElementById('modalScanner');
+  scannerEl.style.display = 'block';
+  scannerEl.style.zIndex = '99999';
+  document.getElementById('scanManualInp').value = '';
+  updateScanStatus();
+  startCamera();
+  startWatchdog();
+}
+
+function ventaOnCodeScanned(code) {
+  const entry = DB.entrees.slice().reverse().find(e => e.num === code);
+  if (!entry) {
+    alert('⚠️ Lote ' + code + ' no encontrado en recepciones.');
+    return;
+  }
+
+  if (ventaScannedNums.includes(code)) {
+    alert('⛔ El lote ' + code + ' ya fue escaneado en esta venta.');
+    return;
+  }
+
+  const dejaSorti = DB.sorties.some(s => s.num === code);
+  if (dejaSorti) {
+    alert('⛔ El lote ' + code + ' ya fue RETIRADO del stock.');
+    return;
+  }
+
+  ventaScannedNums.push(code);
+  ventaRestantes--;
+  document.getElementById('ventaContadorNum').textContent = ventaRestantes;
+
+  // Affiche les infos du produit scanné (référence + lote)
+  const infoDiv = document.getElementById('ventaInfoAuto');
+  const refEl = document.getElementById('ventaRefProd');
+  const loteEl = document.getElementById('ventaLoteInfo');
+  if (infoDiv) infoDiv.style.display = 'block';
+  if (refEl) refEl.value = entry.prod || '—';
+  if (loteEl) loteEl.value = code;
+
+  // Liste des lotes scannés
+  const list = document.getElementById('ventaScannedList');
+  list.innerHTML += '<div style="padding:8px 12px; background:#D1FAE5; border-left:3px solid #059669; border-radius:6px; margin:4px 0; font-size:13px;">' +
+    '✅ <strong style="color:#065F46;">' + (entry.prod || '—') + '</strong> · ' +
+    '<span style="font-family:monospace;">' + code + '</span> · ' +
+    (entry.feuilles || 0) + ' hojas</div>';
+
+  if (ventaRestantes <= 0) {
+    document.getElementById('ventaContadorNum').textContent = '✓';
+    document.getElementById('ventaContadorNum').style.color = '#059669';
+    document.getElementById('ventaBtnScan').style.display = 'none';
+    document.getElementById('ventaBtnConfirm').style.display = 'block';
+  }
+}
+
+function saveSalidaVenta() {
+  const pedido = document.getElementById('ventaPedido').value.trim();
+  const cliente = document.getElementById('ventaCliente').value.trim();
+
+  if (ventaScannedNums.length === 0) {
+    alert('⛔ Escanee al menos un lote primero.');
+    return;
+  }
+
+  // Traiter chaque conteneur scanné
+  let totalHojas = 0;
+  ventaScannedNums.forEach(num => {
+    const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+    if (!entry) return;
+    const prod = entry.prod;
+    const feuilles = Number(entry.feuilles) || Number(entry.hojas) || 0;
+    const nb = Number(entry.nb) || 1;
+
+    if (DB.stock[prod]) {
+      DB.stock[prod].f = Math.max(0, DB.stock[prod].f - feuilles);
+      DB.stock[prod].c = Math.max(0, DB.stock[prod].c - nb);
+    }
+
+    DB.sorties.push({ prod, num, feuilles, nb, client: cliente, pedido, tipo: 'Venta', date: new Date().toISOString() });
+    logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas');
+    totalHojas += feuilles;
+  });
+
+  saveDB();
+  closeModal('modalSortieVenta');
+
+  // Reset
+  document.getElementById('ventaPedido').value = '';
+  document.getElementById('ventaCajas').value = '1';
+  document.getElementById('ventaCliente').value = '';
+  resetVentaCounter();
+
+  renderSorties();
+  alert('✓ Salida Venta confirmada\n' + ventaScannedNums.length + ' cajas · ' + totalHojas + ' hojas\nPedido: ' + pedido);
+}
+
+
+
+// ─── Traspaso de Almacén ───
+// ─── Traspaso avec compteur de scans (même système que Salida Venta) ───
+let traspasoScannedNums = [];
+let traspasoRestantes = 0;
+
+function resetTraspasoCounter() {
+  traspasoScannedNums = [];
+  traspasoRestantes = 0;
+  document.getElementById('traspasoContador').style.display = 'none';
+  document.getElementById('traspasoBtnScan').style.display = 'none';
+  document.getElementById('traspasoBtnConfirm').style.display = 'none';
+  document.getElementById('traspasoBtnIniciar').style.display = 'block';
+  document.getElementById('traspasoScannedList').innerHTML = '';
+  const infoDiv = document.getElementById('traspasoInfoAuto');
+  if (infoDiv) infoDiv.style.display = 'none';
+}
+
+function iniciarTraspaso() {
+  const dest = document.getElementById('traspasoDest').value.trim();
+  const cajas = parseInt(document.getElementById('traspasoCajas').value) || 0;
+  if (!dest) { alert('⛔ Ingrese primero el almacén destino.'); return; }
+  if (cajas < 1) { alert('⛔ Indique el número de cajas a transferir.'); return; }
+
+  traspasoScannedNums = [];
+  traspasoRestantes = cajas;
+  document.getElementById('traspasoContadorNum').textContent = traspasoRestantes;
+  document.getElementById('traspasoContador').style.display = 'block';
+  document.getElementById('traspasoBtnScan').style.display = 'block';
+  document.getElementById('traspasoBtnIniciar').style.display = 'none';
+  document.getElementById('traspasoBtnConfirm').style.display = 'none';
+  document.getElementById('traspasoScannedList').innerHTML = '';
+}
+
+function traspasoScanNext() {
+  if (traspasoRestantes <= 0) return;
+  // Ouvre le scanner avec champ temporaire
+  scanTargetQueue = ['traspasoNumTemp'];
+  scanFoundCodes = {};
+  scanCooldownUntil = 0;
+  scanRejectUntil = 0;
+  scanParentModalId = 'modalTraspaso';
+  document.getElementById('modalTraspaso').style.zIndex = '1';
+  const scannerEl = document.getElementById('modalScanner');
+  scannerEl.style.display = 'block';
+  scannerEl.style.zIndex = '99999';
+  document.getElementById('scanManualInp').value = '';
+  updateScanStatus();
+  startCamera();
+  startWatchdog();
+}
+
+function traspasoOnCodeScanned(code) {
+  const entry = DB.entrees.slice().reverse().find(e => e.num === code);
+  if (!entry) { alert('⚠️ Lote ' + code + ' no encontrado en recepciones.'); return; }
+  if (traspasoScannedNums.includes(code)) { alert('⛔ El lote ' + code + ' ya fue escaneado.'); return; }
+  const dejaSorti = DB.sorties.some(s => s.num === code);
+  if (dejaSorti) { alert('⛔ El lote ' + code + ' ya fue RETIRADO del stock.'); return; }
+
+  traspasoScannedNums.push(code);
+  traspasoRestantes--;
+  document.getElementById('traspasoContadorNum').textContent = traspasoRestantes;
+
+  // Info auto
+  const infoDiv = document.getElementById('traspasoInfoAuto');
+  if (infoDiv) infoDiv.style.display = 'block';
+  const refEl = document.getElementById('traspasoRefProd');
+  const loteEl = document.getElementById('traspasoLoteInfo');
+  if (refEl) refEl.value = entry.prod || '—';
+  if (loteEl) loteEl.value = code;
+
+  // Liste
+  const list = document.getElementById('traspasoScannedList');
+  list.innerHTML += '<div style="padding:8px 12px; background:#DBEAFE; border-left:3px solid #1E40AF; border-radius:6px; margin:4px 0; font-size:13px;">' +
+    '✅ <strong style="color:#1E40AF;">' + (entry.prod || '—') + '</strong> · ' +
+    '<span style="font-family:monospace;">' + code + '</span> · ' +
+    '<strong style="color:#0055cc;">' + (Number(entry.feuilles)||0) + ' hojas</strong></div>';
+
+  if (traspasoRestantes <= 0) {
+    document.getElementById('traspasoContadorNum').textContent = '✓';
+    document.getElementById('traspasoContadorNum').style.color = '#059669';
+    document.getElementById('traspasoBtnScan').style.display = 'none';
+    document.getElementById('traspasoBtnConfirm').style.display = 'block';
+  }
+}
+
+function saveTraspaso() {
+  const dest = document.getElementById('traspasoDest').value.trim();
+  if (!dest) { alert('⛔ Ingrese el almacén destino.'); return; }
+  if (traspasoScannedNums.length === 0) { alert('⛔ Escanee al menos un lote.'); return; }
+
+  let totalHojas = 0;
+  traspasoScannedNums.forEach(num => {
+    const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+    if (!entry) return;
+    const prod = entry.prod;
+    const feuilles = Number(entry.feuilles) || Number(entry.hojas) || 0;
+    const nb = Number(entry.nb) || 1;
+
+    if (DB.stock[prod]) {
+      DB.stock[prod].f = Math.max(0, DB.stock[prod].f - feuilles);
+      DB.stock[prod].c = Math.max(0, DB.stock[prod].c - nb);
+    }
+
+    DB.sorties.push({ prod, num, feuilles, nb, client: dest, tipo: 'Traspaso', date: new Date().toISOString() });
+    logMouvement('Traspaso', num, prod + ' · Traspaso → ' + dest + ' · -' + feuilles + ' hojas');
+    totalHojas += feuilles;
+  });
+
+  saveDB();
+  closeModal('modalTraspaso');
+
+  // Reset
+  document.getElementById('traspasoDest').value = '';
+  document.getElementById('traspasoCajas').value = '1';
+  resetTraspasoCounter();
+
+  renderSorties();
+  alert('✓ Traspaso confirmado → ' + dest + '\n' + traspasoScannedNums.length + ' cajas · ' + totalHojas + ' hojas');
+  envoyerEmailSortie('Traspaso', traspasoScannedNums.join(', '), totalHojas, dest);
+}
+
+// ─── Reintegración (solo Magasinero) ───
+// Auto-remplit la référence produit depuis le N° Lote (cherche dans les entrées)
+// ─── Retorno Cliente ───
+function saveRetorno() {
+  const prod = document.getElementById('retornoProd').value.trim();
+  const num = document.getElementById('retornoNum').value.trim();
+  const motivo = document.getElementById('retornoMotivo').value.trim();
+  const cliente = document.getElementById('retornoCliente').value.trim();
+  const estado = document.getElementById('retornoEstado').value;
+
+  if (!num) { alert('⛔ Escanee o ingrese el N° de lote.'); return; }
+
+  const estadoLabel = { cuarentena: '⚠️ Cuarentena', bueno: '✅ Buen estado', destruir: '❌ A destruir' }[estado];
+
+  // Si buen estado, vuelve al stock
+  if (estado === 'bueno' && prod) {
+    if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
+    const entry = DB.entrees.find(e => e.num === num);
+    const hojas = entry ? entry.feuilles : 0;
+    DB.stock[prod].f += hojas;
+    DB.stock[prod].c += 1;
+
+    // Elimina de las salidas si estaba marcado como salido
+    DB.sorties = DB.sorties.filter(s => s.num !== num);
+  }
+
+  logMouvement('Entrée', num, (prod || '?') + ' · Retorno Cliente · ' + estadoLabel + (motivo ? ' · ' + motivo : '') + (cliente ? ' · ' + cliente : ''));
+  saveDB();
+  closeModal('modalRetorno');
+
+  document.getElementById('retornoProd').value = '';
+  document.getElementById('retornoNum').value = '';
+  document.getElementById('retornoMotivo').value = '';
+  document.getElementById('retornoCliente').value = '';
+
+  alert('↩️ Retorno registrado\nEstado: ' + estadoLabel + (estado === 'bueno' ? '\nProducto vuelto al stock.' : ''));
+}
+
+// ─── Corrección Append-Only ───
+function onCorrLoteChange() {
+  const num = document.getElementById('corrLote').value.trim();
+  const infoEl = document.getElementById('corrLoteInfo');
+  if (!num) { infoEl.textContent = ''; return; }
+  const entry = DB.entrees.find(e => e.num === num);
+  if (entry) {
+    infoEl.textContent = '✓ Lote encontrado: ' + entry.prod + ' · ' + entry.feuilles + ' hojas';
+  } else {
+    infoEl.textContent = '⚠️ Lote no encontrado en recepciones';
+  }
+}
+
+function saveCorreccion() {
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Solo el Magasinero puede registrar correcciones.');
+    return;
+  }
+
+  const num = document.getElementById('corrLote').value.trim();
+  const tipo = document.getElementById('corrTipo').value;
+  const qty = parseInt(document.getElementById('corrQty').value) || 1;
+  const motivo = document.getElementById('corrMotivo').value.trim();
+
+  if (!num) { alert('⛔ Ingrese el N° de lote a corregir.'); return; }
+  if (!motivo) { alert('⛔ Indique el motivo de la corrección.'); return; }
+
+  const entry = DB.entrees.find(e => e.num === num);
+  const prod = entry ? entry.prod : '?';
+  const qtySignee = tipo === '+' ? qty : -qty;
+
+  // Append-Only : on ajoute une ligne corrective
+  DB.mouvements.push({
+    type: 'Système',
+    num,
+    detail: '⚠️ CORRECCIÓN · ' + (tipo === '+' ? '+' : '-') + qty + ' hojas · ' + motivo,
+    operateur: currentUser.nom,
+    date: new Date().toISOString(),
+    correction: true,
+    qty: qtySignee
+  });
+
+  // Mise à jour du stock
+  if (entry && DB.stock[prod]) {
+    DB.stock[prod].f = Math.max(0, DB.stock[prod].f + qtySignee);
+  }
+
+  saveDB();
+  closeModal('modalCorreccion');
+  document.getElementById('corrLote').value = '';
+  document.getElementById('corrLoteInfo').textContent = '';
+  document.getElementById('corrMotivo').value = '';
+  document.getElementById('corrQty').value = '1';
+
+  alert('✓ Corrección registrada\n' + (tipo === '+' ? '+' : '-') + qty + ' hojas · ' + motivo + '\n\nEl registro original NO ha sido modificado.');
+}
+
+// Auto-remplit la référence produit dans Traspaso depuis le N° Lote
+function autofillTraspasoProd() {
+  const num = document.getElementById('traspasoNum').value.trim();
+  const prodEl = document.getElementById('traspasoProd');
+  const hintEl = document.getElementById('traspasoProdHint');
+  if (!num || !prodEl) return;
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (entry && entry.prod) {
+    prodEl.value = entry.prod;
+    if (hintEl) hintEl.innerHTML = '<span style="color:#059669;">✓ ' + entry.feuilles + ' hojas · ' + entry.nb + ' caja(s)</span>';
+  } else {
+    prodEl.value = '';
+    if (hintEl) hintEl.innerHTML = '<span style="color:#D97706;">⚠️ Lote no encontrado en recepciones</span>';
+  }
+}
+
+function autofillCasseProd() {
+  const num = document.getElementById('casseNum').value.trim();
+  const prodEl = document.getElementById('casseProd');
+  const hintEl = document.getElementById('casseProdHint');
+  if (!num || !prodEl) return;
+
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (entry && entry.prod) {
+    prodEl.value = entry.prod;
+    if (hintEl) hintEl.textContent = '✓ Referencia encontrada automáticamente';
+  } else {
+    if (hintEl) hintEl.textContent = 'Lote no encontrado en recepciones — ingrese la referencia manualmente';
+  }
+}
+
+function onCasseProdChange() {
+  const hintEl = document.getElementById('casseProdHint');
+  if (hintEl) hintEl.textContent = '';
+}
+
+// onReintProdChange et saveReintegracion supprimées (remplacées par Retorno Cliente)
+
+function openModal(id) {
+  document.getElementById(id).style.display = 'block';
+  if (id === 'modalRec') {
+    let opts = '';
+    PRODS.forEach(p => opts += '<option value="' + p + '">');
+    document.getElementById('prodList').innerHTML = opts;
+    document.getElementById('recFpc').value = '';
+    document.getElementById('fpcStatus').textContent = '';
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+// Quand le code produit change (saisie ou scan), on regarde si la référence est connue
+function onProdChange() {
+  const fpcInput = document.getElementById('recFpc');
+  const statusEl = document.getElementById('fpcStatus');
+  if (!fpcInput || !statusEl) return; // sécurité : éléments pas présents (mauvais contexte)
+
+  const prodEl = document.getElementById('recProd');
+  const prod = prodEl ? prodEl.value.trim() : '';
+  const parsed = parseProductCode(prod);
+
+  if (!parsed) {
+    statusEl.textContent = '';
+    return;
+  }
+
+  if (FPC_TABLE[parsed.key] !== undefined) {
+    fpcInput.value = FPC_TABLE[parsed.key];
+    statusEl.innerHTML = '<span style="color:#00aa44;">✓ ✓ Referencia conocida</span>';
+  } else {
+    fpcInput.value = '';
+    statusEl.innerHTML = '<span style="color:#cc6600;">⚠️ Nueva referencia — indique la cantidad (CANTIDAD) de la etiqueta</span>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ENTRÉES
+// ═══════════════════════════════════════════════════════════
+function renderEntrees() {
+  if (DB.entrees.length === 0) {
+    document.getElementById('entreeList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay recepciones registradas</p>';
+    return;
+  }
+  let html = '';
+  DB.entrees.slice().reverse().forEach((e, idx) => {
+    const realIdx = DB.entrees.length - 1 - idx;
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const op = mvt ? mvt.operateur : (currentUser ? currentUser.nom : '—');
+    html += '<div class="card" style="border-left:3px solid #00aa44;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+      '<div>' +
+      '<strong style="color:#0055cc;">' + (e.prod || '—') + '</strong><br>' +
+      '<span style="font-family:monospace; font-size:12px;">N° ' + e.num + '</span><br>' +
+      e.nb + ' caja(s) · ' + e.feuilles + ' hojas';
+    if (e.emp) html += ' · <span style="color:#0055cc;">📍 ' + e.emp + '</span>';
+    html += '<br><span style="color:#888; font-size:12px;">📅 ' + new Date(e.date).toLocaleString('es-ES') + ' · 👤 ' + op + '</span>' +
+      '</div>' +
+      '<button onclick="imprimirFichaEntrada(' + realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; margin-left:8px;">🖨️ Fiche</button>' +
+      '</div></div>';
+  });
+  document.getElementById('entreeList').innerHTML = html;
+}
+
+function saveRec() {
+  const prod = document.getElementById('recProd').value.trim();
+  const nb = parseInt(document.getElementById('recNb').value) || 1;
+  const num = document.getElementById('recNum').value.trim();
+  const emp = document.getElementById('recEmp').value.trim();
+  const fpcSaisi = parseInt(document.getElementById('recFpc').value);
+
+  if (!prod || !num) {
+    alert('Por favor complete el producto y el N° de lote');
+    return;
+  }
+
+  if (!fpcSaisi || fpcSaisi <= 0) {
+    alert('⚠️ Por favor indique el número de hojas por caja (visible en la etiqueta: CANTIDAD)');
+    return;
+  }
+
+  // ANTI-DOUBLON : vérifier si ce N° contenant est déja en stock (reçu et pas encore sorti)
+  const dejaRecu = DB.entrees.some(e => e.num === num);
+  const dejaSorti = DB.sorties.some(s => s.num === num);
+  const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
+
+  if (dejaRecu && !dejaSorti) {
+    alert('⛔ El N° de lote (' + num + ') ya está registrado en stock.\nNo se puede escanear dos veces.');
+    return;
+  }
+
+  if (dejaSorti && !isGestionnaire) {
+    alert('⛔ El N° de lote (' + num + ') ya fue RETIRADO del stock.\n' +
+          'Una nueva recepción con este número es imposible.\n' +
+          'Solo el Magasinero puede autorizar esta operación.');
+    return;
+  }
+
+  // Mémoriser cette référence (épaisseur+dimensions) pour la prochaine fois
+  const parsed = parseProductCode(prod);
+  if (parsed && FPC_TABLE[parsed.key] !== fpcSaisi) {
+    FPC_TABLE[parsed.key] = fpcSaisi;
+    saveFpcTable();
+  }
+
+  const feuilles = fpcSaisi * nb;
+
+  DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
+  logMouvement('Entrée', num, prod + ' · ' + nb + ' caja(s) · ' + feuilles + ' hojas' + (emp ? ' · 📍' + emp : ''));
+
+  if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
+  DB.stock[prod].f += feuilles;
+  DB.stock[prod].c += nb;
+
+  saveDB();
+  closeModal('modalRec');
+
+  document.getElementById('recProd').value = '';
+  document.getElementById('recFpc').value = '';
+  document.getElementById('recNb').value = '1';
+  document.getElementById('recNum').value = '';
+  document.getElementById('recEmp').value = '';
+
+  renderEntrees();
+  alert('✓ Recepción registrada : ' + hojas + ' hojas');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CASSE
+// ═══════════════════════════════════════════════════════════
+function renderCasse() {
+  if (DB.casses.length === 0) {
+    document.getElementById('casseList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay roturas declaradas</p>';
+    return;
+  }
+  let html = '';
+  DB.casses.slice().reverse().forEach(c => {
+    html += '<div class="card">' +
+            '<strong style="color:#cc2222;">N° ' + c.num + '</strong><br>' +
+            '-' + c.qty + ' hojas rotas<br>' +
+            '<span style="color:#888; font-size:12px;">' + new Date(c.date).toLocaleString('fr-FR') + '</span>' +
+            '</div>';
+  });
+  document.getElementById('casseList').innerHTML = html;
+}
+
+function saveCasse() {
+  const num = document.getElementById('casseNum').value.trim();
+  const qty = parseInt(document.getElementById('casseQty').value) || 1;
+  const prodScanned = document.getElementById('casseProd').value.trim();
+
+  if (!num) { alert('Por favor ingrese o escanee el N° de lote'); return; }
+
+  // Utilise la référence scannée, sinon cherche dans les entrées
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  const prodLabel = prodScanned || (entry ? entry.prod : '(producto desconocido)');
+
+  // Calcul hojas restantes AVANT décrémentation
+  const casseAvant = DB.casses.filter(c => c.num === num).reduce((s, c) => s + c.qty, 0);
+  const hojasInit = entry ? entry.feuilles : 0;
+  const hojasRestantes = Math.max(0, hojasInit - casseAvant - qty);
+
+  if (entry && DB.stock[entry.prod]) {
+    DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
+  }
+
+  DB.casses.push({ num, qty, prod: prodLabel, date: new Date().toISOString() });
+  logMouvement('Casse', num, prodLabel + ' · -' + qty + ' hojas rotas · resto ' + hojasRestantes + ' hojas');
+  saveDB();
+  closeModal('modalCasse');
+
+  document.getElementById('casseProd').value = '';
+  document.getElementById('casseNum').value = '';
+  document.getElementById('casseQty').value = '1';
+
+  renderCasse();
+
+  // Email déclenché DIRECTEMENT dans l'action utilisateur (pas de setTimeout)
+  // pour éviter le blocage par Chrome mobile
+  envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
+
+  // Confirmation après l'email
+  alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas rotas: ' + qty + '\nHojas restantes: ' + hojasRestantes + '\n\n📧 Email enviado al responsable.');
+}
+
+// Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
+const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
+
+function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
+  const dateStr = new Date().toLocaleString('es-ES');
+  const operateur = currentUser ? currentUser.nom : '—';
+
+  const subject = '💥 Declaración de Rotura - ' + produit;
+  const body =
+    'DECLARACIÓN DE ROTURA - ALMACEN GPS BENICARLO\n\n' +
+    'Producto : ' + produit + '\n' +
+    'N° Lote : ' + contenant + '\n' +
+    'Hojas rotas : ' + hojasCassees + '\n' +
+    'Hojas restantes : ' + hojasRestantes + '\n' +
+    'Operador : ' + operateur + '\n' +
+    'Fecha/Hora : ' + dateStr;
+
+  const url = 'mailto:' + EMAIL_RESPONSABLE +
+    '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
+
+  // Méthode 1 : lien direct (meilleur sur Android)
+  try {
+    window.location.href = url;
+  } catch(e) {
+    // Méthode 2 : fallback avec <a> click
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch(e2) {
+      console.warn('Email non envoyé:', e2);
+    }
+  }
+}
+
+function envoyerEmailSortie(produit, contenant, hojas, client) {
+  const dateStr = new Date().toLocaleString('es-ES');
+  const operateur = currentUser ? currentUser.nom : '—';
+
+  const subject = '📤 Salida de Stock - ' + produit;
+  const body =
+    'SALIDA DE STOCK - ALMACEN GPS BENICARLO\n\n' +
+    'Producto : ' + produit + '\n' +
+    'N° Lote : ' + contenant + '\n' +
+    'Hojas salidas : ' + hojas + '\n' +
+    (client ? 'Cliente/Destino : ' + client + '\n' : '') +
+    'Operador : ' + operateur + '\n' +
+    'Fecha/Hora : ' + dateStr;
+
+  const url = 'mailto:' + EMAIL_RESPONSABLE +
+    '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SORTIES
+// ═══════════════════════════════════════════════════════════
+function renderSorties() {
+  if (DB.sorties.length === 0) {
+    document.getElementById('sortieList').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">No hay salidas registradas</p>';
+    return;
+  }
+
+  const groupes = [];
+  const pedidosVus = new Set();
+  const traspasosVus = new Set();
+
+  DB.sorties.slice().reverse().forEach((s, idx) => {
+    const realIdx = DB.sorties.length - 1 - idx;
+    if (s.tipo === 'Venta' && s.pedido) {
+      if (!pedidosVus.has(s.pedido)) {
+        pedidosVus.add(s.pedido);
+        const toutes = DB.sorties.filter(x => x.pedido === s.pedido);
+        const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
+        groupes.push({ type: 'venta', sorties: toutes, pedido: s.pedido, client: s.client, date: s.date, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
+      }
+    } else if (s.tipo === 'Traspaso' && s.client) {
+      const key = s.client + '_' + (s.date||'').slice(0,16);
+      if (!traspasosVus.has(key)) {
+        traspasosVus.add(key);
+        const dateMin = (s.date||'').slice(0,16);
+        const toutes = DB.sorties.filter(x => x.tipo === 'Traspaso' && x.client === s.client && (x.date||'').slice(0,16) === dateMin);
+        const totalCajas = toutes.reduce((sum, x) => sum + (Number(x.nb)||1), 0);
+        groupes.push({ type: 'traspaso', sorties: toutes, dest: s.client, date: s.date, totalCajas, firstIdx: DB.sorties.indexOf(toutes[0]) });
+      }
+    } else {
+      groupes.push({ type: 'simple', s, realIdx });
+    }
+  });
+
+  const getOp = (num) => {
+    const m = DB.mouvements.find(x => x.num === num && x.type === 'Sortie');
+    return m ? m.operateur : (currentUser ? currentUser.nom : '—');
+  };
+
+  // ── Tableau compact ──
+  let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">' +
+    '<thead><tr style="background:#1e293b; color:white; text-align:left;">' +
+    '<th style="padding:8px 6px;">Tipo</th>' +
+    '<th style="padding:8px 6px;">Ref / Destino</th>' +
+    '<th style="padding:8px 6px; text-align:center;">Cajas</th>' +
+    '<th style="padding:8px 6px;">Referencia · Cant.</th>' +
+    '<th style="padding:8px 6px;"></th>' +
+    '</tr></thead><tbody>';
+
+  groupes.forEach((g, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
+
+    if (g.type === 'venta') {
+      const op = getOp(g.sorties[0].num);
+      const refs = g.sorties.map(x => {
+        const f = Number(x.feuilles)||Number(x.hojas)||0;
+        return (x.prod||'—') + ' ×' + f + 'hj';
+      }).join(' | ');
+
+      html += '<tr style="background:' + bg + '; border-bottom:1px solid #E2E8F0;">' +
+        '<td style="padding:7px 6px; white-space:nowrap;">' +
+          '<span style="background:#D97706; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:600;">VENTA</span>' +
+        '</td>' +
+        '<td style="padding:7px 6px;">' +
+          '<div style="font-weight:600; font-size:12px;">📋 ' + g.pedido + '</div>' +
+          '<div style="color:#888; font-size:10px;">' + (g.client ? '👤 ' + g.client + ' · ' : '') + '👤 ' + op + ' · 📅 ' + new Date(g.date).toLocaleDateString('es-ES') + '</div>' +
+        '</td>' +
+        '<td style="padding:7px 6px; text-align:center; font-weight:700; font-size:14px; color:#D97706;">' + g.totalCajas + '</td>' +
+        '<td style="padding:7px 6px; font-size:11px; color:#475569;">' + refs + '</td>' +
+        '<td style="padding:4px;"><button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;">🖨️</button></td>' +
+        '</tr>';
+
+    } else if (g.type === 'traspaso') {
+      const op = getOp(g.sorties[0].num);
+      const refs = g.sorties.map(x => {
+        const f = Number(x.feuilles)||Number(x.hojas)||0;
+        return (x.prod||'—') + ' ×' + f + 'hj';
+      }).join(' | ');
+
+      html += '<tr style="background:' + bg + '; border-bottom:1px solid #E2E8F0;">' +
+        '<td style="padding:7px 6px; white-space:nowrap;">' +
+          '<span style="background:#1E40AF; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:600;">TRASPASO</span>' +
+        '</td>' +
+        '<td style="padding:7px 6px;">' +
+          '<div style="font-weight:600; font-size:12px;">🚛 ' + g.dest + '</div>' +
+          '<div style="color:#888; font-size:10px;">👤 ' + op + ' · 📅 ' + new Date(g.date).toLocaleDateString('es-ES') + '</div>' +
+        '</td>' +
+        '<td style="padding:7px 6px; text-align:center; font-weight:700; font-size:14px; color:#1E40AF;">' + g.totalCajas + '</td>' +
+        '<td style="padding:7px 6px; font-size:11px; color:#475569;">' + refs + '</td>' +
+        '<td style="padding:4px;"><button onclick="imprimirFichaSalida(' + g.firstIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;">🖨️</button></td>' +
+        '</tr>';
+
+    } else {
+      const s = g.s;
+      const tipo = s.tipo || 'Salida';
+      const f = Number(s.feuilles)||Number(s.hojas)||0;
+      html += '<tr style="background:' + bg + '; border-bottom:1px solid #E2E8F0;">' +
+        '<td style="padding:7px 6px;">' +
+          '<span style="background:#64748B; color:white; padding:2px 6px; border-radius:4px; font-size:10px;">' + tipo.toUpperCase() + '</span>' +
+        '</td>' +
+        '<td style="padding:7px 6px; font-size:12px;">' + (s.client||'—') + '</td>' +
+        '<td style="padding:7px 6px; text-align:center; font-weight:700;">1</td>' +
+        '<td style="padding:7px 6px; font-size:11px; color:#1E40AF;">' + (s.prod||'—') + ' ×' + f + 'hj</td>' +
+        '<td style="padding:4px;"><button onclick="imprimirFichaSalida(' + g.realIdx + ')" style="background:#1e293b; color:white; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;">🖨️</button></td>' +
+        '</tr>';
+    }
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('sortieList').innerHTML = html;
+}
+
+function saveSortie() {
+  const num = document.getElementById('sortieNum').value.trim();
+  const client = document.getElementById('sortieCliente').value.trim();
+
+  if (!num) {
+    alert('Por favor escanee o ingrese el N° de lote');
+    return;
+  }
+
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+
+  if (!entry) {
+    alert('⚠️ No se encontró ninguna recepción para el lote: ' + num);
+    return;
+  }
+
+  const prod = entry.prod;
+  const hojas = entry.feuilles;
+  const nb = entry.nb;
+
+  if (!DB.stock[prod] || DB.stock[prod].f < hojas) {
+    alert('⚠️ Stock insuficiente para este producto (' + prod + ')');
+    return;
+  }
+
+  // Décrémenter le stock
+  DB.stock[prod].f -= hojas;
+  DB.stock[prod].c -= nb;
+
+  DB.sorties.push({ prod, num, hojas, nb, client, date: new Date().toISOString() });
+  logMouvement('Sortie', num, prod + ' · -' + hojas + ' hojas' + (client ? ' · 👤' + client : ''));
+
+  saveDB();
+  closeModal('modalSortie');
+
+  document.getElementById('sortieNum').value = '';
+  document.getElementById('sortieCliente').value = '';
+
+  renderSorties();
+  alert('✓ Salida registrada : -' + hojas + ' hojas (' + prod + ')\nAbriendo su app de correo...');
+
+  setTimeout(() => {
+    envoyerEmailSortie(prod, num, hojas, client);
+  }, 300);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STOCK
+// ═══════════════════════════════════════════════════════════
+// Retourne la liste des contenants encore actifs (reçus, pas sortis, pas cassés en totalité) pour un produit donné
+// Retourne les contenants actifs (reçus, pas sortis) pour un produit, avec leur
+// quantité de hojas RESTANTE (= reçu - cassé), pas la quantité initiale.
+function getContenantsActifs(prod) {
+  return DB.entrees
+    .filter(e => e.prod === prod)
+    .filter(e => !DB.sorties.some(s => s.num === e.num))
+    .map(e => {
+      const hojasInit = Number(e.feuilles) || 0;
+      const casseTotal = DB.casses
+        .filter(c => c.num === e.num)
+        .reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
+      return Object.assign({}, e, {
+        feuilles: hojasInit,
+        hojasConformes: Math.max(0, hojasInit - casseTotal)
+      });
+    });
+}
+
+function renderStock() {
+  let totF = 0, totC = 0;
+  Object.values(DB.stock).forEach(v => { totF += v.f; totC += v.c; });
+
+  document.getElementById('stockKpis').innerHTML =
+    '<div class="kpi">' + totF + ' hojas</div>' +
+    '<div class="kpi">' + totC + ' cajas</div>';
+
+  const allEntries = DB.entrees.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (allEntries.length === 0) {
+    document.getElementById('stockTableWrap').innerHTML = '<p style="color:#999; text-align:center; margin-top:30px;">Sin stock</p>';
+    document.getElementById('stockList').innerHTML = '';
+    return;
+  }
+
+  const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
+
+  // ── Valeurs uniques pour chaque colonne filtrable ──
+  const getMvtOp = e => { const m = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée'); return m ? m.operateur : '—'; };
+  const getEstado = e => DB.sorties.some(s => s.num === e.num) ? 'Salida' : 'En Stock';
+  const getRotura = e => {
+    const ct = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s+(Number(c.qty)||0), 0);
+    return ct > 0 ? 'Sí' : 'No';
+  };
+
+  const uValsStock = {
+    ref:     [...new Set(allEntries.map(e => e.prod || '—'))].sort(),
+    lote:    [...new Set(allEntries.map(e => e.num || '—'))].sort(),
+    fecha:   [...new Set(allEntries.map(e => new Date(e.date).toLocaleDateString('es-ES')))].sort(),
+    op:      [...new Set(allEntries.map(e => getMvtOp(e)))].sort(),
+    rotura:  ['No', 'Sí'],
+    ubic:    [...new Set(allEntries.map(e => e.emp || '—'))].sort(),
+    estado:  ['En Stock', 'Salida'],
+  };
+
+  // ── Fonction dropdown Excel ──
+  function stTh(label, col, vals, align) {
+    const isFiltered = stockColFilters[col] && stockColFilters[col].size > 0;
+    const isOpen = stockDropdownOpen === col;
+    const thBg = isFiltered ? '#0a3d62' : '#1e293b';
+    const badge = isFiltered ? ' <span style="background:#10b981;color:white;border-radius:8px;padding:1px 5px;font-size:9px;">' + stockColFilters[col].size + '</span>' : '';
+
+    let dd = '';
+    if (isOpen && vals) {
+      const sel = stockColFilters[col] || new Set();
+      dd = '<div onclick="event.stopPropagation()" style="position:absolute;top:100%;left:0;min-width:190px;background:white;border:2px solid #1e40af;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:99999;font-size:12px;max-height:260px;overflow-y:auto;">' +
+        '<div style="padding:8px;border-bottom:1px solid #eee;display:flex;gap:6px;">' +
+        '<button onclick="event.stopPropagation();stockSelectAll(\'' + col + '\')" style="flex:1;padding:5px;background:#1e40af;color:white;border:none;border-radius:6px;font-size:11px;cursor:pointer;width:auto;margin:0;">✓ Todo</button>' +
+        '<button onclick="event.stopPropagation();delete stockColFilters[\'' + col + '\'];stockDropdownOpen=null;renderStock();" style="flex:1;padding:5px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;color:#475569;width:auto;margin:0;">✕ Limpiar</button>' +
+        '</div>';
+      vals.forEach(v => {
+        const chk = !stockColFilters[col] || sel.has(v);
+        const vs = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        dd += '<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #f8fafc;">' +
+          '<input type="checkbox"' + (chk ? ' checked' : '') + ' onclick="event.stopPropagation();stockToggleVal(\'' + col + '\',\'' + vs + '\')" style="cursor:pointer;accent-color:#1e40af;width:15px;height:15px;">' +
+          '<span style="font-size:12px;color:#0f172a;">' + v + '</span></label>';
+      });
+      dd += '</div>';
+    }
+
+    const alignStyle = align === 'right' ? 'text-align:right;' : align === 'center' ? 'text-align:center;' : '';
+    return '<th style="padding:0;background:' + thBg + ';position:relative;' + alignStyle + '">' +
+      '<div onclick="stockToggleDropdown(\'' + col + '\',event)" style="padding:9px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;color:white;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;user-select:none;">' +
+      label + badge +
+      '<span style="margin-left:auto;font-size:12px;opacity:0.6;">' + (isOpen ? '▲' : '▼') + '</span>' +
+      '</div>' + dd + '</th>';
+  }
+
+  // Colonnes sans filtre
+  const thF = (label, align) => '<th style="padding:9px 8px;background:#1e293b;color:white;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;' + (align ? 'text-align:' + align + ';' : '') + '">' + label + '</th>';
+
+  // ── Applique les filtres actifs ──
+  let filtered = allEntries.slice();
+  if (stockColFilters.ref    && stockColFilters.ref.size > 0)    filtered = filtered.filter(e => stockColFilters.ref.has(e.prod || '—'));
+  if (stockColFilters.lote   && stockColFilters.lote.size > 0)   filtered = filtered.filter(e => stockColFilters.lote.has(e.num || '—'));
+  if (stockColFilters.fecha  && stockColFilters.fecha.size > 0)  filtered = filtered.filter(e => stockColFilters.fecha.has(new Date(e.date).toLocaleDateString('es-ES')));
+  if (stockColFilters.op     && stockColFilters.op.size > 0)     filtered = filtered.filter(e => stockColFilters.op.has(getMvtOp(e)));
+  if (stockColFilters.rotura && stockColFilters.rotura.size > 0) filtered = filtered.filter(e => stockColFilters.rotura.has(getRotura(e)));
+  if (stockColFilters.ubic   && stockColFilters.ubic.size > 0)   filtered = filtered.filter(e => stockColFilters.ubic.has(e.emp || '—'));
+  if (stockColFilters.estado && stockColFilters.estado.size > 0) filtered = filtered.filter(e => stockColFilters.estado.has(getEstado(e)));
+
+  // ── Construction du tableau ──
+  let tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:760px; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08);">' +
+    '<thead><tr>' +
+    stTh('Referencia', 'ref', uValsStock.ref) +
+    stTh('N° Lote', 'lote', uValsStock.lote) +
+    stTh('Fecha', 'fecha', uValsStock.fecha) +
+    stTh('Operador', 'op', uValsStock.op) +
+    thF('Hojas Iniciales', 'right') +
+    stTh('Rotura', 'rotura', uValsStock.rotura, 'center') +
+    thF('Hojas Conformes', 'right') +
+    stTh('Ubicación', 'ubic', uValsStock.ubic) +
+    stTh('Estado', 'estado', uValsStock.estado) +
+    (isGestionnaire ? thF('') : '') +
+    '</tr></thead><tbody>';
+
+  filtered.forEach((e, idx) => {
+    const hojasInit = Number(e.feuilles) || 0;
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s+(Number(c.qty)||0), 0);
+    const hojasConformes = Math.max(0, hojasInit - casseTotal);
+    const tieneCasse = casseTotal > 0;
+    const estSorti = DB.sorties.some(s => s.num === e.num);
+    const sortie = DB.sorties.find(s => s.num === e.num);
+    const estadoHtml = estSorti
+      ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">' + (sortie?.tipo || 'Salida') + '</span>'
+      : '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">En Stock</span>';
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const operador = mvt ? mvt.operateur : '—';
+    const bg = idx % 2 === 0 ? '#ffffff' : '#F8FAFC';
+
+    tableHtml += '<tr style="background:' + bg + ';border-bottom:1px solid #E2E8F0;transition:background 0.1s;" onmouseover="this.style.background=\'#EFF6FF\'" onmouseout="this.style.background=\'' + bg + '\'">' +
+      '<td style="padding:8px 8px;font-weight:600;color:#1E40AF;white-space:nowrap;">' + (e.prod || '—') + '</td>' +
+      '<td style="padding:8px;font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#475569;">' + e.num + '</td>' +
+      '<td style="padding:8px;white-space:nowrap;color:#475569;">' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
+      '<td style="padding:8px;color:#475569;">' + operador + '</td>' +
+      '<td style="padding:8px;text-align:right;color:#0F172A;font-weight:600;">' + hojasInit + '</td>' +
+      '<td style="padding:8px;text-align:center;">' + (tieneCasse ? '<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">💥 ' + casseTotal + ' hj</span>' : '<span style="color:#94A3B8;font-size:12px;">—</span>') + '</td>' +
+      '<td style="padding:8px;text-align:right;font-weight:700;color:' + (hojasConformes < hojasInit ? '#DC2626' : '#059669') + ';">' + hojasConformes + '</td>' +
+      '<td style="padding:8px;color:#475569;">' + (e.emp || '<span style="color:#CBD5E1;">—</span>') + '</td>' +
+      '<td style="padding:8px;">' + estadoHtml + '</td>' +
+      (isGestionnaire && !estSorti ? '<td style="padding:4px 8px;"><button onclick="removeContenantFromStock(\'' + (e.prod||'').replace(/'/g,"\\'") + '\',\'' + e.num.replace(/'/g,"\\'") + '\')" style="background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:auto;margin:0;font-weight:600;">🗑️</button></td>' : (isGestionnaire ? '<td></td>' : '')) +
+      '</tr>';
+  });
+
+  tableHtml += '</tbody></table>';
+  if (filtered.length === 0) tableHtml = '<div style="text-align:center;padding:40px;color:#94A3B8;font-size:14px;">🔍 Ningún resultado con los filtros actuales — <button onclick="stockColFilters={};renderStock();" style="background:none;border:none;color:#1E40AF;cursor:pointer;font-weight:600;width:auto;padding:0;margin:0;display:inline;font-size:14px;">Limpiar filtros</button></div>';
+
+  document.getElementById('stockTableWrap').innerHTML = tableHtml;
+  document.getElementById('stockList').innerHTML = '';
+}
+
+
+// Ouvre la fenêtre flottante de détail pour une référence produit :
+// liste des contenants actifs avec N°, hojas, et emplacement.
+function openProdDetail(prod) {
+  const contenants = getContenantsActifs(prod);
+  document.getElementById('prodDetailTitle').textContent = '📦 ' + prod;
+
+  if (contenants.length === 0) {
+    document.getElementById('prodDetailList').innerHTML = '<p style="color:#999;">No hay lotees activos para esta referencia</p>';
+  } else {
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">' +
+      '<tr style="background:#f0f0f0;">' +
+      '<th style="padding:6px; text-align:left;">N° Contenant</th>' +
+      '<th style="padding:6px; text-align:right;">Feuilles</th>' +
+      '<th style="padding:6px; text-align:left;">Emplacement</th>' +
+      '</tr>';
+    contenants.forEach(c => {
+      html += '<tr style="border-bottom:1px solid #eee;">' +
+        '<td style="padding:6px;">' + c.num + '</td>' +
+        '<td style="padding:6px; text-align:right;">' + c.feuilles + '</td>' +
+        '<td style="padding:6px;">' + (c.emp || '—') + '</td>' +
+        '</tr>';
+    });
+    html += '</table>';
+    document.getElementById('prodDetailList').innerHTML = html;
+  }
+
+  openModal('modalProdDetail');
+}
+
+// Réservé au Gestionnaire : retire UN contenant précis du stock (plus ciblé que removeProductFromStock)
+function removeContenantFromStock(prod, num) {
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Acción reservada al Magasinero.');
+    return;
+  }
+  const entry = DB.entrees.find(e => e.prod === prod && e.num === num);
+  if (!entry || !DB.stock[prod]) return;
+
+  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.feuilles + ' hojas) du stock ?\nCette action est irreversible.')) return;
+
+  DB.stock[prod].f -= entry.feuilles;
+  DB.stock[prod].c -= entry.nb;
+  if (DB.stock[prod].f <= 0) delete DB.stock[prod];
+
+  logMouvement('Suppression', num, prod + ' · retirado del stock por el Magasinero');
+
+  saveDB();
+  renderStock();
+  alert('✓ Contenant ' + num + ' retiré du stock.');
+}
+
+// Réservé au Gestionnaire : supprime totalement un produit du stock (sans création de sortie/vente).
+function removeProductFromStock(prod) {
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Acción reservada al Magasinero.');
+    return;
+  }
+  if (!DB.stock[prod]) return;
+
+  const confirmMsg = '⚠️ Retirer DÉFINITIVEMENT "' + prod + '" du stock ?\n' +
+    DB.stock[prod].f + ' hojas / ' + DB.stock[prod].c + ' cajas seront supprimées.\n' +
+    'Cette action est irreversible.';
+  if (!confirm(confirmMsg)) return;
+
+  delete DB.stock[prod];
+
+  // On loggue la suppression pour chaque contenant encore actif lié a ce produit,
+  // pour que l'historique par N° contenant reste cohérent.
+  getContenantsActifs(prod).forEach(c => {
+    logMouvement('Suppression', c.num, prod + ' · retirado del stock por el Magasinero');
+  });
+
+  saveDB();
+  renderStock();
+  alert('✓ "' + prod + '" ha sido retirado del stock.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORIQUE DES MOUVEMENTS
+// ═══════════════════════════════════════════════════════════
+const MOUVEMENT_COLORS = {
+  'Entrée': '#0055cc',
+  'Casse': '#cc2222',
+  'Sortie': '#cc6600',
+  'Suppression': '#660000',
+  'Transfert': '#6633aa'
+};
+
+// ═══════════════════════════════════════════════════════════
+// GRAND LIVRE DES MOUVEMENTS — Append-Only
+// ═══════════════════════════════════════════════════════════
+
+const GL_TYPE_CONFIG = {
+  'Entrée':        { color:'#00aa44', bg:'#e8f5e9', icon:'📥', label:'Entrada',       sign:'+' },
+  'Sortie':        { color:'#cc6600', bg:'#fff3e0', icon:'📤', label:'Salida',         sign:'-' },
+  'Casse':         { color:'#cc2222', bg:'#ffebee', icon:'💥', label:'Rotura',         sign:'-' },
+  'Reintegración': { color:'#0055cc', bg:'#e3f2fd', icon:'🔄', label:'Reintegración',  sign:'+' },
+  'Traspaso':      { color:'#663300', bg:'#fbe9e7', icon:'🚛', label:'Traspaso',       sign:'-' },
+  'Suppression':   { color:'#660000', bg:'#fce4ec', icon:'🗑️', label:'Supresión',     sign:'-' },
+  'Système':       { color:'#888888', bg:'#f5f5f5', icon:'🤖', label:'Sistema/Email', sign:'~' },
+};
+
+// Correction Append-Only : ajoute une ligne corrective sans modifier l'existante
+function addCorrection(originalMvtIndex, reason, qty) {
+  const original = DB.mouvements[originalMvtIndex];
+  if (!original) return;
+  DB.mouvements.push({
+    type: 'Correction',
+    num: original.num,
+    detail: 'CORRECCIÓN de [' + original.type + '] · ' + reason + ' · ' + (qty > 0 ? '+' : '') + qty + ' hojas',
+    operateur: currentUser ? currentUser.nom : '—',
+    date: new Date().toISOString(),
+    correction: true,
+    originalIndex: originalMvtIndex,
+    qty
+  });
+  saveDB();
+}
+
+// ═══ FILTRES EXCEL PAR COLONNE ═══
+let glColFilters = {};
+let glDropdownOpen = null;
+
+// ── Variables filtres Stock ──
+let stockColFilters = {};
+let stockDropdownOpen = null;
+
+function stockToggleDropdown(col, event) {
+  event.stopPropagation();
+  stockDropdownOpen = stockDropdownOpen === col ? null : col;
+  renderStock();
+}
+
+function stockToggleVal(col, val) {
+  if (!stockColFilters[col]) stockColFilters[col] = new Set();
+  if (stockColFilters[col].has(val)) stockColFilters[col].delete(val);
+  else stockColFilters[col].add(val);
+  renderStock();
+}
+
+function stockSelectAll(col) {
+  delete stockColFilters[col];
+  stockDropdownOpen = null;
+  renderStock();
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT EXCEL (CSV) ET PDF
+// ═══════════════════════════════════════════════════════════
+
+function downloadXLSX(filename, rows, headers) {
+  // Génère un fichier HTML que Excel ouvre directement comme tableau
+  const BOM = '\uFEFF';
+  let html = BOM + '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">';
+  html += '<head><meta charset="UTF-8"><style>td{mso-number-format:"@";}</style></head><body><table>';
+  
+  // En-têtes en gras
+  html += '<tr>' + headers.map(h => '<th style="background:#1e293b;color:white;font-weight:bold;padding:6px;border:1px solid #ccc;">' + h + '</th>').join('') + '</tr>';
+  
+  // Données
+  rows.forEach((row, idx) => {
+    const bg = idx % 2 === 0 ? '#ffffff' : '#f0f4ff';
+    html += '<tr>' + row.map(cell => {
+      const val = (cell === null || cell === undefined || cell === '—') ? '' : String(cell);
+      return '<td style="padding:5px;border:1px solid #ddd;background:' + bg + ';">' + val + '</td>';
+    }).join('') + '</tr>';
+  });
+
+  html += '</table></body></html>';
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.replace('.csv', '.xls');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Export Stock Global ──
+function exportStockCSV() {
+  const headers = ['Referencia', 'N° Lote', 'Fecha Entrada', 'Operador', 'Hojas Iniciales', 'Declaración Rotura', 'Hojas Conformes', 'Ubicación', 'Estado'];
+  const rows = [];
+
+  DB.entrees.forEach(e => {
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + c.qty, 0);
+    const hojasConformes = Math.max(0, e.feuilles - casseTotal);
+    const estSorti = DB.sorties.some(s => s.num === e.num);
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    rows.push([
+      e.prod || '',
+      e.num,
+      new Date(e.date).toLocaleDateString('es-ES'),
+      mvt ? mvt.operateur : '',
+      e.feuilles,
+      casseTotal > 0 ? 'Sí — ' + casseTotal + ' hojas' : 'No',
+      hojasConformes,
+      e.emp || '',
+      estSorti ? 'Salida' : 'En Stock'
+    ]);
+  });
+
+  const now = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+  downloadXLSX('GPS_BENICARLO_Stock_' + now + '.xls', rows, headers);
+}
+
+// ── Export Historique ──
+function exportHistoriqueCSV() {
+  const headers = ['Fecha', 'Hora', 'Operador', 'Operación', 'Referencia', 'N° Lote', 'Detalle', 'Cantidad', 'Saldo'];
+
+  let mvts = DB.mouvements.slice().sort((a, b) => new Date(b.date) - new Date(a.date)); // tri décroissant
+  let solde = 0;
+  const rows = mvts.map(m => {
+    const d = new Date(m.date);
+    const refMatch = m.detail ? m.detail.match(/^([A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d+\/\d+)/) : null;
+    const ref = refMatch ? refMatch[1] : '';
+    const qty = signedQty(m);
+    solde += qty;
+    return [
+      d.toLocaleDateString('es-ES'),
+      d.toLocaleTimeString('es-ES'),
+      m.operateur || '',
+      m.type || '',
+      ref,
+      m.num || '',
+      (m.detail || '').replace(/[·•]/g, '|'),
+      (qty > 0 ? '+' : '') + qty,
+      solde
+    ];
+  });
+
+  const now = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+  downloadXLSX('GPS_BENICARLO_Historial_' + now + '.xls', rows, headers);
+}
+
+// ── Export PDF via impression navigateur ──
+// ═══════════════════════════════════════════════════════════
+// IMPRESSION FICHES DE RÉCEPTION ET SORTIE
+// ═══════════════════════════════════════════════════════════
+
+function imprimirFichaEntrada(idx) {
+  const e = DB.entrees[idx];
+  if (!e) return;
+  const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s + c.qty, 0);
+  const hojasConf = Math.max(0, e.feuilles - casseTotal);
+  const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+  const op = mvt ? mvt.operateur : '—';
+  const fecha = new Date(e.date).toLocaleString('es-ES');
+
+  const html = `
+    <div style="text-align:center; margin-bottom:20px;">
+      <div style="font-size:28px; font-weight:bold; color:#0055cc;">🪟 ALMACEN GPS BENICARLO</div>
+      <div style="font-size:18px; font-weight:bold; margin-top:8px; color:#1e293b;">FICHE DE RÉCEPTION</div>
+      <div style="color:#888; font-size:13px; margin-top:4px;">N° Fiche: REC-${String(idx+1).padStart(4,'0')}</div>
+    </div>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; width:40%; border:1px solid #ddd;">Referencia Producto</td><td style="padding:10px; border:1px solid #ddd; font-size:18px; font-weight:bold; color:#0055cc;">${e.prod || '—'}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">N° Lote</td><td style="padding:10px; border:1px solid #ddd; font-family:monospace; font-size:16px;">${e.num}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Número de Cajas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px;">${e.nb}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Recibidas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:#00aa44; font-weight:bold;">${e.feuilles}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Conformes</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:#00aa44; font-weight:bold;">${hojasConf}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Hojas Rotas</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; color:${casseTotal>0?'#cc2222':'#888'};">${casseTotal || 0}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Ubicación</td><td style="padding:10px; border:1px solid #ddd;">${e.emp || '—'}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Operador</td><td style="padding:10px; border:1px solid #ddd;">${op}</td></tr>
+      <tr style="background:#f0f4ff;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Fecha y Hora</td><td style="padding:10px; border:1px solid #ddd;">${fecha}</td></tr>
+    </table>
+    <div style="display:flex; gap:40px; margin-top:40px;">
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Operador</div>
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Responsable</div>
+    </div>`;
+  exportPDF('Fiche de Réception — ' + e.num, html);
+}
+
+function imprimirFichaSalida(idx) {
+  const s = DB.sorties[idx];
+  if (!s) return;
+  const tipo = s.tipo || 'Salida';
+  const fecha = new Date(s.date).toLocaleString('es-ES');
+
+  let lignes = [];
+  let totalHojas = 0;
+  let totalCajas = 0;
+  let docRef = '';
+
+  if (s.pedido) {
+    // Salida Venta — regroupe par pedido
+    docRef = 'N° Pedido : ' + s.pedido;
+    const groupe = DB.sorties.filter(x => x.pedido === s.pedido);
+    groupe.forEach(x => {
+      const f = Number(x.feuilles) || Number(x.hojas) || 0;
+      const n = Number(x.nb) || 1;
+      lignes.push({ prod: x.prod, num: x.num, feuilles: f, nb: n });
+      totalHojas += f;
+      totalCajas += n;
+    });
+  } else if (tipo === 'Traspaso' && s.client) {
+    // Traspaso — regroupe par destination + date (même minute)
+    docRef = 'Destino : ' + s.client;
+    const dateMin = s.date.slice(0, 16); // YYYY-MM-DDTHH:MM
+    const groupe = DB.sorties.filter(x =>
+      x.tipo === 'Traspaso' &&
+      x.client === s.client &&
+      x.date && x.date.slice(0, 16) === dateMin
+    );
+    groupe.forEach(x => {
+      const f = Number(x.feuilles) || Number(x.hojas) || 0;
+      const n = Number(x.nb) || 1;
+      lignes.push({ prod: x.prod, num: x.num, feuilles: f, nb: n });
+      totalHojas += f;
+      totalCajas += n;
+    });
+  } else {
+    // Autre sortie simple
+    lignes.push({ prod: s.prod, num: s.num, feuilles: Number(s.feuilles)||0, nb: Number(s.nb)||1 });
+    totalHojas = Number(s.feuilles) || 0;
+    totalCajas = Number(s.nb) || 1;
+  }
+
+  // Tableau des lignes produits
+  let lignesHTML = `
+    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+      <thead>
+        <tr style="background:#1e293b; color:white;">
+          <th style="padding:10px; text-align:left; font-size:13px;">#</th>
+          <th style="padding:10px; text-align:left; font-size:13px;">Referencia</th>
+          <th style="padding:10px; text-align:left; font-size:13px;">N° Lote</th>
+          <th style="padding:10px; text-align:right; font-size:13px;">Cajas</th>
+          <th style="padding:10px; text-align:right; font-size:13px;">Hojas</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  lignes.forEach((l, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#fff8f0';
+    lignesHTML += `
+        <tr style="background:${bg}; border-bottom:1px solid #eee;">
+          <td style="padding:9px 10px; color:#888;">${i+1}</td>
+          <td style="padding:9px 10px; font-weight:bold; color:#0055cc;">${l.prod || '—'}</td>
+          <td style="padding:9px 10px; font-family:monospace; font-size:12px;">${l.num}</td>
+          <td style="padding:9px 10px; text-align:right;">${l.nb}</td>
+          <td style="padding:9px 10px; text-align:right; font-weight:bold; color:#cc6600;">${l.feuilles}</td>
+        </tr>`;
+  });
+
+  lignesHTML += `
+      </tbody>
+      <tfoot>
+        <tr style="background:#fff3e0; font-weight:bold; border-top:2px solid #cc6600;">
+          <td colspan="3" style="padding:10px; font-size:14px;">TOTAL</td>
+          <td style="padding:10px; text-align:right; font-size:14px;">${totalCajas} cajas</td>
+          <td style="padding:10px; text-align:right; font-size:14px; color:#cc6600;">${totalHojas} hojas</td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+  const html = `
+    <div style="text-align:center; margin-bottom:20px;">
+      <div style="font-size:28px; font-weight:bold; color:#cc6600;">🪟 ALMACEN GPS BENICARLO</div>
+      <div style="font-size:20px; font-weight:bold; margin-top:8px; color:#1e293b;">BON DE SORTIE — ${tipo.toUpperCase()}</div>
+      <div style="color:#888; font-size:13px; margin-top:4px;">N° Fiche: SAL-${String(idx+1).padStart(4,'0')} · ${fecha}</div>
+    </div>
+
+    <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+      ${docRef ? `<tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; width:35%; border:1px solid #ddd;">${tipo === 'Traspaso' ? 'Almacén Destino' : 'N° Pedido'}</td><td style="padding:10px; border:1px solid #ddd; font-size:16px; font-weight:bold;">${tipo === 'Traspaso' ? s.client : s.pedido}</td></tr>` : ''}
+      ${s.client && tipo !== 'Traspaso' ? `<tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Cliente</td><td style="padding:10px; border:1px solid #ddd;">${s.client}</td></tr>` : ''}
+      <tr style="background:#fff3e0;"><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Operador</td><td style="padding:10px; border:1px solid #ddd;">${currentUser ? currentUser.nom : '—'}</td></tr>
+      <tr><td style="padding:10px; font-weight:bold; border:1px solid #ddd;">Fecha y Hora</td><td style="padding:10px; border:1px solid #ddd;">${fecha}</td></tr>
+    </table>
+
+    <div style="font-size:13px; font-weight:bold; color:#1e293b; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Detalle de productos salidos</div>
+    ${lignesHTML}
+
+    <div style="display:flex; gap:40px; margin-top:40px;">
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Operador</div>
+      <div style="flex:1; text-align:center; border-top:1px solid #333; padding-top:8px; font-size:13px;">Firma Cliente / Responsable</div>
+    </div>`;
+
+  exportPDF('Bon de Sortie — ' + (s.pedido || s.num), html);
+}
+
+function exportPDF(title, tableHTML) {
+  const now = new Date().toLocaleString('es-ES');
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>${title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 20px; }
+        h1 { color: #0055cc; font-size: 16px; margin-bottom: 4px; }
+        p { color: #888; font-size: 10px; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1e293b; color: white; padding: 6px 8px; text-align: left; font-size: 10px; }
+        td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        @media print { button { display: none; } }
+      </style>
+    </head>
+    <body>
+      <h1>🪟 ALMACEN GPS BENICARLO — ${title}</h1>
+      <p>Generado: ${now} | Operador: ${currentUser ? currentUser.nom : '—'}</p>
+      <button onclick="window.print()" style="background:#0055cc;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:12px;">🖨️ Imprimir / Guardar PDF</button>
+      ${tableHTML}
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+function exportStockPDF() {
+  const headers = ['Referencia', 'N° Lote', 'Fecha Entrada', 'Operador', 'Hojas Iniciales', 'Declaración Rotura', 'Hojas Conformes', 'Ubicación', 'Estado'];
+  let tableHTML = '<table><thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>';
+
+  DB.entrees.forEach(e => {
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s + c.qty, 0);
+    const conf = Math.max(0, e.feuilles - casseTotal);
+    const estSorti = DB.sorties.some(s => s.num === e.num);
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const op = mvt ? mvt.operateur : '—';
+    tableHTML += '<tr>' +
+      '<td><b>' + (e.prod||'—') + '</b></td>' +
+      '<td style="font-family:monospace;">' + e.num + '</td>' +
+      '<td>' + new Date(e.date).toLocaleDateString('es-ES') + '</td>' +
+      '<td>' + op + '</td>' +
+      '<td align="right">' + e.feuilles + '</td>' +
+      '<td align="right" style="color:' + (casseTotal>0?'#cc2222':'#888') + ';">' + (casseTotal>0?'Sí — '+casseTotal+' hj':'No') + '</td>' +
+      '<td align="right" style="color:#00aa44;font-weight:bold;">' + conf + '</td>' +
+      '<td>' + (e.emp||'—') + '</td>' +
+      '<td><span style="background:' + (estSorti?'#cc6600':'#00aa44') + ';color:white;padding:1px 6px;border-radius:4px;">' + (estSorti?'Salida':'En Stock') + '</span></td>' +
+      '</tr>';
+  });
+
+  tableHTML += '</tbody></table>';
+  exportPDF('Stock Global', tableHTML);
+}
+
+function exportHistoriquePDF() {
+  const headers = ['Fecha/Hora', 'Operador', 'Operación', 'Referencia', 'N° Lote', 'Detalle', 'Cantidad', 'Saldo'];
+  let tableHTML = '<table><thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>';
+  let solde = 0;
+
+  DB.mouvements.slice().sort((a,b) => new Date(a.date)-new Date(b.date)).forEach(m => {
+    const d = new Date(m.date);
+    const refMatch = m.detail ? m.detail.match(/^([A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d+\/\d+)/) : null;
+    const ref = refMatch ? refMatch[1] : '—';
+    const qty = signedQty(m);
+    solde += qty;
+    const cfg = GL_TYPE_CONFIG[m.type] || { color:'#888', icon:'•' };
+
+    tableHTML += '<tr>' +
+      '<td style="white-space:nowrap;">' + d.toLocaleDateString('es-ES') + '<br><small>' + d.toLocaleTimeString('es-ES') + '</small></td>' +
+      '<td>' + (m.operateur||'—') + '</td>' +
+      '<td><span style="color:' + cfg.color + ';font-weight:bold;">' + cfg.icon + ' ' + (m.type||'—') + '</span></td>' +
+      '<td style="color:#0055cc;font-weight:bold;">' + ref + '</td>' +
+      '<td style="font-family:monospace;font-size:10px;">' + (m.num||'—') + '</td>' +
+      '<td style="max-width:200px;">' + (m.detail||'—') + '</td>' +
+      '<td align="right" style="font-weight:bold;color:' + (qty>0?'#00aa44':'#cc2222') + ';">' + (qty>0?'+':'')+qty + '</td>' +
+      '<td align="right" style="font-weight:bold;">' + solde + ' hj</td>' +
+      '</tr>';
+  });
+
+  tableHTML += '</tbody></table>';
+  exportPDF('Grand Livre des Mouvements', tableHTML);
+}
+
+// ═══════════════════════════════════════════════════════════
+// RECHERCHE RAPIDE PAR N° LOTE DANS LE STOCK
+// ═══════════════════════════════════════════════════════════
+function searchStockByLote() {
+  const query = (document.getElementById('stockLoteSearch').value || '').trim().toUpperCase();
+  const resultEl = document.getElementById('stockSearchResult');
+  if (!resultEl) return;
+
+  if (!query) {
+    resultEl.innerHTML = '';
+    return;
+  }
+
+  // Cherche dans les entrées
+  const matches = DB.entrees.filter(e => e.num && e.num.toUpperCase().includes(query));
+
+  if (matches.length === 0) {
+    resultEl.innerHTML = '<div style="background:#ffebee; border-left:4px solid #cc2222; border-radius:8px; padding:12px; font-size:14px;">❌ Ningún lote encontrado para: <strong>' + query + '</strong></div>';
+    return;
+  }
+
+  let html = '<div style="margin-bottom:8px; font-size:13px; color:#555;">' + matches.length + ' resultado(s) para <strong>' + query + '</strong></div>';
+
+  matches.forEach(e => {
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s + c.qty, 0);
+    const hojasConf = Math.max(0, e.feuilles - casseTotal);
+    const estSorti = DB.sorties.some(s => s.num === e.num);
+    const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
+    const op = mvt ? mvt.operateur : '—';
+    const estadoColor = estSorti ? '#cc6600' : '#00aa44';
+    const estadoLabel = estSorti ? '📤 Salida' : '✅ En Stock';
+
+    html += '<div style="background:white; border:2px solid ' + estadoColor + '; border-radius:10px; padding:14px; margin-bottom:8px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">' +
+      '<span style="font-family:monospace; font-size:16px; font-weight:bold; color:#0055cc;">' + e.num + '</span>' +
+      '<span style="background:' + estadoColor + '; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">' + estadoLabel + '</span>' +
+      '</div>' +
+      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
+      '<div>📦 <strong>Ref:</strong> ' + (e.prod || '—') + '</div>' +
+      '<div>📅 <strong>Entrada:</strong> ' + new Date(e.date).toLocaleDateString('es-ES') + '</div>' +
+      '<div>🧮 <strong>Hojas iniciales:</strong> ' + e.feuilles + '</div>' +
+      '<div style="color:#00aa44; font-weight:bold;">✅ <strong>Conformes:</strong> ' + hojasConf + '</div>' +
+      '<div style="color:' + (casseTotal > 0 ? '#cc2222' : '#888') + ';">💥 <strong>Rotas:</strong> ' + casseTotal + '</div>' +
+      '<div>📦 <strong>Cajas:</strong> ' + e.nb + '</div>' +
+      '<div>📍 <strong>Ubicación:</strong> ' + (e.emp || '—') + '</div>' +
+      '<div>👤 <strong>Operador:</strong> ' + op + '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:8px; margin-top:10px;">' +
+      '<button onclick="imprimirFichaEntrada(' + DB.entrees.indexOf(e) + ')" style="flex:1; padding:8px; background:#1e293b; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer;">🖨️ Fiche</button>' +
+      '<button onclick="document.getElementById(\'histNum\').value=\'' + e.num + '\'; goto(\'historique\')" style="flex:1; padding:8px; background:#6633aa; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer;">🕓 Historial</button>' +
+      '</div>' +
+      '</div>';
+  });
+
+  resultEl.innerHTML = html;
+}
+
+function clearStockSearch() {
+  const el = document.getElementById('stockLoteSearch');
+  if (el) el.value = '';
+  const res = document.getElementById('stockSearchResult');
+  if (res) res.innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// REINICIAR PANTALLA — Solo TAFAT KHALED
+// Acción ÚNICAMENTE VISUAL — no modifica ningún dato
+// ═══════════════════════════════════════════════════════════
+function resetVisualizacion() {
+  if (!currentUser || currentUser.id !== 'u2') {
+    alert('⛔ Acceso denegado');
+    return;
+  }
+
+  const confirm1 = confirm(
+    '⚠️ ATENCIÓN — REINICIO COMPLETO\n\n' +
+    'Esta acción eliminará TODOS los datos:\n' +
+    '• Todas las entradas\n' +
+    '• Todas las salidas\n' +
+    '• Todo el stock\n' +
+    '• Todas las roturas\n' +
+    '• Todo el historial\n\n' +
+    '¿Está seguro de continuar?'
+  );
+  if (!confirm1) return;
+
+  const confirm2 = confirm(
+    '🔴 CONFIRMACIÓN FINAL\n\n' +
+    'Esta acción es IRREVERSIBLE.\n' +
+    'Todos los datos serán borrados definitivamente.\n\n' +
+    '¿Confirma el reinicio completo?'
+  );
+  if (!confirm2) return;
+
+  // Efface toutes les données
+  DB.stock = {};
+  DB.entrees = [];
+  DB.casses = [];
+  DB.sorties = [];
+  DB.mouvements = [];
+
+  // Efface le localStorage
+  localStorage.removeItem('vs_stock');
+  localStorage.removeItem('vs_entrees');
+  localStorage.removeItem('vs_casses');
+  localStorage.removeItem('vs_sorties');
+  localStorage.removeItem('vs_mouvements');
+  localStorage.removeItem('vs_fpc_table');
+
+  // Réinitialise aussi les filtres visuels
+  glColFilters = {};
+  glDropdownOpen = null;
+  stockColFilters = {};
+  stockDropdownOpen = null;
+
+  // Sync Google Sheets pour effacer aussi là-bas
+  syncToSheets();
+
+  // Rafraîchit toutes les pages
+  try { renderStock(); } catch(e) {}
+  try { renderGrandLivre(); } catch(e) {}
+  try { renderEntrees(); } catch(e) {}
+  try { renderSorties(); } catch(e) {}
+  try { renderCasse(); } catch(e) {}
+  try { renderDashboard(); } catch(e) {}
+
+  alert('✅ Aplicación reiniciada.\n\nTodos los datos han sido eliminados.\nLa aplicación está lista para un nuevo uso.');
+}
+
+function clearGLColFilters() {
+  glColFilters = {};
+  glDropdownOpen = null;
+  renderGrandLivre();
+}
+
+function toggleGLDropdown(col, event) {
+  event.stopPropagation();
+  if (glDropdownOpen === col) {
+    glDropdownOpen = null;
+  } else {
+    glDropdownOpen = col;
+  }
+  renderGrandLivre();
+}
+
+function glToggleVal(col, val) {
+  if (!glColFilters[col]) glColFilters[col] = new Set();
+  if (glColFilters[col].has(val)) glColFilters[col].delete(val);
+  else glColFilters[col].add(val);
+  renderGrandLivre();
+}
+
+function glSelectAll(col, allVals) {
+  delete glColFilters[col];
+  renderGrandLivre();
+}
+
+function glApplyDropdown(col) {
+  glDropdownOpen = null;
+  renderGrandLivre();
+}
+
+function setGLPeriod(period) {
+  document.querySelectorAll('.gl-period-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('glp-' + period).classList.add('active');
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+
+  if (period === 'today') {
+    const t = fmt(now);
+    document.getElementById('glDateFrom').value = t;
+    document.getElementById('glDateTo').value = t;
+  } else if (period === '7days') {
+    const d7 = new Date(now); d7.setDate(d7.getDate() - 7);
+    document.getElementById('glDateFrom').value = fmt(d7);
+    document.getElementById('glDateTo').value = fmt(now);
+  } else if (period === 'month') {
+    document.getElementById('glDateFrom').value = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-01';
+    document.getElementById('glDateTo').value = fmt(now);
+  } else {
+    document.getElementById('glDateFrom').value = '';
+    document.getElementById('glDateTo').value = '';
+  }
+  renderGrandLivre();
+}
+
+function renderGrandLivre() {
+  // Récupère les filtres actifs
+  const dateFrom = document.getElementById('glDateFrom').value;
+  const dateTo = document.getElementById('glDateTo').value;
+  const loteFilter = (document.getElementById('glLote') || {}).value || '';
+  const activeTypes = [...document.querySelectorAll('#glTypeFilters input:checked')].map(i => i.value);
+
+  // Filtre les mouvements
+  let mvts = DB.mouvements.slice().sort((a, b) => new Date(b.date) - new Date(a.date)); // tri décroissant
+
+  if (dateFrom) mvts = mvts.filter(m => m.date >= dateFrom);
+  if (dateTo)   mvts = mvts.filter(m => m.date <= dateTo + 'T23:59:59');
+  if (loteFilter) mvts = mvts.filter(m => m.num && m.num.includes(loteFilter.toUpperCase()));
+  mvts = mvts.filter(m => activeTypes.some(t => m.type === t || m.type.includes(t)));
+
+  // KPI résumé
+  let totEntrees = 0, totSorties = 0, totCasses = 0, totMvts = mvts.length;
+  mvts.forEach(m => {
+    const qty = extractQty(m.detail);
+    if (m.type === 'Entrée' || m.type === 'Reintegración') totEntrees += qty;
+    else if (m.type === 'Sortie' || m.type === 'Traspaso') totSorties += qty;
+    else if (m.type === 'Casse') totCasses += qty;
+  });
+
+  document.getElementById('glKpis').innerHTML =
+    glKpi('📋 Movimientos', totMvts, '#0055cc') +
+    glKpi('📥 Entradas', '+' + totEntrees + ' hj', '#00aa44') +
+    glKpi('📤 Salidas', '-' + totSorties + ' hj', '#cc6600') +
+    glKpi('💥 Roturas', '-' + totCasses + ' hj', '#cc2222');
+
+  if (mvts.length === 0) {
+    document.getElementById('glTable').innerHTML =
+      '<div style="text-align:center; padding:40px; color:#999;">📭 No se encontraron movimientos con estos filtros</div>';
+    return;
+  }
+
+  // Calcul du stock cumulé (solde après chaque opération)
+  let solde = 0;
+  // Calcul solde initial (avant la période filtrée)
+  if (dateFrom) {
+    DB.mouvements
+      .filter(m => m.date < dateFrom)
+      .forEach(m => { solde += signedQty(m); });
+  }
+
+  // Lecture des filtres colonne (Excel-style)
+
+  // Valeurs uniques pour dropdowns
+  function getRef(m) {
+    const r = m.detail ? m.detail.match(/^([A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d+\/\d+)/) : null;
+    return r ? r[1] : '—';
+  }
+  const allM = DB.mouvements;
+  const uVals = {
+    operador: [...new Set(allM.map(m => m.operateur||'—'))].sort(),
+    tipo:     [...new Set(allM.map(m => m.type||'—'))].sort(),
+    ref:      [...new Set(allM.map(m => getRef(m)))].filter(v=>v!=='—').sort(),
+    lote:     [...new Set(allM.map(m => m.num||'—'))].filter(v=>v!=='—').sort(),
+  };
+
+  // Filtres dropdown colonne
+  if (glColFilters.operador && glColFilters.operador.size>0)
+    mvts = mvts.filter(m => glColFilters.operador.has(m.operateur||'—'));
+  if (glColFilters.tipo && glColFilters.tipo.size>0)
+    mvts = mvts.filter(m => glColFilters.tipo.has(m.type||'—'));
+  if (glColFilters.ref && glColFilters.ref.size>0)
+    mvts = mvts.filter(m => glColFilters.ref.has(getRef(m)));
+  if (glColFilters.lote && glColFilters.lote.size>0)
+    mvts = mvts.filter(m => glColFilters.lote.has(m.num||'—'));
+
+  function glTh(label, col, vals) {
+    const isFiltered = glColFilters[col] && glColFilters[col].size>0;
+    const isOpen = glDropdownOpen===col;
+    const badge = isFiltered ? ' <span style="background:#00aa44;color:white;border-radius:8px;padding:1px 5px;font-size:9px;">'+glColFilters[col].size+'</span>' : '';
+    let dd = '';
+    if (isOpen && vals) {
+      const sel = glColFilters[col] || new Set();
+      dd = '<div style="position:absolute;top:100%;left:0;min-width:200px;background:white;border:2px solid #0055cc;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:99999;font-size:12px;max-height:260px;overflow-y:auto;">' +
+        '<div style="padding:8px;border-bottom:1px solid #eee;display:flex;gap:6px;">' +
+        '<button onclick="glSelectAll(\''+col+'\')" style="flex:1;padding:4px;background:#0055cc;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">✓ Todo</button>' +
+        '<button onclick="delete glColFilters[\''+col+'\'];glDropdownOpen=null;renderGrandLivre();" style="flex:1;padding:4px;background:#eee;border:none;border-radius:4px;font-size:11px;cursor:pointer;">✕ Limpiar</button></div>';
+      vals.forEach(v => {
+        const chk = !glColFilters[col]||sel.has(v);
+        const vs = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        dd += '<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:1px solid #f5f5f5;"><input type="checkbox"'+(chk?' checked':'')+' onchange="glToggleVal(\''+col+'\',\''+vs+'\')" style="cursor:pointer;"><span>'+v+'</span></label>';
+      });
+      dd += '</div>';
+    }
+    return '<th style="padding:0;background:'+(isFiltered?'#0a3d62':'#1e293b')+';position:relative;">' +
+      '<div onclick="toggleGLDropdown(\''+col+'\',event)" style="padding:10px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;color:white;font-size:11px;text-transform:uppercase;user-select:none;">'+label+badge+
+      '<span style="margin-left:auto;font-size:14px;">'+(isOpen?'▲':'▼')+'</span></div>'+dd+'</th>';
+  }
+
+  const thS = 'padding:10px 8px;background:#1e293b;color:white;font-size:11px;text-transform:uppercase;white-space:nowrap;';
+  let html = '<table style="width:100%; border-collapse:collapse; min-width:900px;">' +
+    '<thead><tr>' +
+    '<th style="'+thS+'">📅 Fecha y Hora</th>' +
+    glTh('👤 Operador','operador',uVals.operador) +
+    glTh('🔖 Operación','tipo',uVals.tipo) +
+    glTh('📦 Referencia','ref',uVals.ref) +
+    glTh('🏷️ N° Lote','lote',uVals.lote) +
+    '<th style="'+thS+'">📄 Detalle</th>' +
+    '<th style="'+thS+';text-align:right;">± Cantidad</th>' +
+    '<th style="'+thS+';text-align:right;">📊 Saldo</th>' +
+    '</tr></thead><tbody>';
+
+  mvts.forEach((m, idx) => {
+    const cfg = GL_TYPE_CONFIG[m.type] || { color:'#888', bg:'#f5f5f5', icon:'•', label:m.type, sign:'~' };
+    const d = new Date(m.date);
+    const dateStr = d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const timeStr = d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    const qty = signedQty(m);
+    solde += qty;
+
+    const ref = getRef(m);
+
+    const qtyColor = qty > 0 ? '#00aa44' : qty < 0 ? '#cc2222' : '#888';
+    const qtyStr = qty > 0 ? '+' + qty : qty === 0 ? '~' : String(qty);
+    const bgRow = idx % 2 === 0 ? 'white' : '#fafafa';
+    const isoFlag = m.correction ? ' ⚠️' : '';
+
+    html += '<tr style="background:' + bgRow + '; border-bottom:1px solid #f0f0f0; border-left:3px solid ' + cfg.color + ';">' +
+      '<td style="padding:8px; white-space:nowrap; font-size:11px;">' +
+        '<div style="font-weight:bold;">' + dateStr + '</div>' +
+        '<div style="color:#888;">' + timeStr + '</div>' +
+      '</td>' +
+      '<td style="padding:8px; font-size:12px;">👤 ' + (m.operateur || '—') + '</td>' +
+      '<td style="padding:8px;">' +
+        '<span class="gl-badge" style="background:' + cfg.bg + '; color:' + cfg.color + ';">' +
+        cfg.icon + ' ' + cfg.label + isoFlag + '</span>' +
+      '</td>' +
+      '<td style="padding:8px; font-size:12px; font-weight:bold; color:#0055cc;">' + ref + '</td>' +
+      '<td style="padding:8px; font-family:monospace; font-size:11px;">' + (m.num || '—') + '</td>' +
+      '<td style="padding:8px; font-size:11px; color:#555; max-width:220px;">' + (m.detail || '—') + '</td>' +
+      '<td style="padding:8px; text-align:right; font-weight:bold; color:' + qtyColor + '; font-size:14px;">' + qtyStr + '</td>' +
+      '<td style="padding:8px; text-align:right; font-weight:bold; font-size:13px;">' + solde + ' hj</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('glTable').innerHTML = html;
+}
+
+function glKpi(label, val, color) {
+  return '<div style="flex:1; min-width:100px; background:' + color + '18; border-left:3px solid ' + color + '; border-radius:6px; padding:10px; text-align:center;">' +
+    '<div style="font-size:18px; font-weight:bold; color:' + color + ';">' + val + '</div>' +
+    '<div style="font-size:11px; color:#666; margin-top:2px;">' + label + '</div>' +
+    '</div>';
+}
+
+function extractQty(detail) {
+  if (!detail) return 0;
+  const m = detail.match(/[+-]?(\d+)\s*hoja/i);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function signedQty(mvt) {
+  const qty = extractQty(mvt.detail);
+  const t = mvt.type;
+  if (t === 'Entrée' || t === 'Reintegración') return qty;
+  if (t === 'Sortie' || t === 'Casse' || t === 'Traspaso' || t === 'Suppression') return -qty;
+  if (mvt.correction) return mvt.qty || 0;
+  return 0;
+}
+
+// Alias pour compatibilité avec l'ancien code qui appelait renderHistorique()
+function renderHistorique() { renderGrandLivre(); }
+
+// ═══════════════════════════════════════════════════════════
+// SCANNER CAMÉRA — BarcodeDetector (HTTPS requis)
+// ═══════════════════════════════════════════════════════════
+let scanStream = null;
+let scanDetector = null;
+let scanRunning = false;
+let scanRaf = null;
+let scanTargetQueue = [];
+let scanFoundCodes = {}; // codes déja capturés dans cette session { code: true }
+let scanCooldownUntil = 0;
+let scanRejectUntil = 0;
+let scanWatchdogTimer = null;
+let scanLastTickAt = 0;
+
+const FIELD_LABELS = {
+  recProd:     'PRODUCTO',
+  recNum:      'N° LOTE',
+  casseProd:   'PRODUCTO',
+  casseNum:    'N° lote',
+  sortieNum:   'N° lote',
+  histNum:     'N° lote',
+  glLote:          'N° Lote',
+  stockLoteSearch: 'N° Lote',
+  ventaNum:    'N° lote',
+  traspasoNum: 'N° lote',
+
+};
+
+const FIELD_VALIDATORS = {
+  recProd:     { regex: /^[A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' },
+  recNum:      { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  casseProd: { regex: /^[A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato producto: FL8-321/214' },
+  casseNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  sortieNum:   { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  histNum:     { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  ventaNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  traspasoNum: { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  reintNum:    { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra (ej: 22325100518C)' },
+  retornoProd: { regex: /^[A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' },
+  retornoNum:  { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
+  corrLote:        { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
+  stockLoteSearch: { regex: /^\d{11}[A-Z]$/, msg: 'Formato: 11 dígitos + 1 letra' },
+  reintProd:   { regex: /^[A-Z]{1,6}\d{1,3}(\.\d+)?[A-Z0-9]{0,6}-\d{2,4}\/\d{2,4}$/, msg: 'Formato: FL8-321/214' }
+};
+
+let scanParentModalId = null; // mémorise le modal parent pour le rouvrir après
+
+function openScanner(targetFieldId) {
+  scanTargetQueue = Array.isArray(targetFieldId) ? targetFieldId.slice() : [targetFieldId];
+  scanFoundCodes = {};
+  scanCooldownUntil = 0;
+  scanRejectUntil = 0;
+
+  // Masque temporairement tout modal ouvert (sauf le scanner lui-même)
+  // pour que le scanner apparaisse bien au premier plan
+  scanParentModalId = null;
+  const openModals = ['modalRec','modalCasse','modalSortie','modalSortieVenta',
+    'modalTraspaso','modalRetorno','modalCorreccion','modalEntradaOpts','modalProdDetail'];
+  openModals.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.getComputedStyle(el).display !== 'none') {
+      scanParentModalId = id;
+      // Ne pas cacher le modal — juste le passer derrière le scanner
+      // Les champs restent accessibles dans le DOM même visuellement cachés par le scanner
+      el.style.zIndex = '1';
+    }
+  });
+
+  const scannerEl = document.getElementById('modalScanner');
+  scannerEl.style.display = 'block';
+  scannerEl.style.zIndex = '99999';
+  document.getElementById('scanManualInp').value = '';
+  updateScanStatus();
+  startCamera();
+  startWatchdog();
+}
+
+// Garde-fou : si la boucle de détection ne "tique" plus depuis 3s alors qu'elle devrait,
+// on la relance de force. Filet de sécurité ultime contre tout blocage imprévu.
+function startWatchdog() {
+  stopWatchdog();
+  scanLastTickAt = Date.now();
+  scanWatchdogTimer = setInterval(() => {
+    const modalVisible = document.getElementById('modalScanner').style.display === 'block';
+    if (!modalVisible) { stopWatchdog(); return; }
+    if (scanRunning && Date.now() - scanLastTickAt > 3000) {
+      console.warn('Watchdog: boucle figée, relance forcée');
+      detectLoop();
+    }
+  }, 1000);
+}
+
+function stopWatchdog() {
+  if (scanWatchdogTimer) { clearInterval(scanWatchdogTimer); scanWatchdogTimer = null; }
+}
+
+function updateScanStatus(extra) {
+  const statusEl = document.getElementById('scanStatusMsg');
+  const next = scanTargetQueue[0];
+  let html = '📷 Apunte al código de barras <strong>' + (FIELD_LABELS[next] || 'demandé') + '</strong>';
+  if (extra) html = extra + '<br>' + html;
+  statusEl.innerHTML = html;
+}
+
+async function startCamera() {
+  const video = document.getElementById('scanVideo');
+  const statusEl = document.getElementById('scanStatusMsg');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, focusMode: 'continuous' }
+    });
+    scanStream = stream;
+    video.srcObject = stream;
+    await video.play();
+
+    if ('BarcodeDetector' in window) {
+      // Uniquement Code 128 et Code 39 (formats réellement utilisés sur ces étiquettes).
+      // EAN-13, QR, Data Matrix, etc. sont volontairement exclus pour éviter les faux positifs.
+      scanDetector = new BarcodeDetector({
+        formats: ['code_128', 'code_39', 'code_93', 'codabar', 'itf', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code', 'data_matrix']
+      });
+      updateScanStatus();
+      scanRunning = true;
+      detectLoop();
+    } else {
+      statusEl.textContent = '⚠️ Escáner automático no compatible con este navegador. Escriba el código abajo.';
+    }
+  } catch (err) {
+    let msg = 'Erreur caméra : ' + err.message;
+    if (err.name === 'NotAllowedError') msg = '❌ Permiso de cámara denegado. Autorice en la configuración du navigateur.';
+    statusEl.textContent = msg;
+  }
+}
+
+function detectLoop() {
+  const video = document.getElementById('scanVideo');
+  const canvas = document.getElementById('scanCanvas');
+
+  const tick = async () => {
+    scanLastTickAt = Date.now();
+    if (!scanRunning) return;
+    if (!video.videoWidth) { scanRaf = requestAnimationFrame(tick); return; }
+
+    if (Date.now() < scanRejectUntil) {
+      scanRaf = requestAnimationFrame(tick);
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    let detectedCodes = [];
+    try {
+      const codes = await scanDetector.detect(canvas);
+      detectedCodes = codes.map(c => c.rawValue.trim());
+    } catch(e) { /* erreur de détection caméra : on ignore, on continue la boucle */ }
+
+    if (detectedCodes.length > 0) {
+      try {
+        handleCodesFound(detectedCodes);
+      } catch(e) {
+        console.error('Erreur handleCodesFound:', e);
+      }
+    }
+    scanRaf = requestAnimationFrame(tick);
+  };
+  scanRaf = requestAnimationFrame(tick);
+}
+
+// Traite TOUS les codes visibles dans la frame en une fois (pas seulement un par un).
+// Cela évite le problème où 2 codes sont visibles simultanément a l'écran mais le
+// detector ne "voit" toujours que le même, bloquant la progression vers le 2e champ.
+function handleCodesFound(codes) {
+  for (const code of codes) {
+    if (scanFoundCodes[code]) continue;
+    let matched = false;
+    for (let i = 0; i < scanTargetQueue.length; i++) {
+      const field = scanTargetQueue[i];
+      const validator = FIELD_VALIDATORS[field];
+      if (validator && validator.regex.test(code)) {
+        acceptCode(field, code);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      const fieldLibre = scanTargetQueue.find(f => !FIELD_VALIDATORS[f]);
+      if (fieldLibre) acceptCode(fieldLibre, code);
+    }
+  }
+}
+
+// ─── Son douchette professionnelle ───
+let audioCtx = null;
+
+function bip() {
+  try {
+    // Crée le contexte audio si pas encore fait
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Reprend le contexte si suspendu (politique mobile)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const now = audioCtx.currentTime;
+
+    // ─ Son principal : bip court et aigu (style douchette Zebra/Honeywell)
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.type = 'square'; // son plus dur, plus "industriel"
+    osc.frequency.setValueAtTime(1850, now); // fréquence douchette (~1800-2000 Hz)
+    osc.frequency.exponentialRampToValueAtTime(1650, now + 0.06);
+
+    gain.gain.setValueAtTime(0.0, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.005); // attaque rapide
+    gain.gain.setValueAtTime(0.4, now + 0.06);
+    gain.gain.linearRampToValueAtTime(0.0, now + 0.12); // déclin rapide
+
+    osc.start(now);
+    osc.stop(now + 0.12);
+
+  } catch(e) {
+    // Silencieux si Web Audio non supporté
+    console.log('Audio non supporté');
+  }
+}
+
+function acceptCode(field, code) {
+  scanFoundCodes[code] = true;
+  // Son + vibration style douchette professionnelle
+  bip();
+  if (navigator.vibrate) navigator.vibrate([80]);
+
+  // Retire le bon champ de la queue (pas forcément le premier)
+  const idx = scanTargetQueue.indexOf(field);
+  if (idx !== -1) scanTargetQueue.splice(idx, 1);
+
+  // Cas spécial : scan pour la vente avec compteur
+  if (field === 'ventaNumTemp') {
+    document.getElementById('scanStatusMsg').innerHTML = '✅ Escaneado : ' + code + '<br>Cerrando...';
+    scanRunning = false;
+    setTimeout(() => { closeScanner(); ventaOnCodeScanned(code); }, 700);
+    return;
+  }
+
+  if (field === 'traspasoNumTemp') {
+    document.getElementById('scanStatusMsg').innerHTML = '✅ Escaneado : ' + code + '<br>Cerrando...';
+    scanRunning = false;
+    setTimeout(() => { closeScanner(); traspasoOnCodeScanned(code); }, 700);
+    return;
+  }
+
+  // Écriture dans le champ
+  const el = document.getElementById(field);
+  if (el) el.value = code;
+  if (field === 'recProd') onProdChange();
+  if (field === 'casseNum') autofillCasseProd();
+  if (field === 'traspasoNum') autofillTraspasoProd();
+  if (field === 'histNum' || field === 'glLote') renderGrandLivre();
+  if (field === 'stockLoteSearch') searchStockByLote();
+
+  if (scanTargetQueue.length > 0) {
+    // Il reste des champs à scanner — on montre le statut et continue
+    updateScanStatus('✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code);
+  } else {
+    // Tous les champs sont remplis — on ferme le scanner
+    document.getElementById('scanStatusMsg').innerHTML =
+      '✅ <strong>' + (FIELD_LABELS[field] || '') + '</strong> = ' + code + '<br>Terminado !';
+    scanRunning = false;
+    setTimeout(() => { closeScanner(); }, 700);
+  }
+}
+
+function stopCamera() {
+  scanRunning = false;
+  if (scanRaf) cancelAnimationFrame(scanRaf);
+  if (scanStream) {
+    scanStream.getTracks().forEach(t => t.stop());
+    scanStream = null;
+  }
+  scanDetector = null;
+}
+
+function closeScanner() {
+  stopCamera();
+  stopWatchdog();
+  document.getElementById('modalScanner').style.display = 'none';
+  // Remet le modal parent au premier plan
+  if (scanParentModalId) {
+    const parent = document.getElementById(scanParentModalId);
+    if (parent) parent.style.zIndex = '999';
+    scanParentModalId = null;
+  }
+}
+
+function validateManualScan() {
+  const val = document.getElementById('scanManualInp').value.trim();
+  if (!val) return;
+  scanRunning = false;
+  handleCodeFound(val);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  const u = document.getElementById('usernameInput');
+  if (u) u.focus();
+
+  // Déverrouille l'AudioContext au premier toucher (requis sur iOS/Android)
+  const unlock = () => {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    document.removeEventListener('touchstart', unlock);
+    document.removeEventListener('click', unlock);
+  };
+  document.addEventListener('touchstart', unlock, { passive: true });
+  document.addEventListener('click', unlock);
+});
+</script>
+
+</body>
+</html>

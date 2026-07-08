@@ -3283,9 +3283,63 @@ function handleCodesFound(codes) {
   }
 }
 
+// ─── Son douchette — base64 embarqué (fonctionne sur tous mobiles) ───
+// Bip court 1800Hz généré en base64 WAV
+const BIP_WAV = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA' +
+  'ABAAEAQB8AAEAfAAABAAgAZGF0YTtvT18A' +
+  new Array(400).fill(0).map((_,i) => {
+    const t = i / 8000;
+    const v = Math.round(Math.sin(2 * Math.PI * 1800 * t) * 127 * Math.exp(-t * 30));
+    return String.fromCharCode(v + 128);
+  }).join('');
+
+function bip() {
+  try {
+    const audio = new Audio();
+    // Génère le son via AudioContext (méthode la plus fiable)
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => jouerBip(ctx));
+    } else {
+      jouerBip(ctx);
+    }
+  } catch(e) {
+    // Fallback : HTML5 Audio avec fréquence encodée
+    try {
+      const a = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqPkZKRkI+OjIqHhH95cm1nYVtVT0lDPTcxKyUfGRMNCQUBAP3' + '7+Pby7+zp5uPh3tzZ19XT0tDPzs3Nzc7P0NLU19nc3+Lm6u3x9Pf6/f8=');
+      a.volume = 1.0;
+      a.play().catch(() => {});
+    } catch(e2) {}
+  }
+}
+
+function jouerBip(ctx) {
+  try {
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1800, ctx.currentTime);
+
+    gainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+
+    osc.onended = () => ctx.close();
+  } catch(e) {}
+}
+
 function acceptCode(field, code) {
   scanFoundCodes[code] = true;
-  if (navigator.vibrate) navigator.vibrate([100,50,100]);
+  // Son + vibration style douchette professionnelle
+  bip();
+  if (navigator.vibrate) navigator.vibrate([80]);
 
   // Retire le bon champ de la queue (pas forcément le premier)
   const idx = scanTargetQueue.indexOf(field);
@@ -3363,6 +3417,18 @@ function validateManualScan() {
 document.addEventListener('DOMContentLoaded', function() {
   const u = document.getElementById('usernameInput');
   if (u) u.focus();
+
+  // Pré-déverrouille l'audio au premier toucher (requis iOS/Android)
+  const unlock = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume().then(() => ctx.close());
+    } catch(e) {}
+    document.removeEventListener('touchstart', unlock);
+    document.removeEventListener('click', unlock);
+  };
+  document.addEventListener('touchstart', unlock, { passive: true });
+  document.addEventListener('click', unlock);
 });
 </script>
 

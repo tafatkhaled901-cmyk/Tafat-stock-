@@ -382,6 +382,8 @@
       <div class="sidebar-label" style="margin-top:8px;">Consultas</div>
       <button onclick="goto('stock')" class="sidebar-btn" id="sb-stock">🪟 Stock Global</button>
       <button onclick="goto('historique')" class="sidebar-btn" id="sb-historique">📒 Historial</button>
+      <div class="sidebar-label" style="margin-top:8px;">Inventario</div>
+      <button onclick="goto('inventaire')" class="sidebar-btn" id="sb-inventaire">📋 Inventario</button>
       <div id="sbMagasinero" style="display:none;">
         <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Magasinero</div>
         <button onclick="openModal('modalCorreccion')" class="sidebar-btn" style="color:#ffcc44;">⚠️ Corrección Error</button>
@@ -487,6 +489,94 @@
       </div>
 
       <!-- HISTORIAL -->
+      <!-- ═══ INVENTARIO ═══ -->
+      <div class="page" id="page-inventaire">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+          <h2 style="margin:0;">📋 Inventario</h2>
+          <button onclick="abrirNuevoInventario()" style="background:#059669; color:white; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nuevo Inventario</button>
+        </div>
+
+        <!-- Filtres -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+          <select id="invFiltroEstado" onchange="renderInventaires()" style="flex:1; min-width:120px; padding:8px; border:1px solid #E2E8F0; border-radius:8px; font-size:13px; margin:0;">
+            <option value="">Todos los estados</option>
+            <option value="en_curso">🔄 En curso</option>
+            <option value="validado">✅ Validado</option>
+            <option value="anulado">❌ Anulado</option>
+          </select>
+          <input type="date" id="invFiltroFecha" onchange="renderInventaires()" style="flex:1; min-width:140px; padding:8px; border:1px solid #E2E8F0; border-radius:8px; font-size:13px; margin:0;">
+          <button onclick="document.getElementById('invFiltroEstado').value=''; document.getElementById('invFiltroFecha').value=''; renderInventaires();" style="background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">✕ Limpiar</button>
+        </div>
+
+        <div id="invLista"></div>
+      </div>
+
+      <!-- ═══ MODAL NUEVO INVENTARIO ═══ -->
+      <div class="modal" id="modalNuevoInv">
+        <h2>📋 Nuevo Inventario</h2>
+
+        <label>Tipo de inventario</label>
+        <select id="invTipo" onchange="onInvTipoChange()" style="margin-bottom:12px;">
+          <option value="completo">🏭 Inventario Completo (todos los productos)</option>
+          <option value="referencia">📦 Por Referencia</option>
+          <option value="ubicacion">📍 Por Ubicación</option>
+        </select>
+
+        <div id="invFiltroExtra" style="display:none;">
+          <label id="invFiltroLabel">Filtro</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="invFiltroValor" placeholder="" style="flex:1;">
+            <button onclick="openScanner('invFiltroValor')" style="width:50px; padding:10px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:18px; margin:0;">📷</button>
+          </div>
+        </div>
+
+        <label>Notas / Comentarios</label>
+        <input type="text" id="invNota" placeholder="ej: Inventario mensual enero 2026">
+
+        <button class="btn-green" onclick="crearInventario()">▶ Iniciar Inventario</button>
+        <button class="btn-red" onclick="closeModal('modalNuevoInv')">Cancelar</button>
+      </div>
+
+      <!-- ═══ MODAL CONTEO INVENTARIO ═══ -->
+      <div class="modal" id="modalConteoInv" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 style="margin:0; font-size:16px;">🔢 Conteo Físico</h2>
+          <div id="invConteoProgreso" style="font-size:12px; color:#888;"></div>
+        </div>
+
+        <!-- Scan rapide -->
+        <div style="background:#EFF6FF; border-radius:10px; padding:12px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:600; color:#1E40AF; margin-bottom:6px;">📷 Escanear para buscar producto</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="invScanBuscar" placeholder="Escanee o escriba N° Lote..." style="flex:1; margin:0;" oninput="invBuscarPorScan()">
+            <button onclick="openScanner('invScanBuscar')" style="width:50px; padding:10px; background:#0088ff; color:#fff; border:none; border-radius:6px; font-size:18px; margin:0;">📷</button>
+          </div>
+        </div>
+
+        <div id="invConteoLista" style="overflow-y:auto; max-height:calc(100vh - 320px);"></div>
+
+        <div style="position:sticky; bottom:0; background:white; padding:10px 0; border-top:1px solid #E2E8F0; display:flex; gap:8px; margin-top:8px;">
+          <button onclick="closeModal('modalConteoInv')" style="flex:1; background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:8px; padding:12px; font-size:13px; margin:0;">💾 Guardar y salir</button>
+          <div id="invBtnValider" style="flex:1; display:none;">
+            <button onclick="validarInventario()" style="width:100%; background:#059669; color:white; border:none; border-radius:8px; padding:12px; font-size:13px; font-weight:700; margin:0;">✅ Validar Inventario</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MODAL DETAIL INVENTARIO ═══ -->
+      <div class="modal" id="modalDetailInv">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 style="margin:0;">📋 Détail Inventaire</h2>
+          <button onclick="closeModal('modalDetailInv')" style="background:none; border:none; font-size:22px; cursor:pointer; width:auto; margin:0; color:#888;">✕</button>
+        </div>
+        <div id="invDetailContenu"></div>
+        <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+          <button onclick="exportInvPDF()" style="flex:1; background:#DC2626; color:white; border:none; border-radius:8px; padding:12px; font-size:13px; margin:0;">📄 PDF</button>
+          <button onclick="exportInvExcel()" style="flex:1; background:#059669; color:white; border:none; border-radius:8px; padding:12px; font-size:13px; margin:0;">📊 Excel</button>
+          <button onclick="closeModal('modalDetailInv')" style="flex:1; background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:8px; padding:12px; font-size:13px; margin:0;">Cerrar</button>
+        </div>
+      </div>
+
       <!-- GRAND LIVRE DES MOUVEMENTS -->
       <div class="page" id="page-historique">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
@@ -957,6 +1047,7 @@ let DB = {
   casses: JSON.parse(localStorage.getItem('vs_casses') || '[]'),
   sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
   mouvements: JSON.parse(localStorage.getItem('vs_mouvements') || '[]'),
+  inventaires: JSON.parse(localStorage.getItem('vs_inventaires') || '[]'),
 };
 
 let currentUser = null;
@@ -970,6 +1061,7 @@ function saveDB() {
   localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+  localStorage.setItem('vs_inventaires', JSON.stringify(DB.inventaires));
   syncToSheets();
   // Rafraîchit le dashboard si on y est, sinon met à jour en arrière-plan
   if (typeof renderDashboard === 'function') {
@@ -1171,6 +1263,7 @@ function goto(page) {
   else if (page === 'sorties') renderSorties();
   else if (page === 'stock') renderStock();
   else if (page === 'historique') { renderGrandLivre(); }
+  else if (page === 'inventaire') { renderInventaires(); }
 }
 
 // ─── Dashboard / KPI ───
@@ -2834,6 +2927,7 @@ function resetVisualizacion() {
   DB.casses = [];
   DB.sorties = [];
   DB.mouvements = [];
+  DB.inventaires = [];
 
   // Efface le localStorage
   localStorage.removeItem('vs_stock');
@@ -2842,6 +2936,7 @@ function resetVisualizacion() {
   localStorage.removeItem('vs_sorties');
   localStorage.removeItem('vs_mouvements');
   localStorage.removeItem('vs_fpc_table');
+  localStorage.removeItem('vs_inventaires');
 
   // Réinitialise aussi les filtres visuels
   glColFilters = {};
@@ -2861,6 +2956,463 @@ function resetVisualizacion() {
   try { renderDashboard(); } catch(e) {}
 
   alert('✅ Aplicación reiniciada.\n\nTodos los datos han sido eliminados.\nLa aplicación está lista para un nuevo uso.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE INVENTARIO — Complet
+// ═══════════════════════════════════════════════════════════
+
+let currentInvId = null; // ID de l'inventaire en cours de comptage
+
+// ── Structure d'un inventaire ──
+// {
+//   id: 'INV-001',
+//   tipo: 'completo' | 'referencia' | 'ubicacion',
+//   filtroValor: '',
+//   nota: '',
+//   statut: 'en_curso' | 'validado' | 'anulado',
+//   createdBy: 'TAFAT KHALED',
+//   createdAt: ISO date,
+//   validatedBy: null,
+//   validatedAt: null,
+//   lignes: [
+//     { num, prod, emp, teorico, fisico, ecart, comentario }
+//   ]
+// }
+
+function onInvTipoChange() {
+  const tipo = document.getElementById('invTipo').value;
+  const extra = document.getElementById('invFiltroExtra');
+  const label = document.getElementById('invFiltroLabel');
+  if (tipo === 'completo') {
+    extra.style.display = 'none';
+  } else {
+    extra.style.display = 'block';
+    label.textContent = tipo === 'referencia' ? 'Referencia (ej: FL8-321/214)' : 'Ubicación (ej: A1)';
+    document.getElementById('invFiltroValor').placeholder = tipo === 'referencia' ? 'FL8-321/214' : 'A1,3';
+  }
+}
+
+function abrirNuevoInventario() {
+  document.getElementById('invTipo').value = 'completo';
+  document.getElementById('invFiltroExtra').style.display = 'none';
+  document.getElementById('invNota').value = '';
+  document.getElementById('modalNuevoInv').style.display = 'block';
+}
+
+function crearInventario() {
+  const tipo = document.getElementById('invTipo').value;
+  const filtroValor = document.getElementById('invFiltroValor').value.trim();
+  const nota = document.getElementById('invNota').value.trim();
+
+  if (tipo !== 'completo' && !filtroValor) {
+    alert('⛔ Indique el valor del filtro.');
+    return;
+  }
+
+  // Génère les lignes à compter depuis DB.entrees
+  let entreesFiltrees = DB.entrees.filter(e => !DB.sorties.some(s => s.num === e.num));
+
+  if (tipo === 'referencia') {
+    entreesFiltrees = entreesFiltrees.filter(e => (e.prod||'').toLowerCase().includes(filtroValor.toLowerCase()));
+  } else if (tipo === 'ubicacion') {
+    entreesFiltrees = entreesFiltrees.filter(e => (e.emp||'').toLowerCase().includes(filtroValor.toLowerCase()));
+  }
+
+  if (entreesFiltrees.length === 0) {
+    alert('⚠️ No se encontraron productos en stock con este filtro.');
+    return;
+  }
+
+  const invId = 'INV-' + String(DB.inventaires.length + 1).padStart(4, '0');
+  const lignes = entreesFiltrees.map(e => {
+    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s,c) => s+(Number(c.qty)||0), 0);
+    const teorico = Math.max(0, (Number(e.feuilles)||0) - casseTotal);
+    return {
+      num: e.num,
+      prod: e.prod || '—',
+      emp: e.emp || '—',
+      teorico,
+      fisico: null, // pas encore compté
+      ecart: null,
+      comentario: ''
+    };
+  });
+
+  const inv = {
+    id: invId,
+    tipo,
+    filtroValor,
+    nota: nota || 'Inventario ' + new Date().toLocaleDateString('es-ES'),
+    statut: 'en_curso',
+    createdBy: currentUser ? currentUser.nom : '—',
+    createdAt: new Date().toISOString(),
+    validatedBy: null,
+    validatedAt: null,
+    lignes
+  };
+
+  DB.inventaires.push(inv);
+  saveDB();
+  closeModal('modalNuevoInv');
+  logMouvement('Système', '—', 'Inventario creado: ' + invId + ' · ' + tipo + ' · ' + lignes.length + ' líneas');
+  renderInventaires();
+  ouvrirConteo(inv.id);
+}
+
+function ouvrirConteo(invId) {
+  const inv = DB.inventaires.find(i => i.id === invId);
+  if (!inv) return;
+  currentInvId = invId;
+
+  const isMag = currentUser && currentUser.role === 'Magasinero';
+  const nonCompte = inv.lignes.filter(l => l.fisico === null).length;
+  const total = inv.lignes.length;
+
+  document.getElementById('invConteoProgreso').textContent =
+    'Contadas: ' + (total - nonCompte) + '/' + total;
+
+  // Bouton valider uniquement pour Magasinero si tout est compté
+  const btnVal = document.getElementById('invBtnValider');
+  btnVal.style.display = (isMag && inv.statut === 'en_curso' && nonCompte === 0) ? 'block' : 'none';
+
+  renderConteoLista(inv);
+  document.getElementById('modalConteoInv').style.display = 'block';
+}
+
+function renderConteoLista(inv) {
+  const isMag = currentUser && currentUser.role === 'Magasinero';
+  const readonly = inv.statut !== 'en_curso';
+  let html = '';
+
+  inv.lignes.forEach((l, idx) => {
+    const ecart = l.fisico !== null ? l.fisico - l.teorico : null;
+    const ecartColor = ecart === null ? '#888' : ecart === 0 ? '#059669' : ecart > 0 ? '#D97706' : '#DC2626';
+    const ecartLabel = ecart === null ? '—' : (ecart > 0 ? '+' + ecart + ' Excedente' : ecart < 0 ? ecart + ' Faltante' : '✓ Conforme');
+    const bgCard = l.fisico === null ? '#FFFBEB' : ecart === 0 ? '#F0FDF4' : '#FFF5F5';
+
+    html += '<div style="background:' + bgCard + '; border:1px solid #E2E8F0; border-radius:10px; padding:12px; margin-bottom:8px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">' +
+      '<div>' +
+      '<div style="font-weight:700; color:#1E40AF; font-size:13px;">' + l.prod + '</div>' +
+      '<div style="font-family:monospace; font-size:11px; color:#888;">' + l.num + '</div>' +
+      '<div style="font-size:11px; color:#888;">📍 ' + l.emp + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;">' +
+      '<div style="font-size:11px; color:#888;">Teórico</div>' +
+      '<div style="font-size:18px; font-weight:700; color:#0F172A;">' + l.teorico + ' hj</div>' +
+      '</div>' +
+      '</div>' +
+      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center;">' +
+      '<div>' +
+      '<div style="font-size:11px; color:#475569; font-weight:600; margin-bottom:4px;">Cantidad física (hojas)</div>' +
+      (readonly
+        ? '<div style="font-size:18px; font-weight:700; color:#0F172A;">' + (l.fisico !== null ? l.fisico : '—') + '</div>'
+        : '<input type="number" min="0" value="' + (l.fisico !== null ? l.fisico : '') + '" placeholder="0" ' +
+          'onchange="updateLigneInv(\'' + inv.id + '\',' + idx + ',this.value)" ' +
+          'style="width:100%; padding:8px; border:2px solid #CBD5E1; border-radius:8px; font-size:16px; font-weight:700; text-align:center; margin:0; background:white;">') +
+      '</div>' +
+      '<div style="text-align:center;">' +
+      '<div style="font-size:11px; color:#475569; font-weight:600; margin-bottom:4px;">Écart</div>' +
+      '<div style="font-size:14px; font-weight:700; color:' + ecartColor + ';">' + ecartLabel + '</div>' +
+      '</div>' +
+      '</div>' +
+      (l.comentario || !readonly
+        ? '<input type="text" value="' + (l.comentario||'') + '" placeholder="Comentario opcional..." ' +
+          (readonly ? 'readonly ' : 'onchange="updateComentInv(\'' + inv.id + '\',' + idx + ',this.value)" ') +
+          'style="width:100%; margin-top:8px; padding:6px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px; color:#888;">'
+        : '') +
+      '</div>';
+  });
+
+  document.getElementById('invConteoLista').innerHTML = html ||
+    '<p style="text-align:center; color:#888; margin-top:30px;">No hay productos para contar</p>';
+}
+
+function invBuscarPorScan() {
+  const q = (document.getElementById('invScanBuscar').value || '').trim().toUpperCase();
+  if (!q || !currentInvId) return;
+  const inv = DB.inventaires.find(i => i.id === currentInvId);
+  if (!inv) return;
+
+  // Scroll vers la ligne correspondante
+  const idx = inv.lignes.findIndex(l => l.num.toUpperCase().includes(q) || l.prod.toUpperCase().includes(q));
+  if (idx >= 0) {
+    const items = document.querySelectorAll('#invConteoLista > div');
+    if (items[idx]) {
+      items[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      items[idx].style.border = '2px solid #1E40AF';
+      setTimeout(() => items[idx].style.border = '1px solid #E2E8F0', 2000);
+    }
+  } else {
+    alert('⚠️ N° Lote "' + q + '" no encontrado en este inventario.');
+  }
+}
+
+function updateLigneInv(invId, idx, val) {
+  const inv = DB.inventaires.find(i => i.id === invId);
+  if (!inv || inv.statut !== 'en_curso') return;
+
+  const fisico = parseInt(val);
+  if (isNaN(fisico) || fisico < 0) return;
+
+  inv.lignes[idx].fisico = fisico;
+  inv.lignes[idx].ecart = fisico - inv.lignes[idx].teorico;
+
+  const total = inv.lignes.length;
+  const nonCompte = inv.lignes.filter(l => l.fisico === null).length;
+  document.getElementById('invConteoProgreso').textContent = 'Contadas: ' + (total - nonCompte) + '/' + total;
+
+  const isMag = currentUser && currentUser.role === 'Magasinero';
+  const btnVal = document.getElementById('invBtnValider');
+  btnVal.style.display = (isMag && nonCompte === 0) ? 'block' : 'none';
+
+  saveDB();
+}
+
+function updateComentInv(invId, idx, val) {
+  const inv = DB.inventaires.find(i => i.id === invId);
+  if (!inv) return;
+  inv.lignes[idx].comentario = val;
+  saveDB();
+}
+
+function validarInventario() {
+  if (!currentUser || currentUser.role !== 'Magasinero') {
+    alert('⛔ Solo el Magasinero puede validar el inventario.');
+    return;
+  }
+  const inv = DB.inventaires.find(i => i.id === currentInvId);
+  if (!inv) return;
+
+  const nonCompte = inv.lignes.filter(l => l.fisico === null).length;
+  if (nonCompte > 0) {
+    alert('⛔ Hay ' + nonCompte + ' línea(s) sin contar. Complete el conteo antes de validar.');
+    return;
+  }
+
+  const ecarts = inv.lignes.filter(l => l.ecart !== 0);
+  if (ecarts.length > 0 && !confirm(
+    '⚠️ Se detectaron ' + ecarts.length + ' écart(s).\n\n' +
+    ecarts.map(l => l.prod + ' : ' + (l.ecart > 0 ? '+' : '') + l.ecart + ' hj').join('\n') +
+    '\n\n¿Confirmar y actualizar el stock con las cantidades físicas?'
+  )) return;
+
+  // Met à jour le stock avec les quantités physiques
+  inv.lignes.forEach(l => {
+    if (l.ecart !== 0 && l.fisico !== null) {
+      // Met à jour dans DB.entrees
+      const e = DB.entrees.find(en => en.num === l.num);
+      if (e) {
+        const ancienFeuilles = Number(e.feuilles) || 0;
+        e.feuilles = l.fisico;
+
+        // Ajuste DB.stock
+        if (e.prod && DB.stock[e.prod]) {
+          DB.stock[e.prod].f = Math.max(0, DB.stock[e.prod].f + (l.fisico - ancienFeuilles));
+        }
+
+        // Log correction
+        logMouvement('Système', l.num,
+          'INVENTARIO ' + inv.id + ' · ' + l.prod +
+          ' · Ajuste: ' + (l.ecart > 0 ? '+' : '') + l.ecart + ' hj' +
+          (l.comentario ? ' · ' + l.comentario : '')
+        );
+      }
+    }
+  });
+
+  inv.statut = 'validado';
+  inv.validatedBy = currentUser.nom;
+  inv.validatedAt = new Date().toISOString();
+
+  saveDB();
+  closeModal('modalConteoInv');
+  currentInvId = null;
+  renderInventaires();
+  alert('✅ Inventario ' + inv.id + ' validado.\nStock actualizado con las cantidades físicas.');
+}
+
+function anularInventario(invId) {
+  const inv = DB.inventaires.find(i => i.id === invId);
+  if (!inv || inv.statut === 'validado') return;
+  if (!confirm('¿Anular el inventario ' + invId + '?')) return;
+  inv.statut = 'anulado';
+  saveDB();
+  renderInventaires();
+}
+
+function renderInventaires() {
+  const filtroEstado = document.getElementById('invFiltroEstado').value;
+  const filtroFecha = document.getElementById('invFiltroFecha').value;
+
+  let liste = DB.inventaires.slice().reverse();
+  if (filtroEstado) liste = liste.filter(i => i.statut === filtroEstado);
+  if (filtroFecha) liste = liste.filter(i => i.createdAt && i.createdAt.startsWith(filtroFecha));
+
+  if (liste.length === 0) {
+    document.getElementById('invLista').innerHTML =
+      '<div style="text-align:center; padding:40px; color:#94A3B8;">' +
+      '<div style="font-size:40px; margin-bottom:12px;">📋</div>' +
+      '<div style="font-size:14px;">No hay inventarios. Cree uno nuevo.</div></div>';
+    return;
+  }
+
+  const statutCfg = {
+    en_curso:  { label: '🔄 En curso',  bg: '#FEF3C7', color: '#92400E' },
+    validado:  { label: '✅ Validado',  bg: '#D1FAE5', color: '#065F46' },
+    anulado:   { label: '❌ Anulado',   bg: '#FEE2E2', color: '#991B1B' },
+  };
+
+  const isMag = currentUser && currentUser.role === 'Magasinero';
+
+  let html = '';
+  liste.forEach(inv => {
+    const cfg = statutCfg[inv.statut] || statutCfg.en_curso;
+    const totalLignes = inv.lignes.length;
+    const contadas = inv.lignes.filter(l => l.fisico !== null).length;
+    const ecarts = inv.lignes.filter(l => l.ecart !== null && l.ecart !== 0).length;
+    const fecha = new Date(inv.createdAt).toLocaleDateString('es-ES');
+
+    html += '<div style="background:white; border:1px solid #E2E8F0; border-radius:12px; padding:14px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">' +
+      '<div>' +
+      '<div style="font-weight:700; font-size:14px; color:#0F172A;">' + inv.id + '</div>' +
+      '<div style="font-size:12px; color:#888;">' + inv.nota + '</div>' +
+      '</div>' +
+      '<span style="background:' + cfg.bg + '; color:' + cfg.color + '; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; white-space:nowrap;">' + cfg.label + '</span>' +
+      '</div>' +
+      '<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:10px;">' +
+      invMini('📅', fecha) +
+      invMini('👤', inv.createdBy) +
+      invMini('📦', contadas + '/' + totalLignes + ' líneas') +
+      invMini('⚠️', ecarts + ' écart(s)') +
+      '</div>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+      (inv.statut === 'en_curso'
+        ? '<button onclick="ouvrirConteo(\'' + inv.id + '\')" style="flex:1; background:#1E40AF; color:white; border:none; border-radius:6px; padding:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">▶ Continuar</button>'
+        : '') +
+      '<button onclick="afficherDetailInv(\'' + inv.id + '\')" style="flex:1; background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:6px; padding:8px; font-size:12px; cursor:pointer; margin:0;">👁️ Detalle</button>' +
+      (inv.statut === 'en_curso'
+        ? '<button onclick="anularInventario(\'' + inv.id + '\')" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; padding:8px 12px; font-size:12px; cursor:pointer; margin:0;">❌</button>'
+        : '') +
+      '</div>' +
+      '</div>';
+  });
+
+  document.getElementById('invLista').innerHTML = html;
+}
+
+function invMini(icon, val) {
+  return '<div style="background:#F8FAFC; border-radius:6px; padding:6px; text-align:center;">' +
+    '<div style="font-size:14px;">' + icon + '</div>' +
+    '<div style="font-size:10px; color:#475569; margin-top:2px;">' + val + '</div>' +
+    '</div>';
+}
+
+function afficherDetailInv(invId) {
+  const inv = DB.inventaires.find(i => i.id === invId);
+  if (!inv) return;
+  currentInvId = invId;
+
+  const ecarts = inv.lignes.filter(l => l.ecart !== null && l.ecart !== 0);
+  const conformes = inv.lignes.filter(l => l.ecart === 0);
+  const nonComptes = inv.lignes.filter(l => l.fisico === null);
+
+  let html = '<div style="background:#F8FAFC; border-radius:10px; padding:12px; margin-bottom:14px;">' +
+    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px;">' +
+    '<div><strong>ID :</strong> ' + inv.id + '</div>' +
+    '<div><strong>Tipo :</strong> ' + inv.tipo + '</div>' +
+    '<div><strong>Creado :</strong> ' + new Date(inv.createdAt).toLocaleString('es-ES') + '</div>' +
+    '<div><strong>Por :</strong> ' + inv.createdBy + '</div>' +
+    (inv.validatedAt ? '<div><strong>Validado :</strong> ' + new Date(inv.validatedAt).toLocaleString('es-ES') + '</div>' : '') +
+    (inv.validatedBy ? '<div><strong>Validado por :</strong> ' + inv.validatedBy + '</div>' : '') +
+    '<div><strong>Estado :</strong> ' + inv.statut + '</div>' +
+    '<div><strong>Notas :</strong> ' + inv.nota + '</div>' +
+    '</div></div>' +
+
+    // KPI
+    '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px;">' +
+    '<div style="background:#D1FAE5; border-radius:8px; padding:10px; text-align:center;"><div style="font-size:20px; font-weight:700; color:#059669;">' + conformes.length + '</div><div style="font-size:11px; color:#065F46;">Conformes</div></div>' +
+    '<div style="background:#FEE2E2; border-radius:8px; padding:10px; text-align:center;"><div style="font-size:20px; font-weight:700; color:#DC2626;">' + ecarts.length + '</div><div style="font-size:11px; color:#991B1B;">Con écart</div></div>' +
+    '<div style="background:#FEF3C7; border-radius:8px; padding:10px; text-align:center;"><div style="font-size:20px; font-weight:700; color:#D97706;">' + nonComptes.length + '</div><div style="font-size:11px; color:#92400E;">Sin contar</div></div>' +
+    '</div>' +
+
+    // Tableau des écarts
+    '<div style="font-weight:600; font-size:13px; margin-bottom:8px; color:#0F172A;">📊 Détail des lignes</div>' +
+    '<div style="overflow-x:auto;">' +
+    '<table style="width:100%; border-collapse:collapse; font-size:12px;">' +
+    '<thead><tr style="background:#1e293b; color:white;">' +
+    '<th style="padding:8px; text-align:left;">Referencia</th>' +
+    '<th style="padding:8px; text-align:left;">N° Lote</th>' +
+    '<th style="padding:8px; text-align:right;">Teórico</th>' +
+    '<th style="padding:8px; text-align:right;">Físico</th>' +
+    '<th style="padding:8px; text-align:right;">Écart</th>' +
+    '<th style="padding:8px;">Comentario</th>' +
+    '</tr></thead><tbody>';
+
+  inv.lignes.forEach((l, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#F8FAFC';
+    const ecartColor = l.ecart === null ? '#888' : l.ecart === 0 ? '#059669' : l.ecart > 0 ? '#D97706' : '#DC2626';
+    html += '<tr style="background:' + bg + '; border-bottom:1px solid #F1F5F9;">' +
+      '<td style="padding:7px 8px; font-weight:600; color:#1E40AF;">' + l.prod + '</td>' +
+      '<td style="padding:7px 8px; font-family:monospace; font-size:11px; color:#888;">' + l.num + '</td>' +
+      '<td style="padding:7px 8px; text-align:right;">' + l.teorico + '</td>' +
+      '<td style="padding:7px 8px; text-align:right; font-weight:700;">' + (l.fisico !== null ? l.fisico : '—') + '</td>' +
+      '<td style="padding:7px 8px; text-align:right; font-weight:700; color:' + ecartColor + ';">' + (l.ecart !== null ? (l.ecart > 0 ? '+' : '') + l.ecart : '—') + '</td>' +
+      '<td style="padding:7px 8px; color:#888; font-size:11px;">' + (l.comentario || '—') + '</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('invDetailContenu').innerHTML = html;
+  document.getElementById('modalDetailInv').style.display = 'block';
+}
+
+// ── Export PDF Inventaire ──
+function exportInvPDF() {
+  const inv = DB.inventaires.find(i => i.id === currentInvId);
+  if (!inv) return;
+
+  let lignesHtml = inv.lignes.map((l, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+    const ecartColor = l.ecart === null ? '#888' : l.ecart === 0 ? '#059669' : l.ecart > 0 ? '#D97706' : '#DC2626';
+    return '<tr style="background:' + bg + ';">' +
+      '<td style="padding:7px 8px; font-weight:bold; color:#0055cc;">' + l.prod + '</td>' +
+      '<td style="padding:7px 8px; font-family:monospace; font-size:11px;">' + l.num + '</td>' +
+      '<td style="padding:7px 8px; text-align:right;">' + l.teorico + '</td>' +
+      '<td style="padding:7px 8px; text-align:right; font-weight:bold;">' + (l.fisico !== null ? l.fisico : '—') + '</td>' +
+      '<td style="padding:7px 8px; text-align:right; font-weight:bold; color:' + ecartColor + ';">' + (l.ecart !== null ? (l.ecart > 0 ? '+' : '') + l.ecart : '—') + '</td>' +
+      '<td style="padding:7px 8px;">' + (l.comentario || '') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  const tableHtml =
+    '<table style="width:100%; border-collapse:collapse; font-size:11px;">' +
+    '<thead><tr style="background:#1e293b; color:white;">' +
+    '<th style="padding:8px;">Referencia</th><th style="padding:8px;">N° Lote</th>' +
+    '<th style="padding:8px; text-align:right;">Teórico</th><th style="padding:8px; text-align:right;">Físico</th>' +
+    '<th style="padding:8px; text-align:right;">Écart</th><th style="padding:8px;">Comentario</th>' +
+    '</tr></thead><tbody>' + lignesHtml + '</tbody></table>';
+
+  exportPDF('Inventario ' + inv.id + ' — ' + inv.nota, tableHtml);
+}
+
+// ── Export Excel Inventaire ──
+function exportInvExcel() {
+  const inv = DB.inventaires.find(i => i.id === currentInvId);
+  if (!inv) return;
+
+  const headers = ['Referencia', 'N° Lote', 'Ubicación', 'Qty Teórica', 'Qty Física', 'Écart', 'Comentario'];
+  const rows = inv.lignes.map(l => [
+    l.prod, l.num, l.emp, l.teorico,
+    l.fisico !== null ? l.fisico : '',
+    l.ecart !== null ? (l.ecart > 0 ? '+' + l.ecart : l.ecart) : '',
+    l.comentario || ''
+  ]);
+
+  const now = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+  downloadXLSX('GPS_BENICARLO_' + inv.id + '_' + now + '.xls', rows, headers);
 }
 
 function clearGLColFilters() {
@@ -3112,6 +3664,8 @@ const FIELD_LABELS = {
   histNum:     'N° lote',
   glLote:          'N° Lote',
   stockLoteSearch: 'N° Lote',
+  invScanBuscar:   'N° Lote',
+  invFiltroValor:  'Filtro',
   ventaNum:    'N° lote',
   traspasoNum: 'N° lote',
 
@@ -3368,6 +3922,7 @@ function acceptCode(field, code) {
   if (field === 'traspasoNum') autofillTraspasoProd();
   if (field === 'histNum' || field === 'glLote') renderGrandLivre();
   if (field === 'stockLoteSearch') searchStockByLote();
+  if (field === 'invScanBuscar') invBuscarPorScan();
 
   if (scanTargetQueue.length > 0) {
     // Il reste des champs à scanner — on montre le statut et continue

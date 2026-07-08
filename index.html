@@ -390,6 +390,7 @@
       </div>
       <div id="sbTafat" style="display:none;">
         <div style="padding:0 12px; margin:12px 0 6px; color:rgba(255,255,255,0.3); font-size:10px; text-transform:uppercase;">Administración</div>
+        <button onclick="goto('admin')" class="sidebar-btn" id="sb-admin" style="color:#C4B5FD;">⚙️ Administración</button>
         <button onclick="resetVisualizacion()" class="sidebar-btn" style="color:#F87171;">🗑️ Reiniciar Aplicación</button>
       </div>
     </div>
@@ -489,6 +490,232 @@
       </div>
 
       <!-- HISTORIAL -->
+      <!-- ═══ ADMINISTRACIÓN ═══ -->
+      <div class="page" id="page-admin">
+        <h2 style="margin-bottom:16px;">⚙️ Administración</h2>
+
+        <!-- Onglets de navigation -->
+        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; background:#F1F5F9; border-radius:10px; padding:4px;">
+          <button onclick="showAdminTab('usuarios')" id="atab-usuarios" class="admin-tab active" style="flex:1; min-width:80px;">👥 Usuarios</button>
+          <button onclick="showAdminTab('almacenes')" id="atab-almacenes" class="admin-tab" style="flex:1; min-width:80px;">🏭 Almacenes</button>
+          <button onclick="showAdminTab('categorias')" id="atab-categorias" class="admin-tab" style="flex:1; min-width:80px;">📁 Categorías</button>
+          <button onclick="showAdminTab('unidades')" id="atab-unidades" class="admin-tab" style="flex:1; min-width:80px;">📏 Unidades</button>
+          <button onclick="showAdminTab('empresa')" id="atab-empresa" class="admin-tab" style="flex:1; min-width:80px;">🏢 Empresa</button>
+          <button onclick="showAdminTab('alertas')" id="atab-alertas" class="admin-tab" style="flex:1; min-width:80px;">🔔 Alertas</button>
+          <button onclick="showAdminTab('journal')" id="atab-journal" class="admin-tab" style="flex:1; min-width:80px;">📜 Journal</button>
+          <button onclick="showAdminTab('backup')" id="atab-backup" class="admin-tab" style="flex:1; min-width:80px;">💾 Backup</button>
+        </div>
+
+        <!-- ── USUARIOS ── -->
+        <div id="admin-usuarios" class="admin-panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">👥 Gestión de Usuarios</div>
+            <button onclick="abrirModalUsuario()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nuevo Usuario</button>
+          </div>
+          <input type="text" id="buscarUsuario" placeholder="🔍 Buscar usuario..." oninput="renderUsuarios()" style="margin-bottom:12px;">
+          <div id="listaUsuarios"></div>
+        </div>
+
+        <!-- ── ALMACENES ── -->
+        <div id="admin-almacenes" class="admin-panel" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">🏭 Gestión de Almacenes</div>
+            <button onclick="abrirModalAlmacen()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nuevo Almacén</button>
+          </div>
+          <div id="listaAlmacenes"></div>
+        </div>
+
+        <!-- ── CATEGORÍAS ── -->
+        <div id="admin-categorias" class="admin-panel" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">📁 Categorías de Productos</div>
+            <button onclick="abrirModalCategoria()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nueva Categoría</button>
+          </div>
+          <div id="listaCategorias"></div>
+        </div>
+
+        <!-- ── UNIDADES ── -->
+        <div id="admin-unidades" class="admin-panel" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">📏 Unidades de Medida</div>
+            <button onclick="abrirModalUnidad()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nueva Unidad</button>
+          </div>
+          <div id="listaUnidades"></div>
+        </div>
+
+        <!-- ── EMPRESA ── -->
+        <div id="admin-empresa" class="admin-panel" style="display:none;">
+          <div style="font-weight:700; font-size:15px; margin-bottom:16px;">🏢 Parámetros de la Empresa</div>
+          <label>Nombre de la empresa</label>
+          <input type="text" id="empNombre" placeholder="ALMACEN GPS BENICARLO">
+          <label>Dirección</label>
+          <input type="text" id="empDireccion" placeholder="Calle, ciudad, país">
+          <label>Teléfono</label>
+          <input type="text" id="empTelefono" placeholder="+34 ...">
+          <label>Email</label>
+          <input type="email" id="empEmail" placeholder="contacto@empresa.com">
+          <label>Sitio web</label>
+          <input type="text" id="empWeb" placeholder="https://...">
+          <label>N° Fiscal / CIF</label>
+          <input type="text" id="empFiscal" placeholder="B12345678">
+          <label>Moneda</label>
+          <select id="empMoneda">
+            <option value="EUR">€ Euro (EUR)</option>
+            <option value="USD">$ Dólar (USD)</option>
+            <option value="DZD">دج Dinar Argelino (DZD)</option>
+            <option value="MAD">Dh Dírham Marroquí (MAD)</option>
+          </select>
+          <label>Idioma</label>
+          <select id="empIdioma">
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="ar">🇩🇿 العربية</option>
+          </select>
+          <button class="btn-green" onclick="guardarEmpresa()">💾 Guardar Parámetros</button>
+        </div>
+
+        <!-- ── ALERTAS ── -->
+        <div id="admin-alertas" class="admin-panel" style="display:none;">
+          <div style="font-weight:700; font-size:15px; margin-bottom:16px;">🔔 Configuración de Alertas y Notificaciones</div>
+          <label>Email del responsable</label>
+          <input type="email" id="alertEmail" value="tafatkhaled901@gmail.com">
+          <label>Umbral de stock mínimo (hojas)</label>
+          <input type="number" id="alertMin" value="20" min="1">
+          <label>Umbral de stock crítico (hojas)</label>
+          <input type="number" id="alertCritico" value="5" min="1">
+          <div style="background:#F8FAFC; border-radius:10px; padding:14px; margin:12px 0;">
+            <div style="font-weight:600; margin-bottom:10px; font-size:13px;">Activar notificaciones</div>
+            <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; text-transform:none; letter-spacing:0; font-size:14px;">
+              <input type="checkbox" id="alertEmailOn" style="width:18px; height:18px;"> Alertas de stock por email
+            </label>
+            <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; text-transform:none; letter-spacing:0; font-size:14px;">
+              <input type="checkbox" id="alertBackupOn"> Notificaciones de backup
+            </label>
+            <label style="display:flex; align-items:center; gap:10px; text-transform:none; letter-spacing:0; font-size:14px;">
+              <input type="checkbox" id="alertRoturaOn" checked> Alertas de roturas (siempre activo)
+            </label>
+          </div>
+          <div style="background:#F8FAFC; border-radius:10px; padding:14px; margin:12px 0;">
+            <div style="font-weight:600; margin-bottom:10px; font-size:13px;">⚙️ Configuración SMTP</div>
+            <label>Servidor SMTP</label>
+            <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+            <label>Puerto</label>
+            <input type="number" id="smtpPort" placeholder="587">
+            <label>Usuario</label>
+            <input type="text" id="smtpUser" placeholder="correo@gmail.com">
+            <label>Contraseña</label>
+            <input type="password" id="smtpPass" placeholder="••••••••">
+            <button onclick="testEmail()" style="background:#0055cc; color:white; border:none; border-radius:8px; padding:10px; font-size:13px; cursor:pointer; width:auto; margin:4px 0;">📧 Enviar email de prueba</button>
+          </div>
+          <button class="btn-green" onclick="guardarAlertas()">💾 Guardar Configuración</button>
+        </div>
+
+        <!-- ── JOURNAL ── -->
+        <div id="admin-journal" class="admin-panel" style="display:none;">
+          <div style="font-weight:700; font-size:15px; margin-bottom:12px;">📜 Journal des Activités</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+            <input type="text" id="jrnlFiltroUser" placeholder="🔍 Usuario..." oninput="renderJournal()" style="flex:1; min-width:120px; margin:0;">
+            <input type="date" id="jrnlFiltroDate" onchange="renderJournal()" style="flex:1; min-width:140px; margin:0;">
+            <select id="jrnlFiltroType" onchange="renderJournal()" style="flex:1; min-width:120px; margin:0;">
+              <option value="">Todos los tipos</option>
+              <option value="Entrée">📥 Entrada</option>
+              <option value="Sortie">📤 Salida</option>
+              <option value="Casse">💥 Rotura</option>
+              <option value="Traspaso">🚛 Traspaso</option>
+              <option value="Reintegración">🔄 Reintegración</option>
+              <option value="Système">🤖 Sistema</option>
+            </select>
+            <button onclick="exportJournalExcel()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">📊 Excel</button>
+            <button onclick="exportJournalPDF()" style="background:#DC2626; color:white; border:none; border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">📄 PDF</button>
+          </div>
+          <div id="listaJournal" style="overflow-x:auto; font-size:12px;"></div>
+        </div>
+
+        <!-- ── BACKUP ── -->
+        <div id="admin-backup" class="admin-panel" style="display:none;">
+          <div style="font-weight:700; font-size:15px; margin-bottom:16px;">💾 Sauvegarde & Restauration</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+            <button onclick="crearBackup()" style="background:#1E40AF; color:white; border:none; border-radius:10px; padding:16px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
+              💾 Crear Backup Ahora
+            </button>
+            <label style="background:#059669; color:white; border-radius:10px; padding:16px; font-size:13px; font-weight:600; cursor:pointer; text-align:center; display:flex; align-items:center; justify-content:center; text-transform:none; letter-spacing:0;">
+              📂 Restaurar Backup
+              <input type="file" accept=".json" onchange="restaurarBackup(event)" style="display:none;">
+            </label>
+          </div>
+          <div style="font-weight:600; font-size:13px; margin-bottom:8px; color:#0F172A;">Historial de backups</div>
+          <div id="listaBackups"></div>
+        </div>
+      </div>
+
+      <!-- ═══ MODAL USUARIO ═══ -->
+      <div class="modal" id="modalUsuario">
+        <h2 id="modalUsuarioTitulo">👤 Nuevo Usuario</h2>
+        <input type="hidden" id="usuarioId">
+        <label>Nombre completo</label>
+        <input type="text" id="usuarioNom" placeholder="ej: JUAN GARCIA">
+        <label>Login (nombre para iniciar sesión)</label>
+        <input type="text" id="usuarioPrenom" placeholder="ej: JUAN">
+        <label>Rol</label>
+        <select id="usuarioRole">
+          <option value="Operador">Operador</option>
+          <option value="Magasinero">Magasinero (Responsable de stock)</option>
+          <option value="Administrador">Administrador</option>
+          <option value="LecturaOnly">Solo lectura</option>
+        </select>
+        <label>PIN (4 dígitos)</label>
+        <input type="password" id="usuarioPin" placeholder="••••" maxlength="4" inputmode="numeric">
+        <label>Estado</label>
+        <select id="usuarioActivo">
+          <option value="true">✅ Activo</option>
+          <option value="false">❌ Inactivo</option>
+        </select>
+        <button class="btn-green" onclick="guardarUsuario()">💾 Guardar</button>
+        <button class="btn-red" onclick="closeModal('modalUsuario')">Cancelar</button>
+      </div>
+
+      <!-- ═══ MODAL ALMACEN ═══ -->
+      <div class="modal" id="modalAlmacen">
+        <h2 id="modalAlmacenTitulo">🏭 Nuevo Almacén</h2>
+        <input type="hidden" id="almacenId">
+        <label>Nombre del almacén</label>
+        <input type="text" id="almacenNombre" placeholder="ej: Almacén Norte">
+        <label>Ubicación</label>
+        <input type="text" id="almacenUbicacion" placeholder="ej: Benicarlo, España">
+        <label style="display:flex; align-items:center; gap:10px; text-transform:none; letter-spacing:0; font-size:14px; margin:8px 0;">
+          <input type="checkbox" id="almacenDefault" style="width:18px; height:18px;"> Definir como almacén por defecto
+        </label>
+        <button class="btn-green" onclick="guardarAlmacen()">💾 Guardar</button>
+        <button class="btn-red" onclick="closeModal('modalAlmacen')">Cancelar</button>
+      </div>
+
+      <!-- ═══ MODAL CATEGORIA ═══ -->
+      <div class="modal" id="modalCategoria">
+        <h2>📁 Categoría</h2>
+        <input type="hidden" id="catId">
+        <label>Nombre de la categoría</label>
+        <input type="text" id="catNombre" placeholder="ej: Vidrio Float">
+        <label>Categoría padre (opcional)</label>
+        <select id="catParent">
+          <option value="">— Ninguna (categoría principal) —</option>
+        </select>
+        <button class="btn-green" onclick="guardarCategoria()">💾 Guardar</button>
+        <button class="btn-red" onclick="closeModal('modalCategoria')">Cancelar</button>
+      </div>
+
+      <!-- ═══ MODAL UNIDAD ═══ -->
+      <div class="modal" id="modalUnidad">
+        <h2>📏 Unidad de Medida</h2>
+        <input type="hidden" id="unidadId">
+        <label>Nombre</label>
+        <input type="text" id="unidadNombre" placeholder="ej: Hoja">
+        <label>Símbolo</label>
+        <input type="text" id="unidadSimbolo" placeholder="ej: hj">
+        <button class="btn-green" onclick="guardarUnidad()">💾 Guardar</button>
+        <button class="btn-red" onclick="closeModal('modalUnidad')">Cancelar</button>
+      </div>
+
       <!-- ═══ INVENTARIO ═══ -->
       <div class="page" id="page-inventaire">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
@@ -956,13 +1183,19 @@ sidebarStyle.textContent = `
     cursor:pointer; display:flex; align-items:center; gap:5px;
   }
   .gl-type-btn input { cursor:pointer; }
-  .gl-row-entree { border-left: 3px solid #00aa44; }
-  .gl-row-sortie { border-left: 3px solid #cc6600; }
-  .gl-row-casse { border-left: 3px solid #cc2222; }
-  .gl-row-autre { border-left: 3px solid #888; }
-  .gl-badge {
-    display:inline-block; padding:2px 7px; border-radius:10px;
-    font-size:11px; font-weight:bold; white-space:nowrap;
+  .gl-badge { display:inline-block; padding:2px 7px; border-radius:10px; font-size:11px; font-weight:bold; white-space:nowrap; }
+  /* Admin tabs */
+  .admin-tab {
+    padding: 8px 10px; border:none; background:transparent; border-radius:8px;
+    font-size:12px; font-weight:500; cursor:pointer; color:#64748B;
+    font-family:'Inter',sans-serif; margin:0; transition:all 0.15s;
+  }
+  .admin-tab.active { background:white; color:#1E40AF; font-weight:700; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+  .admin-panel { animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+  .admin-card {
+    background:white; border:1px solid #E2E8F0; border-radius:10px;
+    padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04);
   }
 `;
 document.head.appendChild(sidebarStyle);
@@ -1048,6 +1281,31 @@ let DB = {
   sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
   mouvements: JSON.parse(localStorage.getItem('vs_mouvements') || '[]'),
   inventaires: JSON.parse(localStorage.getItem('vs_inventaires') || '[]'),
+  admin: JSON.parse(localStorage.getItem('vs_admin') || JSON.stringify({
+    empresa: { nombre: 'ALMACEN GPS BENICARLO', direccion: 'Benicarlo, España', telefono: '', email: 'tafatkhaled901@gmail.com', web: '', fiscal: '', idioma: 'es', moneda: 'EUR', timezone: 'Europe/Madrid' },
+    almacenes: [
+      { id: 'ALM-1', nombre: 'Almacén Principal', ubicacion: 'Benicarlo', default: true, activo: true },
+    ],
+    categorias: [
+      { id: 'CAT-1', nombre: 'Vidrio Float', parent: null },
+      { id: 'CAT-2', nombre: 'Vidrio Laminado', parent: null },
+      { id: 'CAT-3', nombre: 'Vidrio Templado', parent: null },
+    ],
+    unidades: [
+      { id: 'U-1', nombre: 'Hoja', simbolo: 'hj' },
+      { id: 'U-2', nombre: 'Caja', simbolo: 'cj' },
+      { id: 'U-3', nombre: 'Palé', simbolo: 'pal' },
+    ],
+    alertas: { stockMinimo: 20, stockCritico: 5, emailAlertas: true, emailBackup: false },
+    smtpConfig: { host: '', port: 587, user: '', password: '', from: 'tafatkhaled901@gmail.com', fromName: 'ALMACEN GPS BENICARLO' },
+    usuarios: [
+      { id: 'u1', nom: 'MIGUEL', prenom: 'MIGUEL', role: 'Operador', pin: '1234', activo: true, createdAt: new Date().toISOString() },
+      { id: 'u2', nom: 'TAFAT KHALED', prenom: 'TAFAT', role: 'Administrador', pin: '5678', activo: true, createdAt: new Date().toISOString() },
+      { id: 'u3', nom: 'LUIS MIGUEL SOLERA', prenom: 'LUIS', role: 'Magasinero', pin: '0000', activo: true, createdAt: new Date().toISOString() },
+    ],
+    connexions: [],
+    backups: [],
+  })),
 };
 
 let currentUser = null;
@@ -1062,6 +1320,7 @@ function saveDB() {
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
   localStorage.setItem('vs_inventaires', JSON.stringify(DB.inventaires));
+  localStorage.setItem('vs_admin', JSON.stringify(DB.admin));
   syncToSheets();
   // Rafraîchit le dashboard si on y est, sinon met à jour en arrière-plan
   if (typeof renderDashboard === 'function') {
@@ -1202,6 +1461,11 @@ function loginSuccess(user) {
   // Affiche bouton Reiniciar uniquement pour TAFAT KHALED
   const sbTafat = document.getElementById('sbTafat');
   if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
+  // Log connexion
+  if (!DB.admin.connexions) DB.admin.connexions = [];
+  DB.admin.connexions.unshift({ user: user.nom, date: new Date().toISOString() });
+  if (DB.admin.connexions.length > 100) DB.admin.connexions.pop();
+  saveDB();
   goto('dashboard');
 }
 
@@ -1264,6 +1528,7 @@ function goto(page) {
   else if (page === 'stock') renderStock();
   else if (page === 'historique') { renderGrandLivre(); }
   else if (page === 'inventaire') { renderInventaires(); }
+  else if (page === 'admin') { showAdminTab('usuarios'); }
 }
 
 // ─── Dashboard / KPI ───
@@ -3413,6 +3678,497 @@ function exportInvExcel() {
 
   const now = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
   downloadXLSX('GPS_BENICARLO_' + inv.id + '_' + now + '.xls', rows, headers);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE ADMINISTRACIÓN — Complet
+// ═══════════════════════════════════════════════════════════
+
+function showAdminTab(tab) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('admin-' + tab).style.display = 'block';
+  document.getElementById('atab-' + tab).classList.add('active');
+
+  // Charge les données de l'onglet
+  if (tab === 'usuarios')   renderUsuarios();
+  if (tab === 'almacenes')  renderAlmacenes();
+  if (tab === 'categorias') renderCategorias();
+  if (tab === 'unidades')   renderUnidades();
+  if (tab === 'empresa')    chargerEmpresa();
+  if (tab === 'alertas')    chargerAlertas();
+  if (tab === 'journal')    renderJournal();
+  if (tab === 'backup')     renderBackups();
+}
+
+// ── USUARIOS ──
+function renderUsuarios() {
+  const q = (document.getElementById('buscarUsuario').value || '').toLowerCase();
+  const users = DB.admin.usuarios.filter(u =>
+    u.nom.toLowerCase().includes(q) || u.prenom.toLowerCase().includes(q) || u.role.toLowerCase().includes(q)
+  );
+
+  const roleBadge = {
+    Administrador: { bg:'#EDE9FE', color:'#5B21B6' },
+    Magasinero:    { bg:'#DBEAFE', color:'#1E40AF' },
+    Operador:      { bg:'#D1FAE5', color:'#065F46' },
+    LecturaOnly:   { bg:'#F1F5F9', color:'#475569' },
+  };
+
+  let html = '';
+  users.forEach(u => {
+    const rb = roleBadge[u.role] || roleBadge.Operador;
+    html += '<div class="admin-card">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+      '<div style="display:flex; align-items:center; gap:10px;">' +
+      '<div style="width:38px; height:38px; background:linear-gradient(135deg,#1E40AF,#3B82F6); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px; flex-shrink:0;">' + (u.nom[0]||'?') + '</div>' +
+      '<div>' +
+      '<div style="font-weight:700; font-size:13px;">' + u.nom + '</div>' +
+      '<div style="font-size:11px; color:#888;">Login: <strong>' + u.prenom + '</strong> · PIN: ****</div>' +
+      '</div>' +
+      '</div>' +
+      '<div style="display:flex; align-items:center; gap:6px;">' +
+      '<span style="background:' + rb.bg + '; color:' + rb.color + '; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;">' + u.role + '</span>' +
+      '<span style="background:' + (u.activo ? '#D1FAE5' : '#FEE2E2') + '; color:' + (u.activo ? '#065F46' : '#991B1B') + '; padding:2px 6px; border-radius:8px; font-size:11px;">' + (u.activo ? '✓' : '✗') + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:6px; margin-top:10px;">' +
+      '<button onclick="editarUsuario(\'' + u.id + '\')" style="flex:1; background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE; border-radius:6px; padding:7px; font-size:12px; cursor:pointer; margin:0;">✏️ Editar</button>' +
+      '<button onclick="toggleUsuario(\'' + u.id + '\')" style="flex:1; background:' + (u.activo ? '#FEF3C7' : '#D1FAE5') + '; color:' + (u.activo ? '#92400E' : '#065F46') + '; border:none; border-radius:6px; padding:7px; font-size:12px; cursor:pointer; margin:0;">' + (u.activo ? '🔒 Desactivar' : '🔓 Activar') + '</button>' +
+      (u.id !== 'u2' ? '<button onclick="eliminarUsuario(\'' + u.id + '\')" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:6px; padding:7px 10px; font-size:12px; cursor:pointer; margin:0;">🗑️</button>' : '') +
+      '</div>' +
+      '</div>';
+  });
+
+  document.getElementById('listaUsuarios').innerHTML = html || '<p style="color:#888; text-align:center; margin-top:20px;">No se encontraron usuarios</p>';
+}
+
+function abrirModalUsuario() {
+  document.getElementById('modalUsuarioTitulo').textContent = '👤 Nuevo Usuario';
+  document.getElementById('usuarioId').value = '';
+  document.getElementById('usuarioNom').value = '';
+  document.getElementById('usuarioPrenom').value = '';
+  document.getElementById('usuarioRole').value = 'Operador';
+  document.getElementById('usuarioPin').value = '';
+  document.getElementById('usuarioActivo').value = 'true';
+  document.getElementById('modalUsuario').style.display = 'block';
+}
+
+function editarUsuario(id) {
+  const u = DB.admin.usuarios.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('modalUsuarioTitulo').textContent = '✏️ Editar Usuario';
+  document.getElementById('usuarioId').value = u.id;
+  document.getElementById('usuarioNom').value = u.nom;
+  document.getElementById('usuarioPrenom').value = u.prenom;
+  document.getElementById('usuarioRole').value = u.role;
+  document.getElementById('usuarioPin').value = '';
+  document.getElementById('usuarioActivo').value = String(u.activo);
+  document.getElementById('modalUsuario').style.display = 'block';
+}
+
+function guardarUsuario() {
+  const id = document.getElementById('usuarioId').value;
+  const nom = document.getElementById('usuarioNom').value.trim().toUpperCase();
+  const prenom = document.getElementById('usuarioPrenom').value.trim().toUpperCase();
+  const role = document.getElementById('usuarioRole').value;
+  const pin = document.getElementById('usuarioPin').value.trim();
+  const activo = document.getElementById('usuarioActivo').value === 'true';
+
+  if (!nom || !prenom) { alert('⛔ Complete nombre y login.'); return; }
+
+  if (id) {
+    // Modifier
+    const u = DB.admin.usuarios.find(x => x.id === id);
+    if (u) {
+      u.nom = nom; u.prenom = prenom; u.role = role; u.activo = activo;
+      if (pin && /^\d{4}$/.test(pin)) u.pin = pin;
+    }
+    // Sync USERS array
+    const usr = USERS.find(x => x.id === id);
+    if (usr) { usr.nom = nom; usr.prenom = prenom; usr.role = role; if (pin) usr.pin = pin; }
+  } else {
+    // Nouveau
+    if (!pin || !/^\d{4}$/.test(pin)) { alert('⛔ PIN debe ser exactamente 4 dígitos.'); return; }
+    const newId = 'u' + Date.now();
+    const newUser = { id: newId, nom, prenom, role, pin, activo, createdAt: new Date().toISOString() };
+    DB.admin.usuarios.push(newUser);
+    USERS.push(newUser);
+  }
+
+  logMouvement('Système', '—', 'Usuario ' + (id ? 'modificado' : 'creado') + ': ' + nom);
+  saveDB();
+  closeModal('modalUsuario');
+  renderUsuarios();
+}
+
+function toggleUsuario(id) {
+  const u = DB.admin.usuarios.find(x => x.id === id);
+  if (!u) return;
+  u.activo = !u.activo;
+  logMouvement('Système', '—', 'Usuario ' + u.nom + ' ' + (u.activo ? 'activado' : 'desactivado'));
+  saveDB();
+  renderUsuarios();
+}
+
+function eliminarUsuario(id) {
+  if (!confirm('¿Eliminar este usuario definitivamente?')) return;
+  DB.admin.usuarios = DB.admin.usuarios.filter(x => x.id !== id);
+  const idx = USERS.findIndex(x => x.id === id);
+  if (idx >= 0) USERS.splice(idx, 1);
+  logMouvement('Système', '—', 'Usuario eliminado: ID ' + id);
+  saveDB();
+  renderUsuarios();
+}
+
+// ── ALMACENES ──
+function renderAlmacenes() {
+  let html = '';
+  DB.admin.almacenes.forEach((a, i) => {
+    html += '<div class="admin-card">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+      '<div>' +
+      '<div style="font-weight:700; font-size:13px;">🏭 ' + a.nombre + (a.default ? ' <span style="background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:6px;font-size:10px;margin-left:4px;">⭐ Por defecto</span>' : '') + '</div>' +
+      '<div style="font-size:12px; color:#888;">📍 ' + a.ubicacion + ' · ' + (a.activo ? '<span style="color:#059669;">Activo</span>' : '<span style="color:#DC2626;">Inactivo</span>') + '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:6px;">' +
+      '<button onclick="editarAlmacen(' + i + ')" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin:0;">✏️</button>' +
+      '<button onclick="eliminarAlmacen(' + i + ')" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin:0;">🗑️</button>' +
+      '</div>' +
+      '</div></div>';
+  });
+  document.getElementById('listaAlmacenes').innerHTML = html || '<p style="color:#888; text-align:center; margin-top:20px;">No hay almacenes</p>';
+}
+
+function abrirModalAlmacen() {
+  document.getElementById('modalAlmacenTitulo').textContent = '🏭 Nuevo Almacén';
+  document.getElementById('almacenId').value = '';
+  document.getElementById('almacenNombre').value = '';
+  document.getElementById('almacenUbicacion').value = '';
+  document.getElementById('almacenDefault').checked = false;
+  document.getElementById('modalAlmacen').style.display = 'block';
+}
+
+function editarAlmacen(idx) {
+  const a = DB.admin.almacenes[idx];
+  document.getElementById('modalAlmacenTitulo').textContent = '✏️ Editar Almacén';
+  document.getElementById('almacenId').value = idx;
+  document.getElementById('almacenNombre').value = a.nombre;
+  document.getElementById('almacenUbicacion').value = a.ubicacion;
+  document.getElementById('almacenDefault').checked = a.default;
+  document.getElementById('modalAlmacen').style.display = 'block';
+}
+
+function guardarAlmacen() {
+  const idx = document.getElementById('almacenId').value;
+  const nombre = document.getElementById('almacenNombre').value.trim();
+  const ubicacion = document.getElementById('almacenUbicacion').value.trim();
+  const isDefault = document.getElementById('almacenDefault').checked;
+  if (!nombre) { alert('⛔ Ingrese el nombre del almacén.'); return; }
+  if (isDefault) DB.admin.almacenes.forEach(a => a.default = false);
+  if (idx !== '') {
+    DB.admin.almacenes[idx] = { ...DB.admin.almacenes[idx], nombre, ubicacion, default: isDefault };
+  } else {
+    DB.admin.almacenes.push({ id: 'ALM-' + Date.now(), nombre, ubicacion, default: isDefault, activo: true });
+  }
+  saveDB(); closeModal('modalAlmacen'); renderAlmacenes();
+}
+
+function eliminarAlmacen(idx) {
+  if (!confirm('¿Eliminar este almacén?')) return;
+  DB.admin.almacenes.splice(idx, 1);
+  saveDB(); renderAlmacenes();
+}
+
+// ── CATEGORÍAS ──
+function renderCategorias() {
+  const cats = DB.admin.categorias;
+  const principales = cats.filter(c => !c.parent);
+  let html = '';
+  principales.forEach(cat => {
+    const subs = cats.filter(c => c.parent === cat.id);
+    html += '<div class="admin-card">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+      '<div style="font-weight:700; font-size:13px;">📁 ' + cat.nombre + '</div>' +
+      '<div style="display:flex; gap:6px;">' +
+      '<button onclick="eliminarCategoria(\'' + cat.id + '\')" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin:0;">🗑️</button>' +
+      '</div>' +
+      '</div>' +
+      (subs.length > 0 ? '<div style="margin-top:8px; padding-left:16px;">' +
+        subs.map(s => '<div style="font-size:12px;color:#475569;padding:3px 0;border-left:2px solid #E2E8F0;padding-left:8px;margin:2px 0;">📄 ' + s.nombre +
+          ' <button onclick="eliminarCategoria(\'' + s.id + '\')" style="background:none;border:none;color:#DC2626;font-size:11px;cursor:pointer;width:auto;margin:0;padding:0 4px;">✕</button></div>').join('') +
+        '</div>' : '') +
+      '</div>';
+  });
+  document.getElementById('listaCategorias').innerHTML = html || '<p style="color:#888; text-align:center;">No hay categorías</p>';
+}
+
+function abrirModalCategoria() {
+  document.getElementById('catId').value = '';
+  document.getElementById('catNombre').value = '';
+  const sel = document.getElementById('catParent');
+  sel.innerHTML = '<option value="">— Ninguna (categoría principal) —</option>';
+  DB.admin.categorias.filter(c => !c.parent).forEach(c => {
+    sel.innerHTML += '<option value="' + c.id + '">' + c.nombre + '</option>';
+  });
+  document.getElementById('modalCategoria').style.display = 'block';
+}
+
+function guardarCategoria() {
+  const nombre = document.getElementById('catNombre').value.trim();
+  const parent = document.getElementById('catParent').value || null;
+  if (!nombre) { alert('⛔ Ingrese el nombre de la categoría.'); return; }
+  DB.admin.categorias.push({ id: 'CAT-' + Date.now(), nombre, parent });
+  saveDB(); closeModal('modalCategoria'); renderCategorias();
+}
+
+function eliminarCategoria(id) {
+  if (!confirm('¿Eliminar esta categoría?')) return;
+  DB.admin.categorias = DB.admin.categorias.filter(c => c.id !== id && c.parent !== id);
+  saveDB(); renderCategorias();
+}
+
+// ── UNIDADES ──
+function renderUnidades() {
+  let html = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">';
+  DB.admin.unidades.forEach((u, i) => {
+    html += '<div class="admin-card" style="display:flex; justify-content:space-between; align-items:center;">' +
+      '<div><div style="font-weight:600; font-size:13px;">' + u.nombre + '</div><div style="font-size:11px;color:#888;">' + u.simbolo + '</div></div>' +
+      '<div style="display:flex; gap:4px;">' +
+      '<button onclick="eliminarUnidad(' + i + ')" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;margin:0;">🗑️</button>' +
+      '</div>' +
+      '</div>';
+  });
+  html += '</div>';
+  document.getElementById('listaUnidades').innerHTML = html;
+}
+
+function abrirModalUnidad() {
+  document.getElementById('unidadId').value = '';
+  document.getElementById('unidadNombre').value = '';
+  document.getElementById('unidadSimbolo').value = '';
+  document.getElementById('modalUnidad').style.display = 'block';
+}
+
+function guardarUnidad() {
+  const nombre = document.getElementById('unidadNombre').value.trim();
+  const simbolo = document.getElementById('unidadSimbolo').value.trim();
+  if (!nombre || !simbolo) { alert('⛔ Complete nombre y símbolo.'); return; }
+  DB.admin.unidades.push({ id: 'U-' + Date.now(), nombre, simbolo });
+  saveDB(); closeModal('modalUnidad'); renderUnidades();
+}
+
+function eliminarUnidad(idx) {
+  if (!confirm('¿Eliminar esta unidad?')) return;
+  DB.admin.unidades.splice(idx, 1);
+  saveDB(); renderUnidades();
+}
+
+// ── EMPRESA ──
+function chargerEmpresa() {
+  const e = DB.admin.empresa;
+  document.getElementById('empNombre').value = e.nombre || '';
+  document.getElementById('empDireccion').value = e.direccion || '';
+  document.getElementById('empTelefono').value = e.telefono || '';
+  document.getElementById('empEmail').value = e.email || '';
+  document.getElementById('empWeb').value = e.web || '';
+  document.getElementById('empFiscal').value = e.fiscal || '';
+  document.getElementById('empMoneda').value = e.moneda || 'EUR';
+  document.getElementById('empIdioma').value = e.idioma || 'es';
+}
+
+function guardarEmpresa() {
+  DB.admin.empresa = {
+    ...DB.admin.empresa,
+    nombre: document.getElementById('empNombre').value.trim(),
+    direccion: document.getElementById('empDireccion').value.trim(),
+    telefono: document.getElementById('empTelefono').value.trim(),
+    email: document.getElementById('empEmail').value.trim(),
+    web: document.getElementById('empWeb').value.trim(),
+    fiscal: document.getElementById('empFiscal').value.trim(),
+    moneda: document.getElementById('empMoneda').value,
+    idioma: document.getElementById('empIdioma').value,
+  };
+  saveDB();
+  logMouvement('Système', '—', 'Parámetros de empresa actualizados');
+  alert('✅ Parámetros guardados correctamente.');
+}
+
+// ── ALERTAS ──
+function chargerAlertas() {
+  const a = DB.admin.alertas;
+  document.getElementById('alertEmail').value = a.email || 'tafatkhaled901@gmail.com';
+  document.getElementById('alertMin').value = a.stockMinimo || 20;
+  document.getElementById('alertCritico').value = a.stockCritico || 5;
+  document.getElementById('alertEmailOn').checked = a.emailAlertas !== false;
+  document.getElementById('alertBackupOn').checked = a.emailBackup === true;
+}
+
+function guardarAlertas() {
+  DB.admin.alertas = {
+    email: document.getElementById('alertEmail').value.trim(),
+    stockMinimo: parseInt(document.getElementById('alertMin').value) || 20,
+    stockCritico: parseInt(document.getElementById('alertCritico').value) || 5,
+    emailAlertas: document.getElementById('alertEmailOn').checked,
+    emailBackup: document.getElementById('alertBackupOn').checked,
+  };
+  DB.admin.smtpConfig = {
+    ...DB.admin.smtpConfig,
+    host: document.getElementById('smtpHost').value.trim(),
+    port: parseInt(document.getElementById('smtpPort').value) || 587,
+    user: document.getElementById('smtpUser').value.trim(),
+    password: document.getElementById('smtpPass').value,
+  };
+  saveDB();
+  logMouvement('Système', '—', 'Configuración de alertas actualizada');
+  alert('✅ Configuración de alertas guardada.');
+}
+
+function testEmail() {
+  const email = document.getElementById('alertEmail').value.trim();
+  if (!email) { alert('⛔ Indique un email primero.'); return; }
+  const subject = 'Test — ALMACEN GPS BENICARLO';
+  const body = 'Este es un email de prueba enviado desde ALMACEN GPS BENICARLO.\n\nSistema funcionando correctamente.\n\nFecha: ' + new Date().toLocaleString('es-ES');
+  const url = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  window.location.href = url;
+}
+
+// ── JOURNAL ──
+function renderJournal() {
+  const filtroUser = (document.getElementById('jrnlFiltroUser').value || '').toLowerCase();
+  const filtroDate = document.getElementById('jrnlFiltroDate').value;
+  const filtroType = document.getElementById('jrnlFiltroType').value;
+
+  let mvts = DB.mouvements.slice().reverse();
+  if (filtroUser) mvts = mvts.filter(m => (m.operateur||'').toLowerCase().includes(filtroUser));
+  if (filtroDate) mvts = mvts.filter(m => (m.date||'').startsWith(filtroDate));
+  if (filtroType) mvts = mvts.filter(m => m.type === filtroType);
+
+  // Connexions
+  const connexions = (DB.admin.connexions || []).slice().reverse();
+
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px;">' +
+    '<thead><tr style="background:#1e293b;color:white;">' +
+    '<th style="padding:8px;text-align:left;">Fecha/Hora</th>' +
+    '<th style="padding:8px;">Operador</th>' +
+    '<th style="padding:8px;">Tipo</th>' +
+    '<th style="padding:8px;text-align:left;">Detalle</th>' +
+    '</tr></thead><tbody>';
+
+  mvts.slice(0, 200).forEach((m, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#F8FAFC';
+    const d = new Date(m.date);
+    html += '<tr style="background:' + bg + ';border-bottom:1px solid #F1F5F9;">' +
+      '<td style="padding:7px 8px;white-space:nowrap;font-size:11px;">' + d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</td>' +
+      '<td style="padding:7px 8px;text-align:center;font-size:12px;">👤 ' + (m.operateur||'—') + '</td>' +
+      '<td style="padding:7px 8px;text-align:center;"><span style="background:#EFF6FF;color:#1E40AF;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:600;">' + (m.type||'—') + '</span></td>' +
+      '<td style="padding:7px 8px;color:#475569;font-size:11px;">' + (m.detail||'—') + '</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table>';
+  if (mvts.length === 0) html = '<p style="text-align:center;color:#888;padding:20px;">No se encontraron actividades</p>';
+  document.getElementById('listaJournal').innerHTML = html;
+}
+
+function exportJournalExcel() {
+  const headers = ['Fecha', 'Hora', 'Operador', 'Tipo', 'N° Lote', 'Detalle'];
+  const rows = DB.mouvements.slice().reverse().map(m => {
+    const d = new Date(m.date);
+    return [d.toLocaleDateString('es-ES'), d.toLocaleTimeString('es-ES'), m.operateur||'—', m.type||'—', m.num||'—', m.detail||'—'];
+  });
+  downloadXLSX('GPS_BENICARLO_Journal_' + new Date().toLocaleDateString('es-ES').replace(/\//g,'-') + '.xls', rows, headers);
+}
+
+function exportJournalPDF() {
+  let lignesHtml = DB.mouvements.slice().reverse().slice(0,500).map((m, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+    const d = new Date(m.date);
+    return '<tr style="background:' + bg + '"><td>' + d.toLocaleDateString('es-ES') + '</td><td>' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</td><td>' + (m.operateur||'—') + '</td><td>' + (m.type||'—') + '</td><td>' + (m.detail||'—') + '</td></tr>';
+  }).join('');
+  const tableHtml = '<table style="width:100%;border-collapse:collapse;font-size:10px;"><thead><tr style="background:#1e293b;color:white;"><th style="padding:6px;">Fecha</th><th style="padding:6px;">Hora</th><th style="padding:6px;">Operador</th><th style="padding:6px;">Tipo</th><th style="padding:6px;">Detalle</th></tr></thead><tbody>' + lignesHtml + '</tbody></table>';
+  exportPDF('Journal des Activités', tableHtml);
+}
+
+// ── BACKUP ──
+function crearBackup() {
+  const data = {
+    version: '1.0',
+    fecha: new Date().toISOString(),
+    createdBy: currentUser ? currentUser.nom : '—',
+    DB: {
+      stock: DB.stock,
+      entrees: DB.entrees,
+      casses: DB.casses,
+      sorties: DB.sorties,
+      mouvements: DB.mouvements,
+      inventaires: DB.inventaires,
+    }
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'GPS_BENICARLO_Backup_' + new Date().toLocaleDateString('es-ES').replace(/\//g,'-') + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Log dans l'historique des backups
+  if (!DB.admin.backups) DB.admin.backups = [];
+  DB.admin.backups.unshift({ fecha: new Date().toISOString(), createdBy: data.createdBy, size: Math.round(json.length / 1024) + ' KB' });
+  logMouvement('Système', '—', 'Backup creado: ' + data.createdBy);
+  saveDB();
+  renderBackups();
+  alert('✅ Backup descargado correctamente.');
+}
+
+function restaurarBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!confirm('⚠️ La restauración REEMPLAZARÁ todos los datos actuales.\n\n¿Confirmar?')) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.DB) { alert('❌ Archivo inválido.'); return; }
+      DB.stock = data.DB.stock || {};
+      DB.entrees = data.DB.entrees || [];
+      DB.casses = data.DB.casses || [];
+      DB.sorties = data.DB.sorties || [];
+      DB.mouvements = data.DB.mouvements || [];
+      DB.inventaires = data.DB.inventaires || [];
+      saveDB();
+      logMouvement('Système', '—', 'Backup restaurado: ' + file.name);
+      alert('✅ Backup restaurado correctamente.\nFecha del backup: ' + new Date(data.fecha).toLocaleString('es-ES'));
+      renderBackups();
+    } catch(err) {
+      alert('❌ Error al restaurar el backup: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function renderBackups() {
+  const backups = DB.admin.backups || [];
+  if (backups.length === 0) {
+    document.getElementById('listaBackups').innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No hay backups anteriores</p>';
+    return;
+  }
+  let html = '';
+  backups.slice(0, 20).forEach((b, i) => {
+    html += '<div class="admin-card" style="display:flex;justify-content:space-between;align-items:center;">' +
+      '<div>' +
+      '<div style="font-weight:600;font-size:13px;">💾 Backup ' + (i+1) + '</div>' +
+      '<div style="font-size:11px;color:#888;">📅 ' + new Date(b.fecha).toLocaleString('es-ES') + ' · 👤 ' + b.createdBy + ' · ' + b.size + '</div>' +
+      '</div>' +
+      '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:8px;font-size:11px;">✓</span>' +
+      '</div>';
+  });
+  document.getElementById('listaBackups').innerHTML = html;
 }
 
 function clearGLColFilters() {

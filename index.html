@@ -880,6 +880,27 @@
   </div>
 </div>
 
+<!-- ═══ MODAL ALERTA CUSTOM (remplace alert()) ═══ -->
+<div id="modalAlerta" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:999999; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:16px; padding:28px 24px; max-width:340px; width:90%; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div id="modalAlertaIcono" style="font-size:40px; text-align:center; margin-bottom:12px;">ℹ️</div>
+    <div id="modalAlertaTexto" style="font-size:14px; color:#0F172A; margin-bottom:24px; text-align:center; line-height:1.6; white-space:pre-line;"></div>
+    <button onclick="cerrarAlerta()" style="width:100%; padding:13px; background:#1E40AF; color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; margin:0;">Aceptar</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRM CUSTOM (remplace confirm()) ═══ -->
+<div id="modalConfirm" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:999999; justify-content:center; align-items:center;">
+  <div style="background:white; border-radius:16px; padding:28px 24px; max-width:340px; width:90%; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div id="modalConfirmIcono" style="font-size:40px; text-align:center; margin-bottom:12px;">❓</div>
+    <div id="modalConfirmTexto" style="font-size:14px; color:#0F172A; margin-bottom:24px; text-align:center; line-height:1.6; white-space:pre-line;"></div>
+    <div style="display:flex; gap:10px;">
+      <button id="modalConfirmBtnNo" onclick="resolverConfirm(false)" style="flex:1; padding:13px; background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0;">Cancelar</button>
+      <button id="modalConfirmBtnSi" onclick="resolverConfirm(true)" style="flex:1; padding:13px; background:#DC2626; color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; margin:0;">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL CONFIRMACIÓN SALIDA ═══ -->
 <div id="modalConfirmSalir" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
   <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
@@ -1472,6 +1493,49 @@ function loginSuccess(user) {
   saveDB();
   goto('dashboard');
 }
+
+// ═══════════════════════════════════════════════════════════
+// SISTEMA DE ALERTAS PERSONALIZADAS — Sin URL visible
+// ═══════════════════════════════════════════════════════════
+let _confirmCallback = null;
+
+function mostrarAlerta(mensaje, icono) {
+  icono = icono || (mensaje.includes('⛔') ? '⛔' : mensaje.includes('✅') || mensaje.includes('✓') ? '✅' : mensaje.includes('⚠️') ? '⚠️' : mensaje.includes('💥') ? '💥' : mensaje.includes('📧') ? '📧' : 'ℹ️');
+  // Nettoie les emojis du texte pour l'icône
+  const texto = mensaje.replace(/^[⛔✅✓⚠️💥📧ℹ️🔒❌]\s*/, '');
+  document.getElementById('modalAlertaIcono').textContent = icono;
+  document.getElementById('modalAlertaTexto').textContent = mensaje;
+  document.getElementById('modalAlerta').style.display = 'flex';
+  return new Promise(resolve => {
+    document.getElementById('modalAlerta')._resolve = resolve;
+  });
+}
+
+function cerrarAlerta() {
+  const modal = document.getElementById('modalAlerta');
+  modal.style.display = 'none';
+  if (modal._resolve) { modal._resolve(); modal._resolve = null; }
+}
+
+function mostrarConfirm(mensaje, icono, textSi, textNo) {
+  document.getElementById('modalConfirmIcono').textContent = icono || '⚠️';
+  document.getElementById('modalConfirmTexto').textContent = mensaje;
+  document.getElementById('modalConfirmBtnSi').textContent = textSi || 'Confirmar';
+  document.getElementById('modalConfirmBtnNo').textContent = textNo || 'Cancelar';
+  document.getElementById('modalConfirm').style.display = 'flex';
+  return new Promise(resolve => { _confirmCallback = resolve; });
+}
+
+function resolverConfirm(resultado) {
+  document.getElementById('modalConfirm').style.display = 'none';
+  if (_confirmCallback) { _confirmCallback(resultado); _confirmCallback = null; }
+}
+
+// Surcharge globale de alert() et confirm()
+window._nativeAlert   = window.alert;
+window._nativeConfirm = window.confirm;
+window.alert   = (msg) => mostrarAlerta(String(msg));
+window.confirm = (msg) => { mostrarAlerta(String(msg)); return true; } // fallback sync
 
 function logout() {
   if (!currentUser) return;
@@ -2679,7 +2743,7 @@ function removeContenantFromStock(prod, num) {
   const entry = DB.entrees.find(e => e.prod === prod && e.num === num);
   if (!entry || !DB.stock[prod]) return;
 
-  if (!confirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.feuilles + ' hojas) du stock ?\nCette action est irreversible.')) return;
+  if (!window._nativeConfirm('⚠️ Retirer DÉFINITIVEMENT le contenant ' + num + ' (' + entry.feuilles + ' hojas) du stock ?\nCette action est irreversible.')) return;
 
   DB.stock[prod].f -= entry.feuilles;
   DB.stock[prod].c -= entry.nb;
@@ -2703,7 +2767,7 @@ function removeProductFromStock(prod) {
   const confirmMsg = '⚠️ Retirer DÉFINITIVEMENT "' + prod + '" du stock ?\n' +
     DB.stock[prod].f + ' hojas / ' + DB.stock[prod].c + ' cajas seront supprimées.\n' +
     'Cette action est irreversible.';
-  if (!confirm(confirmMsg)) return;
+  if (!window._nativeConfirm(confirmMsg)) return;
 
   delete DB.stock[prod];
 
@@ -3184,7 +3248,7 @@ function resetVisualizacion() {
     return;
   }
 
-  const confirm1 = confirm(
+  const confirm1 = window._nativeConfirm(
     '⚠️ ATENCIÓN — REINICIO COMPLETO\n\n' +
     'Esta acción eliminará TODOS los datos:\n' +
     '• Todas las entradas\n' +
@@ -3196,7 +3260,7 @@ function resetVisualizacion() {
   );
   if (!confirm1) return;
 
-  const confirm2 = confirm(
+  const confirm2 = window._nativeConfirm(
     '🔴 CONFIRMACIÓN FINAL\n\n' +
     'Esta acción es IRREVERSIBLE.\n' +
     'Todos los datos serán borrados definitivamente.\n\n' +
@@ -3476,7 +3540,7 @@ function validarInventario() {
   }
 
   const ecarts = inv.lignes.filter(l => l.ecart !== 0);
-  if (ecarts.length > 0 && !confirm(
+  if (ecarts.length > 0 && !window._nativeConfirm(
     '⚠️ Se detectaron ' + ecarts.length + ' écart(s).\n\n' +
     ecarts.map(l => l.prod + ' : ' + (l.ecart > 0 ? '+' : '') + l.ecart + ' hj').join('\n') +
     '\n\n¿Confirmar y actualizar el stock con las cantidades físicas?'
@@ -3520,7 +3584,7 @@ function validarInventario() {
 function anularInventario(invId) {
   const inv = DB.inventaires.find(i => i.id === invId);
   if (!inv || inv.statut === 'validado') return;
-  if (!confirm('¿Anular el inventario ' + invId + '?')) return;
+  if (!window._nativeConfirm('¿Anular el inventario ' + invId + '?')) return;
   inv.statut = 'anulado';
   saveDB();
   renderInventaires();
@@ -3831,7 +3895,7 @@ function toggleUsuario(id) {
 }
 
 function eliminarUsuario(id) {
-  if (!confirm('¿Eliminar este usuario definitivamente?')) return;
+  if (!window._nativeConfirm('¿Eliminar este usuario definitivamente?')) return;
   DB.admin.usuarios = DB.admin.usuarios.filter(x => x.id !== id);
   const idx = USERS.findIndex(x => x.id === id);
   if (idx >= 0) USERS.splice(idx, 1);
@@ -3894,7 +3958,7 @@ function guardarAlmacen() {
 }
 
 function eliminarAlmacen(idx) {
-  if (!confirm('¿Eliminar este almacén?')) return;
+  if (!window._nativeConfirm('¿Eliminar este almacén?')) return;
   DB.admin.almacenes.splice(idx, 1);
   saveDB(); renderAlmacenes();
 }
@@ -3942,7 +4006,7 @@ function guardarCategoria() {
 }
 
 function eliminarCategoria(id) {
-  if (!confirm('¿Eliminar esta categoría?')) return;
+  if (!window._nativeConfirm('¿Eliminar esta categoría?')) return;
   DB.admin.categorias = DB.admin.categorias.filter(c => c.id !== id && c.parent !== id);
   saveDB(); renderCategorias();
 }
@@ -3978,7 +4042,7 @@ function guardarUnidad() {
 }
 
 function eliminarUnidad(idx) {
-  if (!confirm('¿Eliminar esta unidad?')) return;
+  if (!window._nativeConfirm('¿Eliminar esta unidad?')) return;
   DB.admin.unidades.splice(idx, 1);
   saveDB(); renderUnidades();
 }
@@ -4146,7 +4210,7 @@ function crearBackup() {
 function restaurarBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (!confirm('⚠️ La restauración REEMPLAZARÁ todos los datos actuales.\n\n¿Confirmar?')) return;
+  if (!window._nativeConfirm('⚠️ La restauración REEMPLAZARÁ todos los datos actuales.\n\n¿Confirmar?')) return;
 
   const reader = new FileReader();
   reader.onload = (e) => {

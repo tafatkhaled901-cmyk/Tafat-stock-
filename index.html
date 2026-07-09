@@ -1340,6 +1340,8 @@ function saveDB() {
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
   localStorage.setItem('vs_inventaires', JSON.stringify(DB.inventaires));
   localStorage.setItem('vs_admin', JSON.stringify(DB.admin));
+  // Sync Google Sheets (pour PC)
+  syncToSheets();
   // Rafraîchit le dashboard
   if (typeof renderDashboard === 'function') {
     setTimeout(() => {
@@ -1347,11 +1349,65 @@ function saveDB() {
       if (dash && dash.classList.contains('active')) renderDashboard();
     }, 100);
   }
-  setSyncStatus('synced');
 }
 
-function syncToSheets() { setSyncStatus('synced'); }
-function loadFromSheets() { setSyncStatus('synced'); }
+let syncTimer = null;
+function syncToSheets() {
+  clearTimeout(syncTimer);
+  setSyncStatus('syncing');
+  syncTimer = setTimeout(() => {
+    const payload = {
+      stock: DB.stock,
+      entrees: DB.entrees,
+      casses: DB.casses,
+      sorties: DB.sorties,
+      mouvements: DB.mouvements,
+      fpcTable: FPC_TABLE,
+      updatedAt: new Date().toISOString()
+    };
+    fetch(SYNC_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    })
+    .then(() => setSyncStatus('synced'))
+    .catch(() => setSyncStatus('error'));
+  }, 500);
+}
+
+function loadFromSheets() {
+  fetch(SYNC_URL + '?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.entrees) return;
+      DB.stock     = data.stock      || {};
+      DB.entrees   = data.entrees    || [];
+      DB.casses    = data.casses     || [];
+      DB.sorties   = data.sorties    || [];
+      DB.mouvements= data.mouvements || [];
+      if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
+      localStorage.setItem('vs_stock',      JSON.stringify(DB.stock));
+      localStorage.setItem('vs_entrees',    JSON.stringify(DB.entrees));
+      localStorage.setItem('vs_casses',     JSON.stringify(DB.casses));
+      localStorage.setItem('vs_sorties',    JSON.stringify(DB.sorties));
+      localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+      setSyncStatus('synced');
+      // Rafraîchit la page active
+      if (currentUser) {
+        try { renderStock(); } catch(e) {}
+        try { renderSorties(); } catch(e) {}
+        try { renderEntrees(); } catch(e) {}
+        try { renderCasse(); } catch(e) {}
+        try { renderDashboard(); } catch(e) {}
+      }
+    })
+    .catch(() => setSyncStatus('error'));
+}
+
+// Charge depuis Google Sheets au démarrage puis toutes les 30 secondes
+loadFromSheets();
+setInterval(loadFromSheets, 30000);
 
 // Journal centralisé : enregistre TOUTE opération liée a un contenant.
 // type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)

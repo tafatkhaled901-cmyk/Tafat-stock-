@@ -2216,16 +2216,35 @@ function saveCasse() {
 
   if (!num) { alert('Por favor ingrese o escanee el N° de lote'); return; }
 
+  // ⛔ BLOQUEO: Verificar que el lote NO ha sido vendido ni traspasado
+  const sortie = DB.sorties.find(s => s.num === num);
+  if (sortie) {
+    const tipo = sortie.tipo || 'Salida';
+    const dest = sortie.pedido ? 'Pedido ' + sortie.pedido : (sortie.client ? sortie.client : '');
+    alert('⛔ OPERACIÓN BLOQUEADA\n\n' +
+      'El lote ' + num + ' ya fue retirado del stock.\n' +
+      'Tipo: ' + tipo + (dest ? ' — ' + dest : '') + '\n' +
+      'Fecha: ' + new Date(sortie.date).toLocaleDateString('es-ES') + '\n\n' +
+      'No se puede declarar una rotura sobre un lote ya salido.');
+    return;
+  }
+
   // Utilise la référence scannée, sinon cherche dans les entrées
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
   const prodLabel = prodScanned || (entry ? entry.prod : '(producto desconocido)');
 
+  // Vérifie que le lote existe en stock
+  if (!entry) {
+    alert('⚠️ Lote ' + num + ' no encontrado en las recepciones.');
+    return;
+  }
+
   // Calcul hojas restantes AVANT décrémentation
   const casseAvant = DB.casses.filter(c => c.num === num).reduce((s, c) => s + c.qty, 0);
-  const hojasInit = entry ? entry.feuilles : 0;
+  const hojasInit = Number(entry.feuilles) || 0;
   const hojasRestantes = Math.max(0, hojasInit - casseAvant - qty);
 
-  if (entry && DB.stock[entry.prod]) {
+  if (DB.stock[entry.prod]) {
     DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
   }
 
@@ -2239,12 +2258,7 @@ function saveCasse() {
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
-
-  // Email déclenché DIRECTEMENT dans l'action utilisateur (pas de setTimeout)
-  // pour éviter le blocage par Chrome mobile
   envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
-
-  // Confirmation après l'email
   alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas rotas: ' + qty + '\nHojas restantes: ' + hojasRestantes + '\n\n📧 Email enviado al responsable.');
 }
 

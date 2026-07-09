@@ -1313,7 +1313,119 @@ let currentUser = null;
 // URL du Google Apps Script de synchronisation
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwva6-Ugbh9icmKJOZVg5Dyj3NPgC0-Px-m0VO9lOW1E9Kd3r6p_CyZ77JY6pUUJmyJ/exec';
 
+// ═══════════════════════════════════════════════════════════
+// SUPABASE — Base de données cloud temps réel
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://bylyezuwwtuhrayvpnmx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_x5x_LqqqskAIbwMnukdWvA_gDjbS6JQ';
+
+const supa = {
+  async query(table, method = 'GET', data = null, filter = '') {
+    const url = SUPABASE_URL + '/rest/v1/' + table + filter;
+    const opts = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+      }
+    };
+    if (data) opts.body = JSON.stringify(data);
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  },
+
+  async get(table, filter = '') { return this.query(table, 'GET', null, filter); },
+  async insert(table, data) { return this.query(table, 'POST', data); },
+  async update(table, data, filter) { return this.query(table, 'PATCH', data, filter); },
+  async upsert(table, data, onConflict) {
+    const url = SUPABASE_URL + '/rest/v1/' + table;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+        'on-conflict': onConflict || 'id'
+      },
+      body: JSON.stringify(data)
+    });
+    return res.ok;
+  },
+  async delete(table, filter) { return this.query(table, 'DELETE', null, filter); }
+};
+
+// ─── Chargement initial depuis Supabase ───
+async function loadFromSupabase() {
+  try {
+    setSyncStatus('syncing');
+    const [entrees, sorties, casses, mouvements, stocks, inventaires] = await Promise.all([
+      supa.get('entrees', '?order=date.desc'),
+      supa.get('sorties', '?order=date.desc'),
+      supa.get('casses', '?order=date.desc'),
+      supa.get('mouvements', '?order=date.desc'),
+      supa.get('stock'),
+      supa.get('inventaires', '?order=created_at.desc'),
+    ]);
+
+    DB.entrees = (entrees || []).map(e => ({
+      prod: e.prod, nb: e.nb, num: e.num, emp: e.emp,
+      feuilles: e.feuilles, date: e.date, operateur: e.operateur
+    }));
+
+    DB.sorties = (sorties || []).map(s => ({
+      prod: s.prod, num: s.num, feuilles: s.feuilles, nb: s.nb,
+      client: s.client, pedido: s.pedido, tipo: s.tipo,
+      operateur: s.operateur, date: s.date
+    }));
+
+    DB.casses = (casses || []).map(c => ({
+      num: c.num, prod: c.prod, qty: c.qty, date: c.date, operateur: c.operateur
+    }));
+
+    DB.mouvements = (mouvements || []).map(m => ({
+      type: m.type, num: m.num, detail: m.detail, operateur: m.operateur, date: m.date
+    }));
+
+    // Reconstruit DB.stock depuis la table stock
+    DB.stock = {};
+    (stocks || []).forEach(s => {
+      DB.stock[s.prod] = { f: s.feuilles, c: s.cajas };
+    });
+
+    DB.inventaires = (inventaires || []).map(i => ({
+      id: i.inv_id, tipo: i.tipo, nota: i.nota, statut: i.statut,
+      createdBy: i.created_by, validatedBy: i.validated_by,
+      validatedAt: i.validated_at, lignes: i.lignes || [],
+      createdAt: i.created_at
+    }));
+
+    // Sauvegarde locale en cache
+    localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
+    localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
+    localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
+    localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+    localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
+
+    setSyncStatus('synced');
+    console.log('✅ Données chargées depuis Supabase');
+  } catch(e) {
+    setSyncStatus('error');
+    console.warn('⚠️ Supabase offline — utilisation du cache local', e);
+  }
+}
+
+// ─── Sauvegarde vers Supabase ───
+let saveTimer = null;
 function saveDB() {
+  // Sauvegarde locale immédiate (cache)
   localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
   localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
   localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
@@ -1321,8 +1433,12 @@ function saveDB() {
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
   localStorage.setItem('vs_inventaires', JSON.stringify(DB.inventaires));
   localStorage.setItem('vs_admin', JSON.stringify(DB.admin));
-  syncToSheets();
-  // Rafraîchit le dashboard si on y est, sinon met à jour en arrière-plan
+
+  // Sync Supabase avec délai pour grouper les appels
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => syncToSupabase(), 800);
+
+  // Rafraîchit le dashboard
   if (typeof renderDashboard === 'function') {
     setTimeout(() => {
       const dash = document.getElementById('page-dashboard');
@@ -1331,7 +1447,65 @@ function saveDB() {
   }
 }
 
-let syncTimer = null;
+async function syncToSupabase() {
+  try {
+    setSyncStatus('syncing');
+
+    // Sync stock
+    const stockRows = Object.entries(DB.stock).map(([prod, v]) => ({
+      prod, feuilles: v.f, cajas: v.c, updated_at: new Date().toISOString()
+    }));
+    if (stockRows.length > 0) {
+      await supa.upsert('stock', stockRows, 'prod');
+    }
+
+    // Sync dernière entrée
+    if (DB.entrees.length > 0) {
+      const last = DB.entrees[DB.entrees.length - 1];
+      await supa.upsert('entrees', [{
+        prod: last.prod, nb: last.nb, num: last.num,
+        emp: last.emp, feuilles: last.feuilles,
+        date: last.date, operateur: last.operateur
+      }], 'num');
+    }
+
+    // Sync dernière sortie
+    if (DB.sorties.length > 0) {
+      const last = DB.sorties[DB.sorties.length - 1];
+      await supa.insert('sorties', {
+        prod: last.prod, num: last.num, feuilles: last.feuilles,
+        nb: last.nb, client: last.client, pedido: last.pedido,
+        tipo: last.tipo, operateur: last.operateur, date: last.date
+      }).catch(() => {}); // ignore doublon
+    }
+
+    // Sync dernière casse
+    if (DB.casses.length > 0) {
+      const last = DB.casses[DB.casses.length - 1];
+      await supa.insert('casses', {
+        num: last.num, prod: last.prod, qty: last.qty,
+        operateur: last.operateur, date: last.date
+      }).catch(() => {});
+    }
+
+    // Sync dernier mouvement
+    if (DB.mouvements.length > 0) {
+      const last = DB.mouvements[DB.mouvements.length - 1];
+      await supa.insert('mouvements', {
+        type: last.type, num: last.num, detail: last.detail,
+        operateur: last.operateur, date: last.date
+      }).catch(() => {});
+    }
+
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+    console.warn('Supabase sync error:', e);
+  }
+}
+
+// Remplace l'ancienne sync Google Sheets
+function syncToSheets() { syncToSupabase(); }
 function setSyncStatus(state) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
@@ -1346,64 +1520,12 @@ function setSyncStatus(state) {
   el.style.color = s.color;
 }
 
-function syncToSheets() {
-  clearTimeout(syncTimer);
-  setSyncStatus('syncing');
-  syncTimer = setTimeout(() => {
-    const payload = {
-      stock: DB.stock,
-      entrees: DB.entrees,
-      casses: DB.casses,
-      sorties: DB.sorties,
-      mouvements: DB.mouvements,
-      fpcTable: FPC_TABLE,
-      updatedAt: new Date().toISOString()
-    };
-    fetch(SYNC_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    })
-    .then(() => setSyncStatus('synced'))
-    .catch(e => { setSyncStatus('error'); console.warn('Sync Sheets echouee:', e); });
-  }, 500);
-}
-
-function loadFromSheets() {
-  fetch(SYNC_URL + '?t=' + Date.now())
-    .then(r => r.json())
-    .then(data => {
-      if (!data || !data.entrees) return;
-      DB.stock = data.stock || {};
-      DB.entrees = data.entrees || [];
-      DB.casses = data.casses || [];
-      DB.sorties = data.sorties || [];
-      DB.mouvements = data.mouvements || [];
-      if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
-      localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
-      localStorage.setItem('vs_entrees', JSON.stringify(DB.entrees));
-      localStorage.setItem('vs_casses', JSON.stringify(DB.casses));
-      localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
-      localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
-      if (currentUser) {
-        const activePage = document.querySelector('#app .page.active');
-        if (activePage) {
-          const id = activePage.id.replace('page-', '');
-          if (id === 'entrees') renderEntrees();
-          else if (id === 'casse') renderCasse();
-          else if (id === 'sorties') renderSorties();
-          else if (id === 'stock') renderStock();
-          else if (id === 'historique') renderHistorique();
-        }
-      }
-    })
-    .catch(e => console.warn('Chargement Sheets echoue:', e));
-}
+// Chargement au démarrage après connexion
+function loadFromSheets() { loadFromSupabase(); }
 
 // Charge les données au démarrage puis toutes les 30 secondes
-loadFromSheets();
-setInterval(loadFromSheets, 30000);
+loadFromSupabase();
+setInterval(loadFromSupabase, 30000);
 
 // Journal centralisé : enregistre TOUTE opération liée a un contenant.
 // type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)

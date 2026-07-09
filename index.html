@@ -1415,14 +1415,6 @@ async function loadFromSupabase() {
     localStorage.setItem('vs_stock', JSON.stringify(DB.stock));
 
     setSyncStatus('synced');
-
-    // Remet les compteurs à jour après chargement
-    syncedCounts.entrees    = DB.entrees.length;
-    syncedCounts.sorties    = DB.sorties.length;
-    syncedCounts.casses     = DB.casses.length;
-    syncedCounts.mouvements = DB.mouvements.length;
-    saveSyncedCounts();
-
     console.log('✅ Données chargées depuis Supabase');
   } catch(e) {
     setSyncStatus('error');
@@ -1455,82 +1447,59 @@ function saveDB() {
   }
 }
 
-// Compteurs pour tracker les éléments déjà synchronisés
-let syncedCounts = {
-  entrees:    parseInt(localStorage.getItem('sc_entrees') || '0'),
-  sorties:    parseInt(localStorage.getItem('sc_sorties') || '0'),
-  casses:     parseInt(localStorage.getItem('sc_casses') || '0'),
-  mouvements: parseInt(localStorage.getItem('sc_mouvements') || '0'),
-};
-
-function saveSyncedCounts() {
-  Object.entries(syncedCounts).forEach(([k,v]) => localStorage.setItem('sc_' + k, v));
-}
-
 async function syncToSupabase() {
   try {
     setSyncStatus('syncing');
 
-    // ── 1. Stock complet (upsert par prod) ──
+    // ── 1. Stock complet ──
     const stockRows = Object.entries(DB.stock).map(([prod, v]) => ({
       prod, feuilles: v.f, cajas: v.c, updated_at: new Date().toISOString()
     }));
     if (stockRows.length > 0) await supa.upsert('stock', stockRows, 'prod');
 
-    // ── 2. Toutes les nouvelles entrées depuis la dernière sync ──
-    const nouvellesEntrees = DB.entrees.slice(syncedCounts.entrees);
-    for (const e of nouvellesEntrees) {
-      await supa.upsert('entrees', [{
-        prod: e.prod, nb: e.nb, num: e.num, emp: e.emp,
-        feuilles: e.feuilles, date: e.date, operateur: e.operateur
-      }], 'num').catch(() => {});
-    }
-    if (nouvellesEntrees.length > 0) {
-      syncedCounts.entrees = DB.entrees.length;
+    // ── 2. Toutes les entrées ──
+    if (DB.entrees.length > 0) {
+      const rows = DB.entrees.map(e => ({
+        prod: e.prod, nb: e.nb, num: e.num, emp: e.emp || '',
+        feuilles: e.feuilles || 0, date: e.date, operateur: e.operateur || ''
+      }));
+      await supa.upsert('entrees', rows, 'num').catch(err => console.warn('entrees sync:', err));
     }
 
-    // ── 3. Toutes les nouvelles sorties ──
-    const nouvellesSorties = DB.sorties.slice(syncedCounts.sorties);
-    for (const s of nouvellesSorties) {
-      await supa.insert('sorties', {
-        prod: s.prod, num: s.num, feuilles: s.feuilles,
-        nb: s.nb, client: s.client, pedido: s.pedido,
-        tipo: s.tipo, operateur: s.operateur, date: s.date
-      }).catch(() => {});
-    }
-    if (nouvellesSorties.length > 0) {
-      syncedCounts.sorties = DB.sorties.length;
-    }
-
-    // ── 4. Toutes les nouvelles casses ──
-    const nouvellesCasses = DB.casses.slice(syncedCounts.casses);
-    for (const c of nouvellesCasses) {
-      await supa.insert('casses', {
-        num: c.num, prod: c.prod, qty: c.qty,
-        operateur: c.operateur, date: c.date
-      }).catch(() => {});
-    }
-    if (nouvellesCasses.length > 0) {
-      syncedCounts.casses = DB.casses.length;
+    // ── 3. Toutes les sorties — supprime et reinsère ──
+    if (DB.sorties.length > 0) {
+      // Efface toutes les sorties Supabase et reinsère tout
+      await supa.delete('sorties', '?id=neq.00000000-0000-0000-0000-000000000000').catch(() => {});
+      const rows = DB.sorties.map(s => ({
+        prod: s.prod, num: s.num, feuilles: s.feuilles || 0,
+        nb: s.nb || 1, client: s.client || '', pedido: s.pedido || '',
+        tipo: s.tipo || 'Salida', operateur: s.operateur || '', date: s.date
+      }));
+      await supa.insert('sorties', rows).catch(err => console.warn('sorties sync:', err));
     }
 
-    // ── 5. Tous les nouveaux mouvements ──
-    const nouveauxMouvements = DB.mouvements.slice(syncedCounts.mouvements);
-    for (const m of nouveauxMouvements) {
-      await supa.insert('mouvements', {
-        type: m.type, num: m.num, detail: m.detail,
-        operateur: m.operateur, date: m.date
-      }).catch(() => {});
-    }
-    if (nouveauxMouvements.length > 0) {
-      syncedCounts.mouvements = DB.mouvements.length;
+    // ── 4. Toutes les casses ──
+    if (DB.casses.length > 0) {
+      await supa.delete('casses', '?id=neq.00000000-0000-0000-0000-000000000000').catch(() => {});
+      const rows = DB.casses.map(c => ({
+        num: c.num, prod: c.prod || '', qty: c.qty || 0,
+        operateur: c.operateur || '', date: c.date
+      }));
+      await supa.insert('casses', rows).catch(err => console.warn('casses sync:', err));
     }
 
-    saveSyncedCounts();
+    // ── 5. Tous les mouvements ──
+    if (DB.mouvements.length > 0) {
+      await supa.delete('mouvements', '?id=neq.00000000-0000-0000-0000-000000000000').catch(() => {});
+      const rows = DB.mouvements.map(m => ({
+        type: m.type, num: m.num || '', detail: m.detail || '',
+        operateur: m.operateur || '', date: m.date
+      }));
+      await supa.insert('mouvements', rows).catch(err => console.warn('mouvements sync:', err));
+    }
+
     setSyncStatus('synced');
-
-    const total = nouvellesEntrees.length + nouvellesSorties.length + nouvellesCasses.length + nouveauxMouvements.length;
-    if (total > 0) console.log('✅ Supabase : ' + total + ' enregistrement(s) synchronisé(s)');
+    console.log('✅ Supabase sync complète — ' + DB.sorties.length + ' sorties, ' + DB.entrees.length + ' entrées');
 
   } catch(e) {
     setSyncStatus('error');

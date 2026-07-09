@@ -2400,7 +2400,7 @@ function saveSortie() {
   DB.stock[prod].f -= hojas;
   DB.stock[prod].c -= nb;
 
-  DB.sorties.push({ prod, num, hojas, nb, client, date: new Date().toISOString() });
+  DB.sorties.push({ prod, num, feuilles: hojas, nb, client, date: new Date().toISOString() });
   logMouvement('Sortie', num, prod + ' · -' + hojas + ' hojas' + (client ? ' · 👤' + client : ''));
 
   saveDB();
@@ -3150,6 +3150,7 @@ function resetVisualizacion() {
   localStorage.removeItem('vs_mouvements');
   localStorage.removeItem('vs_fpc_table');
   localStorage.removeItem('vs_inventaires');
+  localStorage.removeItem('vs_admin');
 
   // Réinitialise aussi les filtres visuels
   glColFilters = {};

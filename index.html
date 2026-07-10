@@ -504,6 +504,7 @@
           <button onclick="showAdminTab('alertas')" id="atab-alertas" class="admin-tab" style="flex:1; min-width:80px;">🔔 Alertas</button>
           <button onclick="showAdminTab('journal')" id="atab-journal" class="admin-tab" style="flex:1; min-width:80px;">📜 Journal</button>
           <button onclick="showAdminTab('backup')" id="atab-backup" class="admin-tab" style="flex:1; min-width:80px;">💾 Backup</button>
+          <button onclick="showAdminTab('emails')" id="atab-emails" class="admin-tab" style="flex:1; min-width:80px;">📧 E-mails</button>
         </div>
 
         <!-- ── USUARIOS ── -->
@@ -632,6 +633,62 @@
           <div id="listaJournal" style="overflow-x:auto; font-size:12px;"></div>
         </div>
 
+        <!-- ── ARCHIVOS E-MAILS ── -->
+        <div id="admin-emails" class="admin-panel" style="display:none;">
+          <!-- Barre d'outils -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">📧 Archivo de E-mails</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button onclick="renderEmailArchive()" style="background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE; border-radius:7px; padding:7px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">🔄 Actualizar</button>
+              <button onclick="exportEmailsExcel()" style="background:#059669; color:white; border:none; border-radius:7px; padding:7px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">📊 Excel</button>
+              <button onclick="exportEmailsPDF()" style="background:#DC2626; color:white; border:none; border-radius:7px; padding:7px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">📄 PDF</button>
+              <button onclick="window.print()" style="background:#475569; color:white; border:none; border-radius:7px; padding:7px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">🖨️ Imprimir</button>
+            </div>
+          </div>
+
+          <!-- Filtres -->
+          <div style="background:#F8FAFC; border-radius:10px; padding:12px; margin-bottom:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <input type="text" id="emailFiltroSearch" placeholder="🔍 Buscar destinatario, asunto, contenido..." oninput="renderEmailArchive()" style="margin:0; font-size:12px;">
+            <input type="date" id="emailFiltroFecha" onchange="renderEmailArchive()" style="margin:0; font-size:12px;">
+            <select id="emailFiltroEstado" onchange="renderEmailArchive()" style="margin:0; font-size:12px;">
+              <option value="">Todos los estados</option>
+              <option value="enviado">✅ Enviado</option>
+              <option value="pendiente">⏳ En espera</option>
+              <option value="error">❌ Fallido</option>
+            </select>
+            <select id="emailFiltroTipo" onchange="renderEmailArchive()" style="margin:0; font-size:12px;">
+              <option value="">Todos los tipos</option>
+              <option value="Rotura">💥 Declaración de Rotura</option>
+              <option value="Venta">🛒 Bon de Sortie Venta</option>
+              <option value="Traspaso">🚛 Bon de Sortie Traspaso</option>
+              <option value="Alerta">⚠️ Alerta de Stock</option>
+              <option value="Inventario">📋 Inventario</option>
+              <option value="Prueba">🧪 E-mail de Prueba</option>
+              <option value="Sistema">🤖 Sistema</option>
+            </select>
+            <select id="emailFiltroUser" onchange="renderEmailArchive()" style="margin:0; font-size:12px;">
+              <option value="">Todos los usuarios</option>
+              <option value="MIGUEL">MIGUEL</option>
+              <option value="TAFAT KHALED">TAFAT KHALED</option>
+              <option value="LUIS MIGUEL SOLERA">LUIS MIGUEL SOLERA</option>
+              <option value="Sistema">Sistema</option>
+            </select>
+            <select id="emailFiltroPag" onchange="renderEmailArchive()" style="margin:0; font-size:12px;">
+              <option value="25">25 por página</option>
+              <option value="50">50 por página</option>
+              <option value="100">100 por página</option>
+              <option value="200">200 por página</option>
+            </select>
+          </div>
+
+          <!-- Stats rapides -->
+          <div id="emailStats" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+
+          <!-- Tableau -->
+          <div id="emailTabla" style="overflow-x:auto; font-size:12px;"></div>
+          <div id="emailPaginacion" style="margin-top:12px; text-align:center;"></div>
+        </div>
+
         <!-- ── BACKUP ── -->
         <div id="admin-backup" class="admin-panel" style="display:none;">
           <div style="font-weight:700; font-size:15px; margin-bottom:16px;">💾 Sauvegarde & Restauration</div>
@@ -646,6 +703,20 @@
           </div>
           <div style="font-weight:600; font-size:13px; margin-bottom:8px; color:#0F172A;">Historial de backups</div>
           <div id="listaBackups"></div>
+        </div>
+      </div>
+
+      <!-- ═══ MODAL DETALLE EMAIL ═══ -->
+      <div class="modal" id="modalEmailDetail" style="padding:0;">
+        <div style="background:#1e293b; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="color:white; font-weight:700; font-size:15px;">📧 Detalle del E-mail</div>
+          <button onclick="closeModal('modalEmailDetail')" style="background:none; border:none; color:rgba(255,255,255,0.7); font-size:22px; cursor:pointer; width:auto; margin:0; padding:0;">✕</button>
+        </div>
+        <div id="emailDetailContenido" style="padding:20px; overflow-y:auto; max-height:calc(100vh - 120px);"></div>
+        <div style="padding:12px 20px; border-top:1px solid #E2E8F0; display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="reenviarEmail()" style="flex:1; background:#1E40AF; color:white; border:none; border-radius:8px; padding:10px; font-size:13px; font-weight:600; margin:0; cursor:pointer;">↩️ Reenviar</button>
+          <button onclick="copiarEmail()" style="flex:1; background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:8px; padding:10px; font-size:13px; margin:0; cursor:pointer;">📋 Copiar</button>
+          <button onclick="closeModal('modalEmailDetail')" style="flex:1; background:#F1F5F9; color:#475569; border:1px solid #E2E8F0; border-radius:8px; padding:10px; font-size:13px; margin:0; cursor:pointer;">Cerrar</button>
         </div>
       </div>
 
@@ -1302,6 +1373,7 @@ let DB = {
   sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
   mouvements: JSON.parse(localStorage.getItem('vs_mouvements') || '[]'),
   inventaires: JSON.parse(localStorage.getItem('vs_inventaires') || '[]'),
+  emailArchive: JSON.parse(localStorage.getItem('vs_emails') || '[]'),
   admin: JSON.parse(localStorage.getItem('vs_admin') || JSON.stringify({
     empresa: { nombre: 'ALMACEN GPS BENICARLO', direccion: 'Benicarlo, España', telefono: '', email: 'tafatkhaled901@gmail.com', web: '', fiscal: '', idioma: 'es', moneda: 'EUR', timezone: 'Europe/Madrid' },
     almacenes: [
@@ -1360,6 +1432,7 @@ function saveDB() {
   localStorage.setItem('vs_sorties', JSON.stringify(DB.sorties));
   localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
   localStorage.setItem('vs_inventaires', JSON.stringify(DB.inventaires));
+  localStorage.setItem('vs_emails', JSON.stringify(DB.emailArchive));
   localStorage.setItem('vs_admin', JSON.stringify(DB.admin));
   // Sync Google Sheets (pour PC)
   syncToSheets();
@@ -2329,10 +2402,34 @@ function saveCasse() {
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
 const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
 
+// ═══════════════════════════════════════════════════════════
+// ARCHIVAGE AUTOMATIQUE DES E-MAILS
+// ═══════════════════════════════════════════════════════════
+let _currentEmailDetail = null;
+
+function archiveEmail(tipo, destinatario, asunto, cuerpo, adjunto) {
+  const entry = {
+    id: Date.now(),
+    fecha: new Date().toISOString(),
+    tipo: tipo || 'Sistema',
+    destinatario: destinatario || EMAIL_RESPONSABLE,
+    asunto: asunto || '',
+    cuerpo: cuerpo || '',
+    adjunto: adjunto || false,
+    statut: 'enviado',
+    remitente: currentUser ? currentUser.nom : 'Sistema',
+    smtpInfo: { host: 'mailto://', tiempo: '<1s' }
+  };
+  if (!DB.emailArchive) DB.emailArchive = [];
+  DB.emailArchive.unshift(entry);
+  // Limite à 500 emails en archive
+  if (DB.emailArchive.length > 500) DB.emailArchive = DB.emailArchive.slice(0, 500);
+  localStorage.setItem('vs_emails', JSON.stringify(DB.emailArchive));
+}
+
 function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
   const dateStr = new Date().toLocaleString('es-ES');
   const operateur = currentUser ? currentUser.nom : '—';
-
   const subject = '💥 Declaración de Rotura - ' + produit;
   const body =
     'DECLARACIÓN DE ROTURA - ALMACEN GPS BENICARLO\n\n' +
@@ -2343,32 +2440,24 @@ function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
     'Operador : ' + operateur + '\n' +
     'Fecha/Hora : ' + dateStr;
 
+  archiveEmail('Rotura', EMAIL_RESPONSABLE, subject, body, false);
+
   const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
-
-  // Méthode 1 : lien direct (meilleur sur Android)
-  try {
-    window.location.href = url;
-  } catch(e) {
-    // Méthode 2 : fallback avec <a> click
+  try { window.location.href = url; } catch(e) {
     try {
       const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch(e2) {
-      console.warn('Email non envoyé:', e2);
-    }
+      a.href = url; a.target = '_blank';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } catch(e2) {}
   }
 }
 
 function envoyerEmailSortie(produit, contenant, hojas, client) {
   const dateStr = new Date().toLocaleString('es-ES');
   const operateur = currentUser ? currentUser.nom : '—';
-
+  const tipo = produit === 'Traspaso' ? 'Traspaso' : 'Venta';
   const subject = '📤 Salida de Stock - ' + produit;
   const body =
     'SALIDA DE STOCK - ALMACEN GPS BENICARLO\n\n' +
@@ -2379,16 +2468,18 @@ function envoyerEmailSortie(produit, contenant, hojas, client) {
     'Operador : ' + operateur + '\n' +
     'Fecha/Hora : ' + dateStr;
 
+  archiveEmail(tipo, EMAIL_RESPONSABLE, subject, body, false);
+
   const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  try { window.location.href = url; } catch(e) {
+    try {
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } catch(e2) {}
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3782,6 +3873,7 @@ function showAdminTab(tab) {
   if (tab === 'alertas')    chargerAlertas();
   if (tab === 'journal')    renderJournal();
   if (tab === 'backup')     renderBackups();
+  if (tab === 'emails')     renderEmailArchive();
 }
 
 // ── USUARIOS ──
@@ -4111,7 +4203,8 @@ function testEmail() {
   const email = document.getElementById('alertEmail').value.trim();
   if (!email) { alert('⛔ Indique un email primero.'); return; }
   const subject = 'Test — ALMACEN GPS BENICARLO';
-  const body = 'Este es un email de prueba enviado desde ALMACEN GPS BENICARLO.\n\nSistema funcionando correctamente.\n\nFecha: ' + new Date().toLocaleString('es-ES');
+  const body = 'Este es un email de prueba.\nSistema funcionando correctamente.\nFecha: ' + new Date().toLocaleString('es-ES');
+  archiveEmail('Prueba', email, subject, body, false);
   const url = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   window.location.href = url;
 }
@@ -4252,6 +4345,224 @@ function renderBackups() {
       '</div>';
   });
   document.getElementById('listaBackups').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE ARCHIVE E-MAILS
+// ═══════════════════════════════════════════════════════════
+let emailPageActual = 0;
+
+function renderEmailArchive() {
+  if (!DB.emailArchive) DB.emailArchive = [];
+  const search   = (document.getElementById('emailFiltroSearch')?.value || '').toLowerCase();
+  const fecha    = document.getElementById('emailFiltroFecha')?.value || '';
+  const estado   = document.getElementById('emailFiltroEstado')?.value || '';
+  const tipo     = document.getElementById('emailFiltroTipo')?.value || '';
+  const user     = document.getElementById('emailFiltroUser')?.value || '';
+  const perPag   = parseInt(document.getElementById('emailFiltroPag')?.value || '25');
+
+  let emails = DB.emailArchive.slice();
+
+  // Filtres
+  if (search) emails = emails.filter(e =>
+    (e.destinatario||'').toLowerCase().includes(search) ||
+    (e.asunto||'').toLowerCase().includes(search) ||
+    (e.cuerpo||'').toLowerCase().includes(search)
+  );
+  if (fecha)   emails = emails.filter(e => (e.fecha||'').startsWith(fecha));
+  if (estado)  emails = emails.filter(e => e.statut === estado);
+  if (tipo)    emails = emails.filter(e => e.tipo === tipo);
+  if (user)    emails = emails.filter(e => e.remitente === user);
+
+  // Stats
+  const enviados  = emails.filter(e => e.statut === 'enviado').length;
+  const pendiente = emails.filter(e => e.statut === 'pendiente').length;
+  const errores   = emails.filter(e => e.statut === 'error').length;
+
+  document.getElementById('emailStats').innerHTML =
+    emailStatCard('📧 Total', emails.length, '#1E40AF', '#EFF6FF') +
+    emailStatCard('✅ Enviados', enviados, '#059669', '#D1FAE5') +
+    emailStatCard('⏳ Pendiente', pendiente, '#D97706', '#FEF3C7') +
+    emailStatCard('❌ Fallidos', errores, '#DC2626', '#FEE2E2');
+
+  // Pagination
+  const totalPages = Math.ceil(emails.length / perPag);
+  if (emailPageActual >= totalPages) emailPageActual = 0;
+  const pagEmails = emails.slice(emailPageActual * perPag, (emailPageActual + 1) * perPag);
+
+  // Tableau
+  const tipoCfg = {
+    'Rotura':     { icon:'💥', color:'#DC2626', bg:'#FEE2E2' },
+    'Venta':      { icon:'🛒', color:'#D97706', bg:'#FEF3C7' },
+    'Traspaso':   { icon:'🚛', color:'#1E40AF', bg:'#DBEAFE' },
+    'Alerta':     { icon:'⚠️', color:'#92400E', bg:'#FEF3C7' },
+    'Inventario': { icon:'📋', color:'#5B21B6', bg:'#EDE9FE' },
+    'Prueba':     { icon:'🧪', color:'#475569', bg:'#F1F5F9' },
+    'Sistema':    { icon:'🤖', color:'#475569', bg:'#F1F5F9' },
+  };
+
+  if (pagEmails.length === 0) {
+    document.getElementById('emailTabla').innerHTML =
+      '<div style="text-align:center; padding:40px; color:#94A3B8;"><div style="font-size:40px; margin-bottom:12px;">📭</div><div>No hay e-mails archivados</div></div>';
+    document.getElementById('emailPaginacion').innerHTML = '';
+    return;
+  }
+
+  let html = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:700px;">' +
+    '<thead><tr style="background:#1e293b; color:white;">' +
+    '<th style="padding:9px 8px; text-align:left; white-space:nowrap;">📅 Fecha</th>' +
+    '<th style="padding:9px 8px; text-align:left;">📧 Destinatario</th>' +
+    '<th style="padding:9px 8px; text-align:left;">📌 Asunto</th>' +
+    '<th style="padding:9px 8px; text-align:center;">Tipo</th>' +
+    '<th style="padding:9px 8px; text-align:center;">Estado</th>' +
+    '<th style="padding:9px 8px; text-align:center;">👤 Remitente</th>' +
+    '<th style="padding:9px 8px; text-align:center;">📎</th>' +
+    '<th style="padding:9px 8px; text-align:center;">Acciones</th>' +
+    '</tr></thead><tbody>';
+
+  pagEmails.forEach((e, i) => {
+    const d = new Date(e.fecha);
+    const bg = i % 2 === 0 ? '#fff' : '#F8FAFC';
+    const cfg = tipoCfg[e.tipo] || tipoCfg['Sistema'];
+    const estatusCfg = {
+      enviado:   { label:'✅ Enviado',  bg:'#D1FAE5', color:'#065F46' },
+      pendiente: { label:'⏳ Espera',   bg:'#FEF3C7', color:'#92400E' },
+      error:     { label:'❌ Fallido',  bg:'#FEE2E2', color:'#991B1B' },
+    };
+    const est = estatusCfg[e.statut] || estatusCfg.enviado;
+
+    html += '<tr style="background:' + bg + '; border-bottom:1px solid #F1F5F9;">' +
+      '<td style="padding:8px; white-space:nowrap;">' +
+        '<div style="font-weight:600; font-size:11px;">' + d.toLocaleDateString('es-ES') + '</div>' +
+        '<div style="color:#888; font-size:10px;">' + d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}) + '</div>' +
+      '</td>' +
+      '<td style="padding:8px; font-size:12px; color:#475569;">' + (e.destinatario || '—') + '</td>' +
+      '<td style="padding:8px; font-size:12px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (e.asunto||'') + '">' + (e.asunto || '—') + '</td>' +
+      '<td style="padding:8px; text-align:center;"><span style="background:' + cfg.bg + '; color:' + cfg.color + '; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:600; white-space:nowrap;">' + cfg.icon + ' ' + (e.tipo||'—') + '</span></td>' +
+      '<td style="padding:8px; text-align:center;"><span style="background:' + est.bg + '; color:' + est.color + '; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:600;">' + est.label + '</span></td>' +
+      '<td style="padding:8px; text-align:center; font-size:11px; color:#475569;">👤 ' + (e.remitente || 'Sistema') + '</td>' +
+      '<td style="padding:8px; text-align:center; font-size:12px; color:#888;">' + (e.adjunto ? '📎 Sí' : '—') + '</td>' +
+      '<td style="padding:6px; text-align:center;">' +
+        '<div style="display:flex; gap:4px; justify-content:center;">' +
+        '<button onclick="verEmailDetalle(' + e.id + ')" style="background:#EFF6FF; color:#1E40AF; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Ver detalle">👁️</button>' +
+        '<button onclick="reenviarEmailId(' + e.id + ')" style="background:#D1FAE5; color:#065F46; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Reenviar">↩️</button>' +
+        '<button onclick="copiarEmailId(' + e.id + ')" style="background:#F1F5F9; color:#475569; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Copiar">📋</button>' +
+        (currentUser && currentUser.id === 'u2' ? '<button onclick="eliminarEmailArchive(' + e.id + ')" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Eliminar">🗑️</button>' : '') +
+        '</div>' +
+      '</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('emailTabla').innerHTML = html;
+
+  // Pagination
+  let pag = '<div style="display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap;">';
+  pag += '<span style="font-size:12px; color:#888;">Página ' + (emailPageActual+1) + ' de ' + (totalPages||1) + ' · ' + emails.length + ' e-mails</span>';
+  if (emailPageActual > 0) pag += '<button onclick="emailPageActual=' + (emailPageActual-1) + '; renderEmailArchive();" style="background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE; border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; margin:0;">◀ Anterior</button>';
+  if (emailPageActual < totalPages - 1) pag += '<button onclick="emailPageActual=' + (emailPageActual+1) + '; renderEmailArchive();" style="background:#EFF6FF; color:#1E40AF; border:1px solid #BFDBFE; border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; margin:0;">Siguiente ▶</button>';
+  pag += '</div>';
+  document.getElementById('emailPaginacion').innerHTML = pag;
+}
+
+function emailStatCard(label, val, color, bg) {
+  return '<div style="background:' + bg + '; border-left:3px solid ' + color + '; border-radius:8px; padding:8px 12px; flex:1; min-width:80px; text-align:center;">' +
+    '<div style="font-size:18px; font-weight:700; color:' + color + ';">' + val + '</div>' +
+    '<div style="font-size:10px; color:#475569; margin-top:2px;">' + label + '</div>' +
+    '</div>';
+}
+
+function verEmailDetalle(id) {
+  const e = (DB.emailArchive || []).find(x => x.id === id);
+  if (!e) return;
+  _currentEmailDetail = e;
+  const d = new Date(e.fecha);
+  const tipoCfg = { Rotura:'💥', Venta:'🛒', Traspaso:'🚛', Alerta:'⚠️', Inventario:'📋', Prueba:'🧪', Sistema:'🤖' };
+
+  document.getElementById('emailDetailContenido').innerHTML =
+    '<div style="display:grid; gap:10px;">' +
+    '<div style="background:#F8FAFC; border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">' +
+    '<div><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Fecha y Hora</span><strong>' + d.toLocaleString('es-ES') + '</strong></div>' +
+    '<div><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Tipo</span><strong>' + (tipoCfg[e.tipo]||'📧') + ' ' + (e.tipo||'—') + '</strong></div>' +
+    '<div><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Remitente</span><strong>👤 ' + (e.remitente||'Sistema') + '</strong></div>' +
+    '<div><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Destinatario</span><strong>' + (e.destinatario||'—') + '</strong></div>' +
+    '<div style="grid-column:1/-1;"><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Asunto</span><strong>' + (e.asunto||'—') + '</strong></div>' +
+    '<div><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Estado</span><strong>' + (e.statut||'—') + '</strong></div>' +
+    '<div><span style="font-size:11px; color:#888; display:block; margin-bottom:2px;">Adjuntos</span><strong>' + (e.adjunto ? '📎 Sí' : 'No') + '</strong></div>' +
+    '</div>' +
+    '<div>' +
+    '<div style="font-size:11px; color:#888; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Contenido del mensaje</div>' +
+    '<div style="background:#0F172A; color:#E2E8F0; border-radius:10px; padding:16px; font-family:monospace; font-size:12px; line-height:1.7; white-space:pre-wrap;">' + (e.cuerpo||'—') + '</div>' +
+    '</div>' +
+    '<div style="background:#F8FAFC; border-radius:8px; padding:12px;">' +
+    '<div style="font-size:11px; color:#888; margin-bottom:6px; font-weight:600; text-transform:uppercase;">Detalles técnicos</div>' +
+    '<div style="font-size:12px; color:#475569;">🖥️ Servidor: ' + (e.smtpInfo?.host || 'mailto://') + '<br>⏱️ Tiempo envío: ' + (e.smtpInfo?.tiempo || '<1s') + '<br>🕐 Timestamp: ' + e.fecha + '</div>' +
+    '</div>' +
+    '</div>';
+
+  document.getElementById('modalEmailDetail').style.display = 'block';
+}
+
+function reenviarEmail() {
+  if (!_currentEmailDetail) return;
+  reenviarEmailId(_currentEmailDetail.id);
+}
+
+function reenviarEmailId(id) {
+  const e = (DB.emailArchive || []).find(x => x.id === id);
+  if (!e) return;
+  const url = 'mailto:' + e.destinatario +
+    '?subject=' + encodeURIComponent(e.asunto || '') +
+    '&body=' + encodeURIComponent(e.cuerpo || '');
+  // Archive le renvoi
+  archiveEmail(e.tipo, e.destinatario, '[REENVÍO] ' + e.asunto, e.cuerpo, e.adjunto);
+  window.location.href = url;
+}
+
+function copiarEmail() {
+  if (!_currentEmailDetail) return;
+  copiarEmailId(_currentEmailDetail.id);
+}
+
+function copiarEmailId(id) {
+  const e = (DB.emailArchive || []).find(x => x.id === id);
+  if (!e) return;
+  const texto = 'Asunto: ' + e.asunto + '\n\n' + e.cuerpo;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(texto).then(() => alert('📋 Contenido copiado al portapapeles'));
+  } else {
+    alert('Contenido:\n\n' + texto);
+  }
+}
+
+function eliminarEmailArchive(id) {
+  if (!window._nativeConfirm('¿Eliminar este e-mail del archivo?')) return;
+  DB.emailArchive = (DB.emailArchive || []).filter(e => e.id !== id);
+  localStorage.setItem('vs_emails', JSON.stringify(DB.emailArchive));
+  renderEmailArchive();
+}
+
+function exportEmailsExcel() {
+  const headers = ['Fecha', 'Hora', 'Destinatario', 'Asunto', 'Tipo', 'Estado', 'Remitente', 'Adjunto'];
+  const rows = (DB.emailArchive || []).map(e => {
+    const d = new Date(e.fecha);
+    return [
+      d.toLocaleDateString('es-ES'), d.toLocaleTimeString('es-ES'),
+      e.destinatario||'', e.asunto||'', e.tipo||'', e.statut||'',
+      e.remitente||'', e.adjunto ? 'Sí' : 'No'
+    ];
+  });
+  downloadXLSX('GPS_BENICARLO_Emails_' + new Date().toLocaleDateString('es-ES').replace(/\//g,'-') + '.xls', rows, headers);
+}
+
+function exportEmailsPDF() {
+  let lignesHtml = (DB.emailArchive || []).slice(0, 200).map((e, i) => {
+    const d = new Date(e.fecha);
+    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+    return '<tr style="background:' + bg + '"><td>' + d.toLocaleDateString('es-ES') + '</td><td>' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</td><td>' + (e.destinatario||'') + '</td><td>' + (e.asunto||'') + '</td><td>' + (e.tipo||'') + '</td><td>' + (e.statut||'') + '</td><td>' + (e.remitente||'') + '</td></tr>';
+  }).join('');
+  const tableHtml = '<table style="width:100%;border-collapse:collapse;font-size:10px;"><thead><tr style="background:#1e293b;color:white;"><th style="padding:6px;">Fecha</th><th style="padding:6px;">Hora</th><th style="padding:6px;">Destinatario</th><th style="padding:6px;">Asunto</th><th style="padding:6px;">Tipo</th><th style="padding:6px;">Estado</th><th style="padding:6px;">Remitente</th></tr></thead><tbody>' + lignesHtml + '</tbody></table>';
+  exportPDF('Archivo de E-mails — ALMACEN GPS BENICARLO', tableHtml);
 }
 
 function clearGLColFilters() {

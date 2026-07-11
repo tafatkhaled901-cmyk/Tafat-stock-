@@ -1953,59 +1953,49 @@ function saveSalidaVenta() {
 function enviarBonSalidaVenta(pedido, cliente, lignes, totalCajas, totalHojas) {
   const fecha = new Date().toLocaleString('es-ES');
   const operador = currentUser ? currentUser.nom : '—';
+  const separador = '─────────────────────────────────────────';
 
-  // Construction du tableau produits
-  const separador = '─'.repeat(55);
   const lignesTexto = lignes.map((l, i) =>
-    (i + 1) + '. ' + (l.prod || '—').padEnd(20) +
-    ' | Lote: ' + l.num +
-    '\n   Cajas: ' + l.nb + '  |  Hojas: ' + l.feuilles
-  ).join('\n');
+    (i + 1) + '. ' + (l.prod || '—') +
+    '\n   N° Lote : ' + l.num +
+    '\n   Cajas   : ' + l.nb + '  |  Hojas : ' + l.feuilles
+  ).join('\n\n');
 
-  const subject = '📦 BON DE SORTIE VENTA — Pedido ' + pedido + ' — ' + fecha;
+  const subject = 'BON DE SORTIE VENTA - Pedido ' + pedido;
 
   const body =
-    '╔══════════════════════════════════════════════════════╗\n' +
-    '║         BON DE SORTIE — SALIDA VENTA                ║\n' +
-    '║         ALMACEN GPS BENICARLO                       ║\n' +
-    '╚══════════════════════════════════════════════════════╝\n\n' +
-    separador + '\n' +
-    '📋 N° PEDIDO    : ' + (pedido || '—') + '\n' +
-    '👤 CLIENTE      : ' + (cliente || '—') + '\n' +
-    '📅 FECHA/HORA   : ' + fecha + '\n' +
-    '👷 OPERADOR     : ' + operador + '\n' +
+    'BON DE SORTIE - SALIDA VENTA\n' +
+    'ALMACEN GPS BENICARLO\n' +
     separador + '\n\n' +
-    '📦 DETALLE DE PRODUCTOS SALIDOS\n' +
+    'N° PEDIDO   : ' + (pedido || '—') + '\n' +
+    'CLIENTE     : ' + (cliente || '—') + '\n' +
+    'FECHA/HORA  : ' + fecha + '\n' +
+    'OPERADOR    : ' + operador + '\n\n' +
     separador + '\n' +
-    lignesTexto + '\n' +
-    separador + '\n\n' +
-    '📊 RESUMEN TOTAL\n' +
-    '   ▸ Total Cajas  : ' + totalCajas + ' caja(s)\n' +
-    '   ▸ Total Hojas  : ' + totalHojas + ' hojas\n' +
-    '   ▸ Références   : ' + lignes.length + ' référence(s)\n\n' +
+    'PRODUCTOS SALIDOS :\n\n' +
+    lignesTexto + '\n\n' +
     separador + '\n' +
-    '✅ Salida validada y registrada en el sistema.\n' +
-    'Este bon de sortie a été généré automatiquement par\n' +
-    'ALMACEN GPS BENICARLO — Système de gestion de stock\n' +
-    separador;
+    'TOTAL CAJAS : ' + totalCajas + '\n' +
+    'TOTAL HOJAS : ' + totalHojas + '\n' +
+    separador + '\n' +
+    'Salida validada y registrada en el sistema.\n' +
+    'ALMACEN GPS BENICARLO';
 
-  // Archive l'email
+  // ── 1. Archive AVANT tout ──
   archiveEmail('Venta', EMAIL_RESPONSABLE, subject, body, false);
 
-  // Envoi via mailto
+  // ── 2. Ouvre Gmail via lien <a> sans quitter la page ──
   const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
 
-  try {
-    window.location.href = url;
-  } catch(e) {
-    try {
-      const a = document.createElement('a');
-      a.href = url; a.target = '_blank';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } catch(e2) { console.warn('Email non envoyé', e2); }
-  }
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank'; // ouvre dans nouvel onglet sans recharger la page
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 1000);
 }
 
 
@@ -2469,6 +2459,58 @@ function saveCasse() {
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
 const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
 
+function _ouvrirMailto(url) {
+  // Ouvre mailto sans recharger la page — méthode fiable mobile/PC
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { try { document.body.removeChild(a); } catch(e) {} }, 1000);
+}
+
+function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
+  const fecha = new Date().toLocaleString('es-ES');
+  const operador = currentUser ? currentUser.nom : '—';
+  const subject = 'DECLARACION DE ROTURA - ' + produit;
+  const body =
+    'DECLARACION DE ROTURA\nALMACEN GPS BENICARLO\n' +
+    '─────────────────────────────────\n\n' +
+    'Producto   : ' + produit + '\n' +
+    'N Lote     : ' + contenant + '\n' +
+    'Hojas rotas: ' + hojasCassees + '\n' +
+    'Hojas rest.: ' + hojasRestantes + '\n' +
+    'Operador   : ' + operador + '\n' +
+    'Fecha/Hora : ' + fecha + '\n\n' +
+    '─────────────────────────────────\n' +
+    'ALMACEN GPS BENICARLO';
+
+  archiveEmail('Rotura', EMAIL_RESPONSABLE, subject, body, false);
+  _ouvrirMailto('mailto:' + EMAIL_RESPONSABLE + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body));
+}
+
+function envoyerEmailSortie(produit, contenant, hojas, client) {
+  const fecha = new Date().toLocaleString('es-ES');
+  const operador = currentUser ? currentUser.nom : '—';
+  const tipo = produit === 'Traspaso' ? 'Traspaso' : 'Venta';
+  const subject = 'SALIDA DE STOCK - ' + produit;
+  const body =
+    'SALIDA DE STOCK\nALMACEN GPS BENICARLO\n' +
+    '─────────────────────────────────\n\n' +
+    'Producto   : ' + produit + '\n' +
+    'N Lote     : ' + contenant + '\n' +
+    'Hojas      : ' + hojas + '\n' +
+    (client ? 'Destino    : ' + client + '\n' : '') +
+    'Operador   : ' + operador + '\n' +
+    'Fecha/Hora : ' + fecha + '\n\n' +
+    '─────────────────────────────────\n' +
+    'ALMACEN GPS BENICARLO';
+
+  archiveEmail(tipo, EMAIL_RESPONSABLE, subject, body, false);
+  _ouvrirMailto('mailto:' + EMAIL_RESPONSABLE + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body));
+}
+
 // ═══════════════════════════════════════════════════════════
 // ARCHIVAGE AUTOMATIQUE DES E-MAILS
 // ═══════════════════════════════════════════════════════════
@@ -2494,60 +2536,6 @@ function archiveEmail(tipo, destinatario, asunto, cuerpo, adjunto) {
   localStorage.setItem('vs_emails', JSON.stringify(DB.emailArchive));
 }
 
-function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
-  const dateStr = new Date().toLocaleString('es-ES');
-  const operateur = currentUser ? currentUser.nom : '—';
-  const subject = '💥 Declaración de Rotura - ' + produit;
-  const body =
-    'DECLARACIÓN DE ROTURA - ALMACEN GPS BENICARLO\n\n' +
-    'Producto : ' + produit + '\n' +
-    'N° Lote : ' + contenant + '\n' +
-    'Hojas rotas : ' + hojasCassees + '\n' +
-    'Hojas restantes : ' + hojasRestantes + '\n' +
-    'Operador : ' + operateur + '\n' +
-    'Fecha/Hora : ' + dateStr;
-
-  archiveEmail('Rotura', EMAIL_RESPONSABLE, subject, body, false);
-
-  const url = 'mailto:' + EMAIL_RESPONSABLE +
-    '?subject=' + encodeURIComponent(subject) +
-    '&body=' + encodeURIComponent(body);
-  try { window.location.href = url; } catch(e) {
-    try {
-      const a = document.createElement('a');
-      a.href = url; a.target = '_blank';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } catch(e2) {}
-  }
-}
-
-function envoyerEmailSortie(produit, contenant, hojas, client) {
-  const dateStr = new Date().toLocaleString('es-ES');
-  const operateur = currentUser ? currentUser.nom : '—';
-  const tipo = produit === 'Traspaso' ? 'Traspaso' : 'Venta';
-  const subject = '📤 Salida de Stock - ' + produit;
-  const body =
-    'SALIDA DE STOCK - ALMACEN GPS BENICARLO\n\n' +
-    'Producto : ' + produit + '\n' +
-    'N° Lote : ' + contenant + '\n' +
-    'Hojas salidas : ' + hojas + '\n' +
-    (client ? 'Cliente/Destino : ' + client + '\n' : '') +
-    'Operador : ' + operateur + '\n' +
-    'Fecha/Hora : ' + dateStr;
-
-  archiveEmail(tipo, EMAIL_RESPONSABLE, subject, body, false);
-
-  const url = 'mailto:' + EMAIL_RESPONSABLE +
-    '?subject=' + encodeURIComponent(subject) +
-    '&body=' + encodeURIComponent(body);
-  try { window.location.href = url; } catch(e) {
-    try {
-      const a = document.createElement('a');
-      a.href = url; a.target = '_blank';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } catch(e2) {}
-  }
-}
 
 // ═══════════════════════════════════════════════════════════
 // SORTIES

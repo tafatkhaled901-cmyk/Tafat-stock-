@@ -1743,22 +1743,40 @@ function doLogin() {
   const username = document.getElementById('usernameInput').value.trim().toUpperCase();
   const password = document.getElementById('passwordInput').value.trim();
 
-  // ── Sécurité : si usuarios corrompu, remet les défauts ──
-  if (!DB.admin.usuarios || !Array.isArray(DB.admin.usuarios) || DB.admin.usuarios.length === 0) {
-    DB.admin.usuarios = JSON.parse(JSON.stringify(DEFAULT_USUARIOS));
-    saveDB();
+  // Liste fixe de secours — fonctionne TOUJOURS même si localStorage corrompu
+  const FALLBACK = [
+    { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
+    { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
+    { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
+  ];
+
+  // Cherche d'abord dans DB.admin.usuarios (PINs modifiés)
+  let users = [];
+  try {
+    if (DB.admin && Array.isArray(DB.admin.usuarios) && DB.admin.usuarios.length > 0) {
+      users = DB.admin.usuarios;
+    } else {
+      users = FALLBACK;
+    }
+  } catch(e) {
+    users = FALLBACK;
   }
 
-  // ── Recherche dans la source de vérité persistée ──
-  const user = DB.admin.usuarios.find(u =>
+  // Fusionne : si un utilisateur n'a pas de PIN valide, prend le PIN de FALLBACK
+  const merged = FALLBACK.map(def => {
+    const saved = users.find(u => u.id === def.id);
+    return saved && saved.pin ? saved : def;
+  });
+
+  const user = merged.find(u =>
     (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) &&
-    u.pin === password &&
-    u.activo !== false
+    u.pin === password
   );
 
   if (user) {
     document.getElementById('loginError').classList.remove('visible');
-    syncUsers();
+    // Met à jour DB.admin avec les utilisateurs fusionnés
+    if (DB.admin) DB.admin.usuarios = merged;
     loginSuccess(user);
   } else {
     document.getElementById('loginError').classList.add('visible');

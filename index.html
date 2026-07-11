@@ -1524,6 +1524,33 @@ setInterval(loadFromSheets, 30000);
 
 // Journal centralisé : enregistre TOUTE opération liée a un contenant.
 // type: 'Entrée' | 'Casse' | 'Sortie' | 'Suppression' | 'Transfert' (futur)
+// ═══════════════════════════════════════════════════════════
+// FONCTION CENTRALE — Hojas Conformes
+// Feuilles initiales − total casses sur ce lote
+// Utilisée partout : stock, sorties, bons, historique
+// ═══════════════════════════════════════════════════════════
+function getHojasConformes(num) {
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (!entry) return 0;
+  const hojasInit = Number(entry.feuilles) || Number(entry.hojas) || 0;
+  const totalCasses = DB.casses
+    .filter(c => c.num === num)
+    .reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
+  return Math.max(0, hojasInit - totalCasses);
+}
+
+function getHojasInit(num) {
+  const entry = DB.entrees.slice().reverse().find(e => e.num === num);
+  if (!entry) return 0;
+  return Number(entry.feuilles) || Number(entry.hojas) || 0;
+}
+
+function getTotalCasses(num) {
+  return DB.casses
+    .filter(c => c.num === num)
+    .reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
+}
+
 function logMouvement(type, num, detail) {
   DB.mouvements.push({
     type, num, detail,
@@ -1896,20 +1923,27 @@ function ventaOnCodeScanned(code) {
   ventaRestantes--;
   document.getElementById('ventaContadorNum').textContent = ventaRestantes;
 
-  // Affiche les infos du produit scanné (référence + lote)
+  // Hojas conformes = initiales − casses
+  const hojasConformes = getHojasConformes(code);
+  const hojasInit = getHojasInit(code);
+  const totalC = getTotalCasses(code);
+
+  // Info auto
   const infoDiv = document.getElementById('ventaInfoAuto');
+  if (infoDiv) infoDiv.style.display = 'block';
   const refEl = document.getElementById('ventaRefProd');
   const loteEl = document.getElementById('ventaLoteInfo');
-  if (infoDiv) infoDiv.style.display = 'block';
   if (refEl) refEl.value = entry.prod || '—';
   if (loteEl) loteEl.value = code;
 
-  // Liste des lotes scannés
+  // Liste avec hojas conformes
   const list = document.getElementById('ventaScannedList');
   list.innerHTML += '<div style="padding:8px 12px; background:#D1FAE5; border-left:3px solid #059669; border-radius:6px; margin:4px 0; font-size:13px;">' +
     '✅ <strong style="color:#065F46;">' + (entry.prod || '—') + '</strong> · ' +
-    '<span style="font-family:monospace;">' + code + '</span> · ' +
-    (entry.feuilles || 0) + ' hojas</div>';
+    '<span style="font-family:monospace;">' + code + '</span><br>' +
+    '<span style="font-size:11px; color:#475569;">Init: ' + hojasInit + ' hj' +
+    (totalC > 0 ? ' · Rotas: ' + totalC + ' hj' : '') +
+    ' · <strong style="color:#059669;">Conformes: ' + hojasConformes + ' hj</strong></span></div>';
 
   if (ventaRestantes <= 0) {
     document.getElementById('ventaContadorNum').textContent = '✓';
@@ -1937,7 +1971,8 @@ function saveSalidaVenta() {
     const entry = DB.entrees.slice().reverse().find(e => e.num === num);
     if (!entry) return;
     const prod = entry.prod;
-    const feuilles = Number(entry.feuilles) || Number(entry.hojas) || 0;
+    // ── Hojas conformes = initiales − casses déclarées ──
+    const feuilles = getHojasConformes(num);
     const nb = Number(entry.nb) || 1;
 
     if (DB.stock[prod]) {
@@ -1946,7 +1981,7 @@ function saveSalidaVenta() {
     }
 
     DB.sorties.push({ prod, num, feuilles, nb, client: cliente, pedido, tipo: 'Venta', date: new Date().toISOString() });
-    logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas');
+    logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas conformes');
     totalHojas += feuilles;
     totalCajas += nb;
     lignesVenta.push({ prod, num, feuilles, nb });
@@ -2080,7 +2115,10 @@ function traspasoOnCodeScanned(code) {
   traspasoRestantes--;
   document.getElementById('traspasoContadorNum').textContent = traspasoRestantes;
 
-  // Info auto
+  const hojasConformes = getHojasConformes(code);
+  const hojasInit = getHojasInit(code);
+  const totalC = getTotalCasses(code);
+
   const infoDiv = document.getElementById('traspasoInfoAuto');
   if (infoDiv) infoDiv.style.display = 'block';
   const refEl = document.getElementById('traspasoRefProd');
@@ -2088,12 +2126,13 @@ function traspasoOnCodeScanned(code) {
   if (refEl) refEl.value = entry.prod || '—';
   if (loteEl) loteEl.value = code;
 
-  // Liste
   const list = document.getElementById('traspasoScannedList');
   list.innerHTML += '<div style="padding:8px 12px; background:#DBEAFE; border-left:3px solid #1E40AF; border-radius:6px; margin:4px 0; font-size:13px;">' +
     '✅ <strong style="color:#1E40AF;">' + (entry.prod || '—') + '</strong> · ' +
-    '<span style="font-family:monospace;">' + code + '</span> · ' +
-    '<strong style="color:#0055cc;">' + (Number(entry.feuilles)||0) + ' hojas</strong></div>';
+    '<span style="font-family:monospace;">' + code + '</span><br>' +
+    '<span style="font-size:11px; color:#475569;">Init: ' + hojasInit + ' hj' +
+    (totalC > 0 ? ' · Rotas: ' + totalC + ' hj' : '') +
+    ' · <strong style="color:#059669;">Conformes: ' + hojasConformes + ' hj</strong></span></div>';
 
   if (traspasoRestantes <= 0) {
     document.getElementById('traspasoContadorNum').textContent = '✓';
@@ -2113,7 +2152,8 @@ function saveTraspaso() {
     const entry = DB.entrees.slice().reverse().find(e => e.num === num);
     if (!entry) return;
     const prod = entry.prod;
-    const feuilles = Number(entry.feuilles) || Number(entry.hojas) || 0;
+    // ── Hojas conformes = initiales − casses déclarées ──
+    const feuilles = getHojasConformes(num);
     const nb = Number(entry.nb) || 1;
 
     if (DB.stock[prod]) {
@@ -2122,7 +2162,7 @@ function saveTraspaso() {
     }
 
     DB.sorties.push({ prod, num, feuilles, nb, client: dest, tipo: 'Traspaso', date: new Date().toISOString() });
-    logMouvement('Traspaso', num, prod + ' · Traspaso → ' + dest + ' · -' + feuilles + ' hojas');
+    logMouvement('Traspaso', num, prod + ' · Traspaso → ' + dest + ' · -' + feuilles + ' hojas conformes');
     totalHojas += feuilles;
   });
 
@@ -2428,50 +2468,59 @@ function saveCasse() {
 
   if (!num) { alert('Por favor ingrese o escanee el N° de lote'); return; }
 
-  // ⛔ BLOQUEO: Verificar que el lote NO ha sido vendido ni traspasado
+  // ⛔ Lote déjà sorti
   const sortie = DB.sorties.find(s => s.num === num);
   if (sortie) {
     const tipo = sortie.tipo || 'Salida';
-    const dest = sortie.pedido ? 'Pedido ' + sortie.pedido : (sortie.client ? sortie.client : '');
-    alert('⛔ OPERACIÓN BLOQUEADA\n\n' +
-      'El lote ' + num + ' ya fue retirado del stock.\n' +
-      'Tipo: ' + tipo + (dest ? ' — ' + dest : '') + '\n' +
-      'Fecha: ' + new Date(sortie.date).toLocaleDateString('es-ES') + '\n\n' +
-      'No se puede declarar una rotura sobre un lote ya salido.');
+    const dest = sortie.pedido ? 'Pedido ' + sortie.pedido : (sortie.client || '');
+    alert('⛔ OPERACIÓN BLOQUEADA\n\nEl lote ' + num + ' ya fue retirado del stock.\nTipo: ' + tipo + (dest ? ' — ' + dest : '') + '\n\nNo se puede declarar una rotura sobre un lote ya salido.');
     return;
   }
 
-  // Utilise la référence scannée, sinon cherche dans les entrées
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
-  const prodLabel = prodScanned || (entry ? entry.prod : '(producto desconocido)');
+  if (!entry) { alert('⚠️ Lote ' + num + ' no encontrado en las recepciones.'); return; }
 
-  // Vérifie que le lote existe en stock
-  if (!entry) {
-    alert('⚠️ Lote ' + num + ' no encontrado en las recepciones.');
+  const prodLabel = prodScanned || entry.prod;
+  const hojasInit   = getHojasInit(num);
+  const totalCasses  = getTotalCasses(num);
+  const hojasConformes = Math.max(0, hojasInit - totalCasses);
+
+  // ⛔ Validation : ne peut pas casser plus que les feuilles conformes
+  if (qty > hojasConformes) {
+    alert('⛔ CANTIDAD INVÁLIDA\n\n' +
+      'Feuilles initiales   : ' + hojasInit + '\n' +
+      'Déjà déclarées casse : ' + totalCasses + '\n' +
+      'Feuilles conformes   : ' + hojasConformes + '\n\n' +
+      'Vous ne pouvez pas déclarer ' + qty + ' feuilles.\n' +
+      'Maximum autorisé : ' + hojasConformes + ' feuilles.');
     return;
   }
 
-  // Calcul hojas restantes AVANT décrémentation
-  const casseAvant = DB.casses.filter(c => c.num === num).reduce((s, c) => s + c.qty, 0);
-  const hojasInit = Number(entry.feuilles) || 0;
-  const hojasRestantes = Math.max(0, hojasInit - casseAvant - qty);
+  if (qty <= 0) { alert('⛔ La cantidad debe ser mayor que 0.'); return; }
 
+  const hojasRestantes = hojasConformes - qty;
+
+  // Met à jour le stock avec les feuilles conformes recalculées
   if (DB.stock[entry.prod]) {
     DB.stock[entry.prod].f = Math.max(0, DB.stock[entry.prod].f - qty);
   }
 
   DB.casses.push({ num, qty, prod: prodLabel, date: new Date().toISOString() });
-  logMouvement('Casse', num, prodLabel + ' · -' + qty + ' hojas rotas · resto ' + hojasRestantes + ' hojas');
+  logMouvement('Casse', num,
+    prodLabel + ' · Hojas init: ' + hojasInit +
+    ' · Rotas: -' + qty +
+    ' · Conformes restantes: ' + hojasRestantes
+  );
+
   saveDB();
   closeModal('modalCasse');
-
   document.getElementById('casseProd').value = '';
   document.getElementById('casseNum').value = '';
   document.getElementById('casseQty').value = '1';
 
   renderCasse();
   envoyerEmailCasse(prodLabel, num, qty, hojasRestantes);
-  alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas rotas: ' + qty + '\nHojas restantes: ' + hojasRestantes + '\n\n📧 Email enviado al responsable.');
+  alert('💥 Rotura declarada\nProducto: ' + prodLabel + '\nHojas iniciales: ' + hojasInit + '\nHojas rotas: ' + qty + '\nHojas conformes restantes: ' + hojasRestantes + '\n\n📧 Email enviado al responsable.');
 }
 
 // Ouvre l'app email du téléphone avec un message pré-rempli pour le responsable.
@@ -2773,13 +2822,9 @@ function getContenantsActifs(prod) {
     .filter(e => e.prod === prod)
     .filter(e => !DB.sorties.some(s => s.num === e.num))
     .map(e => {
-      const hojasInit = Number(e.feuilles) || 0;
-      const casseTotal = DB.casses
-        .filter(c => c.num === e.num)
-        .reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
       return Object.assign({}, e, {
-        feuilles: hojasInit,
-        hojasConformes: Math.max(0, hojasInit - casseTotal)
+        feuilles: getHojasInit(e.num),
+        hojasConformes: getHojasConformes(e.num)
       });
     });
 }
@@ -3103,8 +3148,8 @@ function exportStockCSV() {
   const rows = [];
 
   DB.entrees.forEach(e => {
-    const casseTotal = DB.casses.filter(c => c.num === e.num).reduce((s, c) => s + c.qty, 0);
-    const hojasConformes = Math.max(0, e.feuilles - casseTotal);
+    const hojasConformes = getHojasConformes(e.num);
+    const casseTotal = getTotalCasses(e.num);
     const estSorti = DB.sorties.some(s => s.num === e.num);
     const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
     rows.push([

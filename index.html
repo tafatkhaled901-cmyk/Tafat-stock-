@@ -2493,7 +2493,6 @@ function _ouvrirMailto(url, textoModal, archiveData) {
 }
 
 function archivarYCerrarEmail() {
-  // Archive maintenant que l'utilisateur a appuyé
   if (_pendingEmailArchive) {
     const d = _pendingEmailArchive;
     if (!DB.emailArchive) DB.emailArchive = [];
@@ -2506,8 +2505,11 @@ function archivarYCerrarEmail() {
       remitente: currentUser ? currentUser.nom : 'Sistema',
       smtpInfo: { host: 'mailto://', tiempo: '<1s' }
     });
+    if (DB.emailArchive.length > 500) DB.emailArchive = DB.emailArchive.slice(0, 500);
     localStorage.setItem('vs_emails', JSON.stringify(DB.emailArchive));
     _pendingEmailArchive = null;
+    // ── Sync Google Sheets pour que le PC voie aussi ──
+    syncToSheets();
   }
   setTimeout(() => cerrarEmailModal(), 500);
 }

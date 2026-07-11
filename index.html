@@ -1443,40 +1443,49 @@ EPS.forEach(ep => DIMS.forEach(d => PRODS.push('FLT'+ep+'-'+d)));
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
+// ── Utilisateurs par défaut — toujours disponibles ──
+const DEFAULT_USUARIOS = [
+  { id:'u1', nom:'MIGUEL',          prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
+  { id:'u2', nom:'TAFAT KHALED',    prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
+  { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS', role:'Magasinero',   pin:'0000', activo:true },
+];
+
+// Charge admin depuis localStorage, ou valeurs par défaut
+let _adminRaw = {};
+try { _adminRaw = JSON.parse(localStorage.getItem('vs_admin') || '{}'); } catch(e) { _adminRaw = {}; }
+
+// S'assure que usuarios existe et contient les 3 utilisateurs
+// Si usuarios manquant ou vide → remet les défauts
+if (!_adminRaw.usuarios || !Array.isArray(_adminRaw.usuarios) || _adminRaw.usuarios.length === 0) {
+  _adminRaw.usuarios = DEFAULT_USUARIOS;
+}
+
+// S'assure que chaque utilisateur par défaut existe (fusionne sans écraser les PINs modifiés)
+DEFAULT_USUARIOS.forEach(def => {
+  const existing = _adminRaw.usuarios.find(u => u.id === def.id);
+  if (!existing) _adminRaw.usuarios.push(def);
+});
+
 let DB = {
-  stock: JSON.parse(localStorage.getItem('vs_stock') || '{}'),
-  entrees: JSON.parse(localStorage.getItem('vs_entrees') || '[]'),
-  casses: JSON.parse(localStorage.getItem('vs_casses') || '[]'),
-  sorties: JSON.parse(localStorage.getItem('vs_sorties') || '[]'),
-  mouvements: JSON.parse(localStorage.getItem('vs_mouvements') || '[]'),
-  inventaires: JSON.parse(localStorage.getItem('vs_inventaires') || '[]'),
-  emailArchive: JSON.parse(localStorage.getItem('vs_emails') || '[]'),
-  admin: JSON.parse(localStorage.getItem('vs_admin') || JSON.stringify({
-    empresa: { nombre: 'ALMACEN GPS BENICARLO', direccion: 'Benicarlo, España', telefono: '', email: 'tafatkhaled901@gmail.com', web: '', fiscal: '', idioma: 'es', moneda: 'EUR', timezone: 'Europe/Madrid' },
-    almacenes: [
-      { id: 'ALM-1', nombre: 'Almacén Principal', ubicacion: 'Benicarlo', default: true, activo: true },
-    ],
-    categorias: [
-      { id: 'CAT-1', nombre: 'Vidrio Float', parent: null },
-      { id: 'CAT-2', nombre: 'Vidrio Laminado', parent: null },
-      { id: 'CAT-3', nombre: 'Vidrio Templado', parent: null },
-    ],
-    unidades: [
-      { id: 'U-1', nombre: 'Hoja', simbolo: 'hj' },
-      { id: 'U-2', nombre: 'Caja', simbolo: 'cj' },
-      { id: 'U-3', nombre: 'Palé', simbolo: 'pal' },
-    ],
-    alertas: { stockMinimo: 20, stockCritico: 5, emailAlertas: true, emailBackup: false },
-    smtpConfig: { host: '', port: 587, user: '', password: '', from: 'tafatkhaled901@gmail.com', fromName: 'ALMACEN GPS BENICARLO' },
-    usuarios: [
-      { id: 'u1', nom: 'MIGUEL', prenom: 'MIGUEL', role: 'Operador', pin: '1234', activo: true, createdAt: new Date().toISOString() },
-      { id: 'u2', nom: 'TAFAT KHALED', prenom: 'TAFAT', role: 'Administrador', pin: '5678', activo: true, createdAt: new Date().toISOString() },
-      { id: 'u3', nom: 'LUIS MIGUEL SOLERA', prenom: 'LUIS', role: 'Magasinero', pin: '0000', activo: true, createdAt: new Date().toISOString() },
-    ],
-    connexions: [],
-    backups: [],
-    passwordChanges: [],
-  })),
+  stock:        JSON.parse(localStorage.getItem('vs_stock')       || '{}'),
+  entrees:      JSON.parse(localStorage.getItem('vs_entrees')     || '[]'),
+  casses:       JSON.parse(localStorage.getItem('vs_casses')      || '[]'),
+  sorties:      JSON.parse(localStorage.getItem('vs_sorties')     || '[]'),
+  mouvements:   JSON.parse(localStorage.getItem('vs_mouvements')  || '[]'),
+  inventaires:  JSON.parse(localStorage.getItem('vs_inventaires') || '[]'),
+  emailArchive: JSON.parse(localStorage.getItem('vs_emails')      || '[]'),
+  admin: {
+    empresa:         _adminRaw.empresa        || { nombre:'ALMACEN GPS BENICARLO', email:'tafatkhaled901@gmail.com', moneda:'EUR', idioma:'es' },
+    almacenes:       _adminRaw.almacenes      || [{ id:'ALM-1', nombre:'Almacén Principal', ubicacion:'Benicarlo', default:true, activo:true }],
+    categorias:      _adminRaw.categorias     || [],
+    unidades:        _adminRaw.unidades       || [{ id:'U-1', nombre:'Hoja', simbolo:'hj' }],
+    alertas:         _adminRaw.alertas        || { stockMinimo:20, stockCritico:5, emailAlertas:true },
+    smtpConfig:      _adminRaw.smtpConfig     || { host:'', port:587, from:'tafatkhaled901@gmail.com' },
+    usuarios:        _adminRaw.usuarios,
+    connexions:      _adminRaw.connexions     || [],
+    backups:         _adminRaw.backups        || [],
+    passwordChanges: _adminRaw.passwordChanges|| [],
+  },
 };
 
 let currentUser = null;
@@ -1554,6 +1563,8 @@ function loadFromSheets() {
     .then(r => r.json())
     .then(data => {
       if (!data || !data.entrees) return;
+      // ⚠️ NE JAMAIS écraser DB.admin depuis Google Sheets
+      // Les utilisateurs et PINs sont gérés uniquement en localStorage
       DB.stock        = data.stock        || {};
       DB.entrees      = data.entrees      || [];
       DB.casses       = data.casses       || [];
@@ -1561,6 +1572,7 @@ function loadFromSheets() {
       DB.mouvements   = data.mouvements   || [];
       DB.emailArchive = data.emailArchive || [];
       if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
+      // Sauvegarde locale SANS admin (admin reste intact)
       localStorage.setItem('vs_stock',      JSON.stringify(DB.stock));
       localStorage.setItem('vs_entrees',    JSON.stringify(DB.entrees));
       localStorage.setItem('vs_casses',     JSON.stringify(DB.casses));
@@ -1568,7 +1580,6 @@ function loadFromSheets() {
       localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
       localStorage.setItem('vs_emails',     JSON.stringify(DB.emailArchive));
       setSyncStatus('synced');
-      // Rafraîchit la page active
       if (currentUser) {
         try { renderStock(); } catch(e) {}
         try { renderSorties(); } catch(e) {}
@@ -1731,19 +1742,22 @@ function guardarNuevaPassword() {
 function doLogin() {
   const username = document.getElementById('usernameInput').value.trim().toUpperCase();
   const password = document.getElementById('passwordInput').value.trim();
-  const errorEl = document.getElementById('loginError');
 
-  // ── Lit toujours depuis DB.admin.usuarios = source de vérité persistée ──
+  // ── Sécurité : si usuarios corrompu, remet les défauts ──
+  if (!DB.admin.usuarios || !Array.isArray(DB.admin.usuarios) || DB.admin.usuarios.length === 0) {
+    DB.admin.usuarios = JSON.parse(JSON.stringify(DEFAULT_USUARIOS));
+    saveDB();
+  }
+
+  // ── Recherche dans la source de vérité persistée ──
   const user = DB.admin.usuarios.find(u =>
-    (u.nom.toUpperCase() === username ||
-     u.prenom.toUpperCase() === username) &&
+    (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) &&
     u.pin === password &&
     u.activo !== false
   );
 
   if (user) {
     document.getElementById('loginError').classList.remove('visible');
-    // Synchronise USERS avec les données actuelles
     syncUsers();
     loginSuccess(user);
   } else {

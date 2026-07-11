@@ -1371,11 +1371,14 @@ function toggleSidebar() {
   sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
 }
 
-const USERS = [
-  {id:'u1', nom:'MIGUEL', prenom:'MIGUEL', role:'Operador', pin:'1234'},
-  {id:'u2', nom:'TAFAT KHALED', prenom:'TAFAT', role:'Operador', pin:'5678'},
-  {id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS', role:'Magasinero', pin:'0000'},
-];
+// USERS est chargé depuis DB.admin.usuarios (localStorage)
+// C'est la SOURCE DE VÉRITÉ — les PINs modifiés persistent après rechargement
+let USERS = DB.admin.usuarios;
+
+// Synchronise USERS avec DB.admin.usuarios (appelé après chaque modification)
+function syncUsers() {
+  USERS = DB.admin.usuarios;
+}
 
 // Table précise : hojas par caja selon la référence EXACTE (épaisseur + dimensions)
 // Clé = "épaisseur-dimensions" tel qu'extrait du code produit (ex: "8-321/214")
@@ -1662,22 +1665,20 @@ function guardarNuevaPassword() {
     errEl.style.display = 'block'; return;
   }
 
-  // Vérifie que l'utilisateur existe et que le PIN actuel est correct
-  const user = USERS.find(u =>
+  // ── Vérifie dans DB.admin.usuarios (source de vérité persistée) ──
+  const adminUser = DB.admin.usuarios.find(u =>
     u.prenom.toUpperCase() === username && u.pin === pinActual
   );
-  if (!user) {
+  if (!adminUser) {
     errEl.textContent = '⛔ Usuario o contraseña actual incorrectos.';
     errEl.style.display = 'block'; return;
   }
 
-  // Vérifie le format du nouveau PIN
   if (!/^\d{4}$/.test(pinNuevo)) {
     errEl.textContent = '⛔ La nueva contraseña debe tener exactamente 4 dígitos.';
     errEl.style.display = 'block'; return;
   }
 
-  // Vérifie que les deux nouveaux PINs correspondent
   if (pinNuevo !== pinConfirm) {
     errEl.textContent = '⛔ Las contraseñas no coinciden. Verifique e inténtelo de nuevo.';
     errEl.style.display = 'block';
@@ -1686,46 +1687,44 @@ function guardarNuevaPassword() {
     return;
   }
 
-  // Vérifie que le nouveau PIN est différent de l'ancien
   if (pinNuevo === pinActual) {
     errEl.textContent = '⚠️ La nueva contraseña debe ser diferente a la actual.';
     errEl.style.display = 'block'; return;
   }
 
-  // Met à jour le PIN dans USERS
-  user.pin = pinNuevo;
+  // ── Met à jour dans DB.admin.usuarios (persiste dans localStorage) ──
+  adminUser.pin = pinNuevo;
 
-  // Met à jour dans DB.admin.usuarios
-  const adminUser = DB.admin.usuarios.find(u => u.id === user.id);
-  if (adminUser) adminUser.pin = pinNuevo;
-
-  // Enregistre dans l'historique des changements de mot de passe
+  // ── Enregistre le changement dans l'historique ──
   if (!DB.admin.passwordChanges) DB.admin.passwordChanges = [];
   DB.admin.passwordChanges.unshift({
     id: Date.now(),
-    usuario: user.nom,
-    login: user.prenom,
+    usuario: adminUser.nom,
+    login: adminUser.prenom,
     fecha: new Date().toISOString(),
     nuevaPassword: pinNuevo,
   });
 
-  // Log dans le journal
-  logMouvement('Système', '—',
-    'Cambio de contraseña — Usuario: ' + user.nom + ' · Nueva PIN: ' + pinNuevo
-  );
-
+  // ── Sauvegarde dans localStorage immédiatement ──
   saveDB();
 
-  // Affiche le succès
-  sucEl.textContent = '✅ Contraseña actualizada correctamente para ' + user.nom;
+  // ── Synchronise USERS avec la nouvelle valeur ──
+  syncUsers();
+
+  // ── Log journal ──
+  logMouvement('Système', '—',
+    'Cambio de contraseña — Usuario: ' + adminUser.nom
+  );
+
+  // Affiche succès
+  sucEl.textContent = '✅ Contraseña actualizada para ' + adminUser.nom + '. Redirección en 3 segundos...';
   sucEl.style.display = 'block';
 
-  // Vide les champs
+  document.getElementById('cpUsername').value = '';
   document.getElementById('cpPinActual').value = '';
   document.getElementById('cpPinNuevo').value = '';
   document.getElementById('cpPinConfirm').value = '';
 
-  // Retour auto à la connexion après 3 secondes
   setTimeout(() => volverALogin(), 3000);
 }
 
@@ -1734,15 +1733,18 @@ function doLogin() {
   const password = document.getElementById('passwordInput').value.trim();
   const errorEl = document.getElementById('loginError');
 
-  // Accepte le prénom seul (HAMZA, TAFAT, LUIS) OU le nom complet
-  const user = USERS.find(u =>
+  // ── Lit toujours depuis DB.admin.usuarios = source de vérité persistée ──
+  const user = DB.admin.usuarios.find(u =>
     (u.nom.toUpperCase() === username ||
      u.prenom.toUpperCase() === username) &&
-    u.pin === password
+    u.pin === password &&
+    u.activo !== false
   );
 
   if (user) {
     document.getElementById('loginError').classList.remove('visible');
+    // Synchronise USERS avec les données actuelles
+    syncUsers();
     loginSuccess(user);
   } else {
     document.getElementById('loginError').classList.add('visible');

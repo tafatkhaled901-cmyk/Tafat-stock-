@@ -2483,12 +2483,11 @@ const EMAIL_RESPONSABLE = 'tafatkhaled901@gmail.com';
 let _pendingEmailArchive = null;
 
 function _ouvrirMailto(url, textoModal, archiveData) {
-  // Sauvegarde l'archive en attente
+  // Si archiveData fourni, archive en attente — sinon déjà archivé
   _pendingEmailArchive = archiveData || null;
 
-  // Met le href sur le bouton visible
   document.getElementById('emailModalBtn').href = url;
-  document.getElementById('emailModalTexto').textContent = textoModal || 'Pulse el botón para abrir Gmail y enviar el email.';
+  document.getElementById('emailModalTexto').textContent = textoModal || 'Pulse el botón para abrir Gmail.';
   document.getElementById('modalEnvioEmail').style.display = 'flex';
 }
 
@@ -2534,20 +2533,23 @@ function envoyerEmailCasse(produit, contenant, hojasCassees, hojasRestantes) {
     'Fecha/Hora : ' + fecha + '\n\n' +
     'ALMACEN GPS BENICARLO';
 
+  // Archive immédiatement sans attendre l'utilisateur
+  archiveEmail('Rotura', EMAIL_RESPONSABLE, subject, body, false);
+
   const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
 
   _ouvrirMailto(url,
     'Rotura declarada: ' + produit + '\nLote: ' + contenant + '\nHojas rotas: ' + hojasCassees,
-    { tipo:'Rotura', destinatario: EMAIL_RESPONSABLE, asunto: subject, cuerpo: body }
+    null // archive déjà faite
   );
 }
 
 function envoyerEmailSortie(produit, contenant, hojas, client) {
   const fecha = new Date().toLocaleString('es-ES');
   const operador = currentUser ? currentUser.nom : '—';
-  const tipo = produit === 'Traspaso' ? 'Traspaso' : 'Venta';
+  const tipo = client && client.includes('Traspaso') ? 'Traspaso' : 'Venta';
   const subject = 'SALIDA DE STOCK - ' + produit;
   const body =
     'SALIDA DE STOCK\nALMACEN GPS BENICARLO\n' +
@@ -2560,13 +2562,16 @@ function envoyerEmailSortie(produit, contenant, hojas, client) {
     'Fecha/Hora : ' + fecha + '\n\n' +
     'ALMACEN GPS BENICARLO';
 
+  // Archive immédiatement
+  archiveEmail(tipo, EMAIL_RESPONSABLE, subject, body, false);
+
   const url = 'mailto:' + EMAIL_RESPONSABLE +
     '?subject=' + encodeURIComponent(subject) +
     '&body=' + encodeURIComponent(body);
 
   _ouvrirMailto(url,
     'Salida de stock: ' + produit + '\nLote: ' + contenant + '\nHojas: ' + hojas,
-    { tipo, destinatario: EMAIL_RESPONSABLE, asunto: subject, cuerpo: body }
+    null // archive déjà faite
   );
 }
 

@@ -1911,6 +1911,9 @@ function saveSalidaVenta() {
 
   // Traiter chaque conteneur scanné
   let totalHojas = 0;
+  let totalCajas = 0;
+  let lignesVenta = []; // pour le bon de sortie email
+
   ventaScannedNums.forEach(num => {
     const entry = DB.entrees.slice().reverse().find(e => e.num === num);
     if (!entry) return;
@@ -1926,6 +1929,8 @@ function saveSalidaVenta() {
     DB.sorties.push({ prod, num, feuilles, nb, client: cliente, pedido, tipo: 'Venta', date: new Date().toISOString() });
     logMouvement('Sortie', num, prod + ' · Venta · Pedido ' + pedido + ' · -' + feuilles + ' hojas');
     totalHojas += feuilles;
+    totalCajas += nb;
+    lignesVenta.push({ prod, num, feuilles, nb });
   });
 
   saveDB();
@@ -1938,7 +1943,69 @@ function saveSalidaVenta() {
   resetVentaCounter();
 
   renderSorties();
-  alert('✓ Salida Venta confirmada\n' + ventaScannedNums.length + ' cajas · ' + totalHojas + ' hojas\nPedido: ' + pedido);
+
+  // ── Envoi automatique du bon de sortie par email ──
+  enviarBonSalidaVenta(pedido, cliente, lignesVenta, totalCajas, totalHojas);
+
+  alert('✓ Salida Venta confirmada\n' + totalCajas + ' cajas · ' + totalHojas + ' hojas\nPedido: ' + pedido + '\n\n📧 Bon de sortie envoyé à ' + EMAIL_RESPONSABLE);
+}
+
+function enviarBonSalidaVenta(pedido, cliente, lignes, totalCajas, totalHojas) {
+  const fecha = new Date().toLocaleString('es-ES');
+  const operador = currentUser ? currentUser.nom : '—';
+
+  // Construction du tableau produits
+  const separador = '─'.repeat(55);
+  const lignesTexto = lignes.map((l, i) =>
+    (i + 1) + '. ' + (l.prod || '—').padEnd(20) +
+    ' | Lote: ' + l.num +
+    '\n   Cajas: ' + l.nb + '  |  Hojas: ' + l.feuilles
+  ).join('\n');
+
+  const subject = '📦 BON DE SORTIE VENTA — Pedido ' + pedido + ' — ' + fecha;
+
+  const body =
+    '╔══════════════════════════════════════════════════════╗\n' +
+    '║         BON DE SORTIE — SALIDA VENTA                ║\n' +
+    '║         ALMACEN GPS BENICARLO                       ║\n' +
+    '╚══════════════════════════════════════════════════════╝\n\n' +
+    separador + '\n' +
+    '📋 N° PEDIDO    : ' + (pedido || '—') + '\n' +
+    '👤 CLIENTE      : ' + (cliente || '—') + '\n' +
+    '📅 FECHA/HORA   : ' + fecha + '\n' +
+    '👷 OPERADOR     : ' + operador + '\n' +
+    separador + '\n\n' +
+    '📦 DETALLE DE PRODUCTOS SALIDOS\n' +
+    separador + '\n' +
+    lignesTexto + '\n' +
+    separador + '\n\n' +
+    '📊 RESUMEN TOTAL\n' +
+    '   ▸ Total Cajas  : ' + totalCajas + ' caja(s)\n' +
+    '   ▸ Total Hojas  : ' + totalHojas + ' hojas\n' +
+    '   ▸ Références   : ' + lignes.length + ' référence(s)\n\n' +
+    separador + '\n' +
+    '✅ Salida validada y registrada en el sistema.\n' +
+    'Este bon de sortie a été généré automatiquement par\n' +
+    'ALMACEN GPS BENICARLO — Système de gestion de stock\n' +
+    separador;
+
+  // Archive l'email
+  archiveEmail('Venta', EMAIL_RESPONSABLE, subject, body, false);
+
+  // Envoi via mailto
+  const url = 'mailto:' + EMAIL_RESPONSABLE +
+    '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
+
+  try {
+    window.location.href = url;
+  } catch(e) {
+    try {
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } catch(e2) { console.warn('Email non envoyé', e2); }
+  }
 }
 
 

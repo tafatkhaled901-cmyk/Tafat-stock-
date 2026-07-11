@@ -1814,22 +1814,35 @@ document.addEventListener('keydown', function(e) {
 });
 
 function loginSuccess(user) {
-  currentUser = user;
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
-  // Affiche section Magasinero
-  const sbMag = document.getElementById('sbMagasinero');
-  if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
-  // Affiche bouton Reiniciar uniquement pour TAFAT KHALED
-  const sbTafat = document.getElementById('sbTafat');
-  if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
-  // Log connexion
-  if (!DB.admin.connexions) DB.admin.connexions = [];
-  DB.admin.connexions.unshift({ user: user.nom, date: new Date().toISOString() });
-  if (DB.admin.connexions.length > 100) DB.admin.connexions.pop();
-  saveDB();
-  goto('dashboard');
+  try { currentUser = user; } catch(e) {}
+  try {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch(e) {}
+  try { document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role; } catch(e) {}
+  try {
+    const sbMag = document.getElementById('sbMagasinero');
+    if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
+  } catch(e) {}
+  try {
+    const sbTafat = document.getElementById('sbTafat');
+    if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
+  } catch(e) {}
+  try {
+    if (DB && DB.admin) {
+      if (!DB.admin.connexions) DB.admin.connexions = [];
+      DB.admin.connexions.unshift({ user: user.nom, date: new Date().toISOString() });
+    }
+  } catch(e) {}
+  try { saveDB(); } catch(e) {}
+  try { goto('dashboard'); } catch(e) {
+    // Si goto plante, on affiche juste l'app
+    try {
+      document.querySelectorAll('#app .page').forEach(el => el.classList.remove('active'));
+      const dash = document.getElementById('page-dashboard');
+      if (dash) dash.classList.add('active');
+    } catch(e2) {}
+  }
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -1472,6 +1472,7 @@ function syncToSheets() {
       casses: DB.casses,
       sorties: DB.sorties,
       mouvements: DB.mouvements,
+      emailArchive: DB.emailArchive || [],
       fpcTable: FPC_TABLE,
       updatedAt: new Date().toISOString()
     };
@@ -1491,17 +1492,19 @@ function loadFromSheets() {
     .then(r => r.json())
     .then(data => {
       if (!data || !data.entrees) return;
-      DB.stock     = data.stock      || {};
-      DB.entrees   = data.entrees    || [];
-      DB.casses    = data.casses     || [];
-      DB.sorties   = data.sorties    || [];
-      DB.mouvements= data.mouvements || [];
+      DB.stock        = data.stock        || {};
+      DB.entrees      = data.entrees      || [];
+      DB.casses       = data.casses       || [];
+      DB.sorties      = data.sorties      || [];
+      DB.mouvements   = data.mouvements   || [];
+      DB.emailArchive = data.emailArchive || [];
       if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
       localStorage.setItem('vs_stock',      JSON.stringify(DB.stock));
       localStorage.setItem('vs_entrees',    JSON.stringify(DB.entrees));
       localStorage.setItem('vs_casses',     JSON.stringify(DB.casses));
       localStorage.setItem('vs_sorties',    JSON.stringify(DB.sorties));
       localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
+      localStorage.setItem('vs_emails',     JSON.stringify(DB.emailArchive));
       setSyncStatus('synced');
       // Rafraîchit la page active
       if (currentUser) {
@@ -2585,9 +2588,10 @@ function archiveEmail(tipo, destinatario, asunto, cuerpo, adjunto) {
   };
   if (!DB.emailArchive) DB.emailArchive = [];
   DB.emailArchive.unshift(entry);
-  // Limite à 500 emails en archive
   if (DB.emailArchive.length > 500) DB.emailArchive = DB.emailArchive.slice(0, 500);
+  // Sauvegarde locale ET sync Google Sheets pour que le PC voie aussi
   localStorage.setItem('vs_emails', JSON.stringify(DB.emailArchive));
+  syncToSheets(); // envoie vers Google Sheets → visible sur PC
 }
 
 

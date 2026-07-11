@@ -1882,11 +1882,32 @@ function resolverConfirm(resultado) {
   if (_confirmCallback) { _confirmCallback(resultado); _confirmCallback = null; }
 }
 
-// Surcharge globale de alert() et confirm()
+// Surcharge globale de alert() et confirm() — UNIQUEMENT après connexion
 window._nativeAlert   = window.alert;
 window._nativeConfirm = window.confirm;
-window.alert   = (msg) => mostrarAlerta(String(msg));
-window.confirm = (msg) => { mostrarAlerta(String(msg)); return true; } // fallback sync
+
+// alert() custom uniquement si l'utilisateur est connecté ET le modal existe
+window.alert = function(msg) {
+  try {
+    const modal = document.getElementById('modalAlerta');
+    // Si on est sur la page login ou si le modal n'existe pas → alerte native
+    const loginVisible = document.getElementById('login') &&
+      document.getElementById('login').style.display !== 'none';
+    if (loginVisible || !modal) {
+      window._nativeAlert(String(msg));
+      return;
+    }
+    mostrarAlerta(String(msg));
+  } catch(e) {
+    try { window._nativeAlert(String(msg)); } catch(e2) {}
+  }
+};
+
+window.confirm = function(msg) {
+  try {
+    return window._nativeConfirm(String(msg));
+  } catch(e) { return true; }
+};
 
 function logout() {
   if (!currentUser) return;

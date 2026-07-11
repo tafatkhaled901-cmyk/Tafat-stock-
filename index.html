@@ -1740,48 +1740,69 @@ function guardarNuevaPassword() {
 }
 
 function doLogin() {
-  const username = document.getElementById('usernameInput').value.trim().toUpperCase();
-  const password = document.getElementById('passwordInput').value.trim();
-
-  // Liste fixe de secours — fonctionne TOUJOURS même si localStorage corrompu
-  const FALLBACK = [
-    { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
-    { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
-    { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
-  ];
-
-  // Cherche d'abord dans DB.admin.usuarios (PINs modifiés)
-  let users = [];
   try {
-    if (DB.admin && Array.isArray(DB.admin.usuarios) && DB.admin.usuarios.length > 0) {
-      users = DB.admin.usuarios;
-    } else {
-      users = FALLBACK;
+    const username = (document.getElementById('usernameInput').value || '').trim().toUpperCase();
+    const password = (document.getElementById('passwordInput').value || '').trim();
+
+    // Utilisateurs hardcodés — impossible à corrompre
+    const HARDCODED = [
+      { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
+      { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
+      { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
+    ];
+
+    // Récupère les PINs modifiés depuis localStorage si disponibles
+    let users = HARDCODED;
+    try {
+      const saved = JSON.parse(localStorage.getItem('vs_admin') || '{}');
+      if (saved.usuarios && Array.isArray(saved.usuarios) && saved.usuarios.length === 3) {
+        users = saved.usuarios;
+      }
+    } catch(e) { users = HARDCODED; }
+
+    // Cherche l'utilisateur
+    let found = null;
+    for (let i = 0; i < users.length; i++) {
+      const u = users[i];
+      if ((u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password) {
+        found = u;
+        break;
+      }
     }
-  } catch(e) {
-    users = FALLBACK;
-  }
 
-  // Fusionne : si un utilisateur n'a pas de PIN valide, prend le PIN de FALLBACK
-  const merged = FALLBACK.map(def => {
-    const saved = users.find(u => u.id === def.id);
-    return saved && saved.pin ? saved : def;
-  });
+    // Si pas trouvé avec les PINs sauvegardés, essaie avec les hardcodés
+    if (!found) {
+      for (let i = 0; i < HARDCODED.length; i++) {
+        const u = HARDCODED[i];
+        if ((u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password) {
+          found = u;
+          break;
+        }
+      }
+    }
 
-  const user = merged.find(u =>
-    (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) &&
-    u.pin === password
-  );
-
-  if (user) {
-    document.getElementById('loginError').classList.remove('visible');
-    // Met à jour DB.admin avec les utilisateurs fusionnés
-    if (DB.admin) DB.admin.usuarios = merged;
-    loginSuccess(user);
-  } else {
-    document.getElementById('loginError').classList.add('visible');
-    document.getElementById('passwordInput').value = '';
-    document.getElementById('passwordInput').focus();
+    if (found) {
+      document.getElementById('loginError').classList.remove('visible');
+      if (DB && DB.admin) DB.admin.usuarios = users;
+      loginSuccess(found);
+    } else {
+      document.getElementById('loginError').classList.add('visible');
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+    }
+  } catch(err) {
+    // En cas d'erreur totale — connexion d'urgence
+    console.error('doLogin error:', err);
+    const username = (document.getElementById('usernameInput').value || '').trim().toUpperCase();
+    const password = (document.getElementById('passwordInput').value || '').trim();
+    const EMERGENCY = [
+      { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
+      { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
+      { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
+    ];
+    const u = EMERGENCY.find(u => (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password);
+    if (u) loginSuccess(u);
+    else document.getElementById('loginError').classList.add('visible');
   }
 }
 

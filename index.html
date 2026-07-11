@@ -345,16 +345,64 @@
       <h1>ALMACEN GPS BENICARLO</h1>
       <p>Sistema de gestión de almacén</p>
     </div>
-    <div class="input-group">
-      <label for="usernameInput">Nombre de usuario / Operador</label>
-      <input type="text" id="usernameInput" placeholder="Ej: HAMZA o TAFAT o LUIS" autocomplete="username">
+
+    <!-- ── Connexion ── -->
+    <div id="loginSection">
+      <div class="input-group">
+        <label for="usernameInput">Nombre de usuario</label>
+        <input type="text" id="usernameInput" placeholder="" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label for="passwordInput">Contraseña (PIN)</label>
+        <input type="password" id="passwordInput" placeholder="" autocomplete="off" maxlength="4" inputmode="numeric">
+      </div>
+      <button class="btn-login" onclick="doLogin()">Conectarse 🔑</button>
+      <div id="loginError">❌ Usuario o contraseña incorrectos</div>
+
+      <!-- Lien vers changement de mot de passe -->
+      <div style="text-align:center; margin-top:16px;">
+        <button onclick="mostrarCambioPassword()" style="background:none; border:none; color:rgba(255,255,255,0.5); font-size:12px; cursor:pointer; text-decoration:underline; width:auto; margin:0; padding:0;">
+          🔑 Cambiar contraseña
+        </button>
+      </div>
     </div>
-    <div class="input-group">
-      <label for="passwordInput">Contraseña (PIN)</label>
-      <input type="password" id="passwordInput" placeholder="••••" autocomplete="current-password" maxlength="4" inputmode="numeric">
+
+    <!-- ── Changement de mot de passe ── -->
+    <div id="cambioPasswordSection" style="display:none;">
+      <div style="text-align:center; margin-bottom:16px;">
+        <div style="font-size:28px; margin-bottom:8px;">🔑</div>
+        <div style="color:white; font-weight:700; font-size:16px;">Cambiar Contraseña</div>
+        <div style="color:rgba(255,255,255,0.5); font-size:12px; margin-top:4px;">Introduzca sus datos y el nuevo PIN</div>
+      </div>
+
+      <div class="input-group">
+        <label>Nombre de usuario</label>
+        <input type="text" id="cpUsername" placeholder="" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>Contraseña actual (PIN)</label>
+        <input type="password" id="cpPinActual" placeholder="" autocomplete="off" maxlength="4" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <label>Nueva contraseña (PIN)</label>
+        <input type="password" id="cpPinNuevo" placeholder="" autocomplete="off" maxlength="4" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <label>Confirmar nueva contraseña</label>
+        <input type="password" id="cpPinConfirm" placeholder="" autocomplete="off" maxlength="4" inputmode="numeric">
+      </div>
+
+      <div id="cpError" style="display:none; background:rgba(220,38,38,0.2); border:1px solid rgba(220,38,38,0.4); border-radius:8px; padding:10px 14px; color:#FCA5A5; font-size:13px; margin-bottom:12px; text-align:center;"></div>
+      <div id="cpSuccess" style="display:none; background:rgba(5,150,105,0.2); border:1px solid rgba(5,150,105,0.4); border-radius:8px; padding:10px 14px; color:#34D399; font-size:13px; margin-bottom:12px; text-align:center;"></div>
+
+      <button class="btn-login" onclick="guardarNuevaPassword()" style="background:linear-gradient(135deg,#059669,#047857);">✅ Guardar nueva contraseña</button>
+      <div style="text-align:center; margin-top:12px;">
+        <button onclick="volverALogin()" style="background:none; border:none; color:rgba(255,255,255,0.5); font-size:12px; cursor:pointer; text-decoration:underline; width:auto; margin:0; padding:0;">
+          ← Volver al inicio de sesión
+        </button>
+      </div>
     </div>
-    <button class="btn-login" onclick="doLogin()">Conectarse 🔑</button>
-    <div id="loginError">❌ Usuario o contraseña incorrectos</div>
+
   </div>
 </div>
 
@@ -505,6 +553,7 @@
           <button onclick="showAdminTab('journal')" id="atab-journal" class="admin-tab" style="flex:1; min-width:80px;">📜 Journal</button>
           <button onclick="showAdminTab('backup')" id="atab-backup" class="admin-tab" style="flex:1; min-width:80px;">💾 Backup</button>
           <button onclick="showAdminTab('emails')" id="atab-emails" class="admin-tab" style="flex:1; min-width:80px;">📧 E-mails</button>
+          <button onclick="showAdminTab('passwords')" id="atab-passwords" class="admin-tab" style="flex:1; min-width:80px;">🔑 Contraseñas</button>
         </div>
 
         <!-- ── USUARIOS ── -->
@@ -631,6 +680,15 @@
             <button onclick="exportJournalPDF()" style="background:#DC2626; color:white; border:none; border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer; width:auto; margin:0;">📄 PDF</button>
           </div>
           <div id="listaJournal" style="overflow-x:auto; font-size:12px;"></div>
+        </div>
+
+        <!-- ── CONTRASEÑAS ── -->
+        <div id="admin-passwords" class="admin-panel" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">🔑 Historial de Cambios de Contraseña</div>
+            <button onclick="exportPasswordsExcel()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; cursor:pointer; width:auto; margin:0;">📊 Excel</button>
+          </div>
+          <div id="listaPasswords"></div>
         </div>
 
         <!-- ── ARCHIVOS E-MAILS ── -->
@@ -1414,6 +1472,7 @@ let DB = {
     ],
     connexions: [],
     backups: [],
+    passwordChanges: [],
   })),
 };
 
@@ -1565,6 +1624,111 @@ function logMouvement(type, num, detail) {
 // ═══════════════════════════════════════════════════════════
 // LOGIN — Formulaire username + password
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// CHANGEMENT DE MOT DE PASSE
+// ═══════════════════════════════════════════════════════════
+function mostrarCambioPassword() {
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('cambioPasswordSection').style.display = 'block';
+  document.getElementById('cpUsername').value = '';
+  document.getElementById('cpPinActual').value = '';
+  document.getElementById('cpPinNuevo').value = '';
+  document.getElementById('cpPinConfirm').value = '';
+  document.getElementById('cpError').style.display = 'none';
+  document.getElementById('cpSuccess').style.display = 'none';
+}
+
+function volverALogin() {
+  document.getElementById('cambioPasswordSection').style.display = 'none';
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('cpError').style.display = 'none';
+  document.getElementById('cpSuccess').style.display = 'none';
+}
+
+function guardarNuevaPassword() {
+  const username  = document.getElementById('cpUsername').value.trim().toUpperCase();
+  const pinActual = document.getElementById('cpPinActual').value.trim();
+  const pinNuevo  = document.getElementById('cpPinNuevo').value.trim();
+  const pinConfirm= document.getElementById('cpPinConfirm').value.trim();
+  const errEl     = document.getElementById('cpError');
+  const sucEl     = document.getElementById('cpSuccess');
+
+  errEl.style.display = 'none';
+  sucEl.style.display = 'none';
+
+  // Validations
+  if (!username || !pinActual || !pinNuevo || !pinConfirm) {
+    errEl.textContent = '⛔ Todos los campos son obligatorios.';
+    errEl.style.display = 'block'; return;
+  }
+
+  // Vérifie que l'utilisateur existe et que le PIN actuel est correct
+  const user = USERS.find(u =>
+    u.prenom.toUpperCase() === username && u.pin === pinActual
+  );
+  if (!user) {
+    errEl.textContent = '⛔ Usuario o contraseña actual incorrectos.';
+    errEl.style.display = 'block'; return;
+  }
+
+  // Vérifie le format du nouveau PIN
+  if (!/^\d{4}$/.test(pinNuevo)) {
+    errEl.textContent = '⛔ La nueva contraseña debe tener exactamente 4 dígitos.';
+    errEl.style.display = 'block'; return;
+  }
+
+  // Vérifie que les deux nouveaux PINs correspondent
+  if (pinNuevo !== pinConfirm) {
+    errEl.textContent = '⛔ Las contraseñas no coinciden. Verifique e inténtelo de nuevo.';
+    errEl.style.display = 'block';
+    document.getElementById('cpPinNuevo').value = '';
+    document.getElementById('cpPinConfirm').value = '';
+    return;
+  }
+
+  // Vérifie que le nouveau PIN est différent de l'ancien
+  if (pinNuevo === pinActual) {
+    errEl.textContent = '⚠️ La nueva contraseña debe ser diferente a la actual.';
+    errEl.style.display = 'block'; return;
+  }
+
+  // Met à jour le PIN dans USERS
+  user.pin = pinNuevo;
+
+  // Met à jour dans DB.admin.usuarios
+  const adminUser = DB.admin.usuarios.find(u => u.id === user.id);
+  if (adminUser) adminUser.pin = pinNuevo;
+
+  // Enregistre dans l'historique des changements de mot de passe
+  if (!DB.admin.passwordChanges) DB.admin.passwordChanges = [];
+  DB.admin.passwordChanges.unshift({
+    id: Date.now(),
+    usuario: user.nom,
+    login: user.prenom,
+    fecha: new Date().toISOString(),
+    nuevaPassword: pinNuevo,
+  });
+
+  // Log dans le journal
+  logMouvement('Système', '—',
+    'Cambio de contraseña — Usuario: ' + user.nom + ' · Nueva PIN: ' + pinNuevo
+  );
+
+  saveDB();
+
+  // Affiche le succès
+  sucEl.textContent = '✅ Contraseña actualizada correctamente para ' + user.nom;
+  sucEl.style.display = 'block';
+
+  // Vide les champs
+  document.getElementById('cpPinActual').value = '';
+  document.getElementById('cpPinNuevo').value = '';
+  document.getElementById('cpPinConfirm').value = '';
+
+  // Retour auto à la connexion après 3 secondes
+  setTimeout(() => volverALogin(), 3000);
+}
+
 function doLogin() {
   const username = document.getElementById('usernameInput').value.trim().toUpperCase();
   const password = document.getElementById('passwordInput').value.trim();
@@ -4039,6 +4203,7 @@ function showAdminTab(tab) {
   if (tab === 'journal')    renderJournal();
   if (tab === 'backup')     renderBackups();
   if (tab === 'emails')     renderEmailArchive();
+  if (tab === 'passwords')  renderPasswordHistory();
 }
 
 // ── USUARIOS ──
@@ -4728,6 +4893,62 @@ function exportEmailsPDF() {
   }).join('');
   const tableHtml = '<table style="width:100%;border-collapse:collapse;font-size:10px;"><thead><tr style="background:#1e293b;color:white;"><th style="padding:6px;">Fecha</th><th style="padding:6px;">Hora</th><th style="padding:6px;">Destinatario</th><th style="padding:6px;">Asunto</th><th style="padding:6px;">Tipo</th><th style="padding:6px;">Estado</th><th style="padding:6px;">Remitente</th></tr></thead><tbody>' + lignesHtml + '</tbody></table>';
   exportPDF('Archivo de E-mails — ALMACEN GPS BENICARLO', tableHtml);
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORIQUE CHANGEMENTS DE MOT DE PASSE
+// ═══════════════════════════════════════════════════════════
+function renderPasswordHistory() {
+  const changes = DB.admin.passwordChanges || [];
+  const el = document.getElementById('listaPasswords');
+  if (!el) return;
+
+  if (changes.length === 0) {
+    el.innerHTML = '<div style="text-align:center; padding:40px; color:#94A3B8;"><div style="font-size:40px; margin-bottom:12px;">🔑</div><div>No hay cambios de contraseña registrados</div></div>';
+    return;
+  }
+
+  let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">' +
+    '<thead><tr style="background:#1e293b; color:white;">' +
+    '<th style="padding:9px 8px; text-align:left;">👤 Usuario</th>' +
+    '<th style="padding:9px 8px; text-align:left;">🔐 Login</th>' +
+    '<th style="padding:9px 8px; text-align:left;">📅 Fecha</th>' +
+    '<th style="padding:9px 8px; text-align:left;">🕐 Hora</th>' +
+    '<th style="padding:9px 8px; text-align:center;">Nueva PIN</th>' +
+    '</tr></thead><tbody>';
+
+  changes.forEach((c, i) => {
+    const d = new Date(c.fecha);
+    const bg = i % 2 === 0 ? '#fff' : '#F8FAFC';
+    html += '<tr style="background:' + bg + '; border-bottom:1px solid #F1F5F9;">' +
+      '<td style="padding:8px; font-weight:600; color:#1E40AF;">👤 ' + (c.usuario || '—') + '</td>' +
+      '<td style="padding:8px; color:#475569; font-family:monospace;">' + (c.login || '—') + '</td>' +
+      '<td style="padding:8px; color:#475569;">' + d.toLocaleDateString('es-ES') + '</td>' +
+      '<td style="padding:8px; color:#475569;">' + d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', second:'2-digit'}) + '</td>' +
+      '<td style="padding:8px; text-align:center;">' +
+        '<span style="background:#FEF3C7; color:#92400E; padding:3px 10px; border-radius:8px; font-family:monospace; font-weight:700; letter-spacing:2px;">' + (c.nuevaPassword || '****') + '</span>' +
+      '</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function exportPasswordsExcel() {
+  const changes = DB.admin.passwordChanges || [];
+  const headers = ['Usuario', 'Login', 'Fecha', 'Hora', 'Nueva Contraseña'];
+  const rows = changes.map(c => {
+    const d = new Date(c.fecha);
+    return [
+      c.usuario || '—',
+      c.login || '—',
+      d.toLocaleDateString('es-ES'),
+      d.toLocaleTimeString('es-ES'),
+      c.nuevaPassword || '—'
+    ];
+  });
+  downloadXLSX('GPS_BENICARLO_Contraseñas_' + new Date().toLocaleDateString('es-ES').replace(/\//g,'-') + '.xls', rows, headers);
 }
 
 function clearGLColFilters() {

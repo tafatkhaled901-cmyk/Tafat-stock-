@@ -1562,33 +1562,40 @@ function loadFromSheets() {
   fetch(SYNC_URL + '?t=' + Date.now())
     .then(r => r.json())
     .then(data => {
-      if (!data || !data.entrees) return;
-      // ⚠️ NE JAMAIS écraser DB.admin depuis Google Sheets
-      // Les utilisateurs et PINs sont gérés uniquement en localStorage
-      DB.stock        = data.stock        || {};
-      DB.entrees      = data.entrees      || [];
-      DB.casses       = data.casses       || [];
-      DB.sorties      = data.sorties      || [];
-      DB.mouvements   = data.mouvements   || [];
-      DB.emailArchive = data.emailArchive || [];
-      if (data.fpcTable) FPC_TABLE = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
-      // Sauvegarde locale SANS admin (admin reste intact)
+      if (!data) return;
+
+      // Charge toutes les données disponibles depuis Google Sheets
+      if (data.stock)        DB.stock        = data.stock;
+      if (data.entrees)      DB.entrees      = data.entrees;
+      if (data.casses)       DB.casses       = data.casses;
+      if (data.sorties)      DB.sorties      = data.sorties;
+      if (data.mouvements)   DB.mouvements   = data.mouvements;
+      if (data.emailArchive) DB.emailArchive = data.emailArchive;
+      if (data.fpcTable)     FPC_TABLE       = Object.assign({}, FPC_TABLE_DEFAULT, data.fpcTable);
+
+      // Sauvegarde locale
       localStorage.setItem('vs_stock',      JSON.stringify(DB.stock));
       localStorage.setItem('vs_entrees',    JSON.stringify(DB.entrees));
       localStorage.setItem('vs_casses',     JSON.stringify(DB.casses));
       localStorage.setItem('vs_sorties',    JSON.stringify(DB.sorties));
       localStorage.setItem('vs_mouvements', JSON.stringify(DB.mouvements));
       localStorage.setItem('vs_emails',     JSON.stringify(DB.emailArchive));
+
       setSyncStatus('synced');
+
+      // Rafraîchit l'interface si connecté
       if (currentUser) {
-        try { renderStock(); } catch(e) {}
-        try { renderSorties(); } catch(e) {}
-        try { renderEntrees(); } catch(e) {}
-        try { renderCasse(); } catch(e) {}
         try { renderDashboard(); } catch(e) {}
+        try { renderStock(); } catch(e) {}
+        try { renderEntrees(); } catch(e) {}
+        try { renderSorties(); } catch(e) {}
+        try { renderCasse(); } catch(e) {}
       }
     })
-    .catch(() => setSyncStatus('error'));
+    .catch(e => {
+      setSyncStatus('error');
+      console.warn('Google Sheets sync error:', e);
+    });
 }
 
 // Charge depuis Google Sheets au démarrage puis toutes les 30 secondes
@@ -1911,8 +1918,15 @@ window.confirm = function(msg) {
 
 function logout() {
   if (!currentUser) return;
-  // Ouvre le modal personnalisé au lieu de confirm()
-  document.getElementById('modalConfirmSalir').style.display = 'flex';
+  // Utilise confirm natif — plus fiable que le modal
+  if (window._nativeConfirm('¿Desea cerrar la sesión de ' + currentUser.nom + '?')) {
+    currentUser = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+    document.getElementById('usernameInput').value = '';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').classList.remove('visible');
+  }
 }
 
 function confirmarSalir() {

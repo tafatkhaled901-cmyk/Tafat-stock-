@@ -1770,69 +1770,34 @@ function guardarNuevaPassword() {
 }
 
 function doLogin() {
+  const username = (document.getElementById('usernameInput').value || '').trim().toUpperCase();
+  const password = (document.getElementById('passwordInput').value || '').trim();
+  const USERS_DEF = [
+    { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
+    { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
+    { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
+  ];
+  // Fusionne avec les PINs modifiés si disponibles
+  let users = USERS_DEF;
   try {
-    const username = (document.getElementById('usernameInput').value || '').trim().toUpperCase();
-    const password = (document.getElementById('passwordInput').value || '').trim();
-
-    // Utilisateurs hardcodés — impossible à corrompre
-    const HARDCODED = [
-      { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
-      { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
-      { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
-    ];
-
-    // Récupère les PINs modifiés depuis localStorage si disponibles
-    let users = HARDCODED;
-    try {
-      const saved = JSON.parse(localStorage.getItem('vs_admin') || '{}');
-      if (saved.usuarios && Array.isArray(saved.usuarios) && saved.usuarios.length === 3) {
-        users = saved.usuarios;
-      }
-    } catch(e) { users = HARDCODED; }
-
-    // Cherche l'utilisateur
-    let found = null;
-    for (let i = 0; i < users.length; i++) {
-      const u = users[i];
-      if ((u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password) {
-        found = u;
-        break;
-      }
+    const saved = JSON.parse(localStorage.getItem('vs_admin') || '{}');
+    if (saved.usuarios && Array.isArray(saved.usuarios) && saved.usuarios.length > 0) {
+      users = USERS_DEF.map(def => {
+        const s = saved.usuarios.find(u => u.id === def.id);
+        return (s && s.pin) ? Object.assign({}, def, { pin: s.pin }) : def;
+      });
     }
-
-    // Si pas trouvé avec les PINs sauvegardés, essaie avec les hardcodés
-    if (!found) {
-      for (let i = 0; i < HARDCODED.length; i++) {
-        const u = HARDCODED[i];
-        if ((u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password) {
-          found = u;
-          break;
-        }
-      }
-    }
-
-    if (found) {
-      document.getElementById('loginError').classList.remove('visible');
-      if (DB && DB.admin) DB.admin.usuarios = users;
-      loginSuccess(found);
-    } else {
-      document.getElementById('loginError').classList.add('visible');
-      document.getElementById('passwordInput').value = '';
-      document.getElementById('passwordInput').focus();
-    }
-  } catch(err) {
-    // En cas d'erreur totale — connexion d'urgence
-    console.error('doLogin error:', err);
-    const username = (document.getElementById('usernameInput').value || '').trim().toUpperCase();
-    const password = (document.getElementById('passwordInput').value || '').trim();
-    const EMERGENCY = [
-      { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
-      { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
-      { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
-    ];
-    const u = EMERGENCY.find(u => (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password);
-    if (u) loginSuccess(u);
-    else document.getElementById('loginError').classList.add('visible');
+  } catch(e) {}
+  const found = users.find(u =>
+    (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password
+  );
+  if (found) {
+    document.getElementById('loginError').classList.remove('visible');
+    loginSuccess(found);
+  } else {
+    document.getElementById('loginError').classList.add('visible');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
   }
 }
 

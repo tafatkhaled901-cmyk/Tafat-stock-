@@ -1844,35 +1844,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 function loginSuccess(user) {
-  try { currentUser = user; } catch(e) {}
-  try {
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  } catch(e) {}
-  try { document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role; } catch(e) {}
-  try {
-    const sbMag = document.getElementById('sbMagasinero');
-    if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
-  } catch(e) {}
-  try {
-    const sbTafat = document.getElementById('sbTafat');
-    if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
-  } catch(e) {}
-  try {
-    if (DB && DB.admin) {
-      if (!DB.admin.connexions) DB.admin.connexions = [];
-      DB.admin.connexions.unshift({ user: user.nom, date: new Date().toISOString() });
-    }
-  } catch(e) {}
-  try { saveDB(); } catch(e) {}
-  try { goto('dashboard'); } catch(e) {
-    // Si goto plante, on affiche juste l'app
-    try {
-      document.querySelectorAll('#app .page').forEach(el => el.classList.remove('active'));
-      const dash = document.getElementById('page-dashboard');
-      if (dash) dash.classList.add('active');
-    } catch(e2) {}
-  }
+  currentUser = user;
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('userInfo').textContent = user.nom + ' · ' + user.role;
+  const sbMag = document.getElementById('sbMagasinero');
+  if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
+  const sbTafat = document.getElementById('sbTafat');
+  if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
+  goto('dashboard');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1912,37 +1892,13 @@ function resolverConfirm(resultado) {
   if (_confirmCallback) { _confirmCallback(resultado); _confirmCallback = null; }
 }
 
-// Surcharge globale de alert() et confirm() — UNIQUEMENT après connexion
+// Alert et confirm natifs — simples et fiables
 window._nativeAlert   = window.alert;
 window._nativeConfirm = window.confirm;
 
-// alert() custom uniquement si l'utilisateur est connecté ET le modal existe
-window.alert = function(msg) {
-  try {
-    const modal = document.getElementById('modalAlerta');
-    // Si on est sur la page login ou si le modal n'existe pas → alerte native
-    const loginVisible = document.getElementById('login') &&
-      document.getElementById('login').style.display !== 'none';
-    if (loginVisible || !modal) {
-      window._nativeAlert(String(msg));
-      return;
-    }
-    mostrarAlerta(String(msg));
-  } catch(e) {
-    try { window._nativeAlert(String(msg)); } catch(e2) {}
-  }
-};
-
-window.confirm = function(msg) {
-  try {
-    return window._nativeConfirm(String(msg));
-  } catch(e) { return true; }
-};
-
 function logout() {
   if (!currentUser) return;
-  // Utilise confirm natif — plus fiable que le modal
-  if (window._nativeConfirm('¿Desea cerrar la sesión de ' + currentUser.nom + '?')) {
+  if (confirm('¿Desea cerrar la sesión de ' + currentUser.nom + '?')) {
     currentUser = null;
     document.getElementById('app').style.display = 'none';
     document.getElementById('login').style.display = 'flex';

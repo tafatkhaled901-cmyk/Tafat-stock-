@@ -2489,10 +2489,12 @@ function saveCorreccion() {
 
 // Auto-remplit la référence produit dans Traspaso depuis le N° Lote
 function autofillTraspasoProd() {
-  const num = document.getElementById('traspasoNum').value.trim();
+  const numEl = document.getElementById('traspasoNum');
   const prodEl = document.getElementById('traspasoProd');
   const hintEl = document.getElementById('traspasoProdHint');
-  if (!num || !prodEl) return;
+  if (!numEl || !prodEl) return; // éléments de l'ancien modal — absent désormais
+  const num = numEl.value.trim();
+  if (!num) return;
   const entry = DB.entrees.slice().reverse().find(e => e.num === num);
   if (entry && entry.prod) {
     prodEl.value = entry.prod;
@@ -2652,7 +2654,7 @@ function saveRec() {
   document.getElementById('recEmp').value = '';
 
   renderEntrees();
-  alert('✓ Recepción registrada : ' + hojas + ' hojas');
+  alert('✓ Recepción registrada : ' + feuilles + ' hojas');
 }
 
 // ═══════════════════════════════════════════════════════════

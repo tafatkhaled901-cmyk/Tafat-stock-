@@ -1816,9 +1816,6 @@ function guardarNuevaPassword() {
   // ── Sauvegarde dans localStorage immédiatement ──
   saveDB();
 
-  // ── Synchronise USERS avec la nouvelle valeur ──
-  syncUsers();
-
   // ── Log journal ──
   logMouvement('Système', '—',
     'Cambio de contraseña — Usuario: ' + adminUser.nom
@@ -1836,28 +1833,33 @@ function guardarNuevaPassword() {
   setTimeout(() => volverALogin(), 3000);
 }
 
+// ── Source de vérité des utilisateurs : DB.admin.usuarios (localStorage vs_admin) ──
+// Bootstrap : si le stockage est vide/corrompu, les 3 utilisateurs par défaut sont réinjectés.
+function getUsuariosActuales() {
+  if (!DB.admin.usuarios || !Array.isArray(DB.admin.usuarios) || DB.admin.usuarios.length === 0) {
+    DB.admin.usuarios = JSON.parse(JSON.stringify(DEFAULT_USUARIOS));
+    saveDB();
+  }
+  return DB.admin.usuarios;
+}
+
+function esAdmin(user) {
+  return !!user && (user.id === 'u2' || user.role === 'Administrador');
+}
+
 function doLogin() {
   const username = (document.getElementById('usernameInput').value || '').trim().toUpperCase();
   const password = (document.getElementById('passwordInput').value || '').trim();
-  const USERS_DEF = [
-    { id:'u1', nom:'MIGUEL',             prenom:'MIGUEL', role:'Operador',      pin:'1234', activo:true },
-    { id:'u2', nom:'TAFAT KHALED',       prenom:'TAFAT',  role:'Administrador', pin:'5678', activo:true },
-    { id:'u3', nom:'LUIS MIGUEL SOLERA', prenom:'LUIS',   role:'Magasinero',    pin:'0000', activo:true },
-  ];
-  // Fusionne avec les PINs modifiés si disponibles
-  let users = USERS_DEF;
-  try {
-    const saved = JSON.parse(localStorage.getItem('vs_admin') || '{}');
-    if (saved.usuarios && Array.isArray(saved.usuarios) && saved.usuarios.length > 0) {
-      users = USERS_DEF.map(def => {
-        const s = saved.usuarios.find(u => u.id === def.id);
-        return (s && s.pin) ? Object.assign({}, def, { pin: s.pin }) : def;
-      });
-    }
-  } catch(e) {}
+
+  // Lit TOUS les utilisateurs enregistrés (y compris ceux créés dans Administration)
+  const users = getUsuariosActuales();
+
   const found = users.find(u =>
-    (u.nom.toUpperCase() === username || u.prenom.toUpperCase() === username) && u.pin === password
+    ((u.nom || '').toUpperCase() === username || (u.prenom || '').toUpperCase() === username) &&
+    u.pin === password &&
+    u.activo !== false
   );
+
   if (found) {
     document.getElementById('loginError').classList.remove('visible');
     loginSuccess(found);
@@ -1883,7 +1885,7 @@ function loginSuccess(user) {
   const sbMag = document.getElementById('sbMagasinero');
   if (sbMag) sbMag.style.display = user.role === 'Magasinero' ? 'block' : 'none';
   const sbTafat = document.getElementById('sbTafat');
-  if (sbTafat) sbTafat.style.display = user.id === 'u2' ? 'block' : 'none';
+  if (sbTafat) sbTafat.style.display = esAdmin(user) ? 'block' : 'none';
   goto('dashboard');
 }
 
@@ -3788,7 +3790,7 @@ function clearStockSearch() {
 // Acción ÚNICAMENTE VISUAL — no modifica ningún dato
 // ═══════════════════════════════════════════════════════════
 function resetVisualizacion() {
-  if (!currentUser || currentUser.id !== 'u2') {
+  if (!esAdmin(currentUser)) {
     alert('⛔ Acceso denegado');
     return;
   }
@@ -4422,16 +4424,15 @@ function guardarUsuario() {
       u.nom = nom; u.prenom = prenom; u.role = role; u.activo = activo;
       if (pin && /^\d{4}$/.test(pin)) u.pin = pin;
     }
-    // Sync USERS array
-    const usr = USERS.find(x => x.id === id);
-    if (usr) { usr.nom = nom; usr.prenom = prenom; usr.role = role; if (pin) usr.pin = pin; }
   } else {
     // Nouveau
     if (!pin || !/^\d{4}$/.test(pin)) { alert('⛔ PIN debe ser exactamente 4 dígitos.'); return; }
+    // Unicité du login
+    const dup = DB.admin.usuarios.find(x => (x.prenom || '').toUpperCase() === prenom || (x.nom || '').toUpperCase() === nom);
+    if (dup) { alert('⛔ Ya existe un usuario con ese nombre o login: ' + dup.nom); return; }
     const newId = 'u' + Date.now();
     const newUser = { id: newId, nom, prenom, role, pin, activo, createdAt: new Date().toISOString() };
     DB.admin.usuarios.push(newUser);
-    USERS.push(newUser);
   }
 
   logMouvement('Système', '—', 'Usuario ' + (id ? 'modificado' : 'creado') + ': ' + nom);
@@ -4453,9 +4454,7 @@ function eliminarUsuario(id) {
   mostrarConfirm('¿Eliminar este usuario definitivamente?').then(function(_ok) {
   if (!_ok) return;
   DB.admin.usuarios = DB.admin.usuarios.filter(x => x.id !== id);
-  const idx = USERS.findIndex(x => x.id === id);
-  if (idx >= 0) USERS.splice(idx, 1);
-  logMouvement('Système', '—', 'Usuario eliminado: ID ' + id);
+    logMouvement('Système', '—', 'Usuario eliminado: ID ' + id);
   saveDB();
   renderUsuarios();
   });
@@ -4920,7 +4919,7 @@ function renderEmailArchive() {
         '<button onclick="verEmailDetalle(' + e.id + ')" style="background:#EFF6FF; color:#1E40AF; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Ver detalle">👁️</button>' +
         '<button onclick="reenviarEmailId(' + e.id + ')" style="background:#D1FAE5; color:#065F46; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Reenviar">↩️</button>' +
         '<button onclick="copiarEmailId(' + e.id + ')" style="background:#F1F5F9; color:#475569; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Copiar">📋</button>' +
-        (currentUser && currentUser.id === 'u2' ? '<button onclick="eliminarEmailArchive(' + e.id + ')" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Eliminar">🗑️</button>' : '') +
+        (esAdmin(currentUser) ? '<button onclick="eliminarEmailArchive(' + e.id + ')" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; margin:0;" title="Eliminar">🗑️</button>' : '') +
         '</div>' +
       '</td>' +
       '</tr>';

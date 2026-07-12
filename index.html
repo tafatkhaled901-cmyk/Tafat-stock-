@@ -546,6 +546,7 @@
         <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; background:#F1F5F9; border-radius:10px; padding:4px;">
           <button onclick="showAdminTab('usuarios')" id="atab-usuarios" class="admin-tab active" style="flex:1; min-width:80px;">👥 Usuarios</button>
           <button onclick="showAdminTab('almacenes')" id="atab-almacenes" class="admin-tab" style="flex:1; min-width:80px;">🏭 Almacenes</button>
+          <button onclick="showAdminTab('ubicaciones')" id="atab-ubicaciones" class="admin-tab" style="flex:1; min-width:80px;">📍 Ubicaciones</button>
           <button onclick="showAdminTab('categorias')" id="atab-categorias" class="admin-tab" style="flex:1; min-width:80px;">📁 Categorías</button>
           <button onclick="showAdminTab('unidades')" id="atab-unidades" class="admin-tab" style="flex:1; min-width:80px;">📏 Unidades</button>
           <button onclick="showAdminTab('empresa')" id="atab-empresa" class="admin-tab" style="flex:1; min-width:80px;">🏢 Empresa</button>
@@ -573,6 +574,16 @@
             <button onclick="abrirModalAlmacen()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nuevo Almacén</button>
           </div>
           <div id="listaAlmacenes"></div>
+        </div>
+
+        <!-- ── UBICACIONES ── -->
+        <div id="admin-ubicaciones" class="admin-panel" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="font-weight:700; font-size:15px;">📍 Gestión de Ubicaciones</div>
+            <button onclick="abrirModalUbicacion()" style="background:#059669; color:white; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; width:auto; margin:0;">+ Nueva Ubicación</button>
+          </div>
+          <div style="font-size:12px; color:#64748B; margin-bottom:12px;">Organización física del almacén: pasillos, estantes y ubicaciones para localizar cada caja.</div>
+          <div id="listaUbicaciones" style="overflow-x:auto;"></div>
         </div>
 
         <!-- ── CATEGORÍAS ── -->
@@ -1059,6 +1070,47 @@
   </div>
 </div>
 
+<!-- ═══ MODAL UBICACIÓN ═══ -->
+<div id="modalUbicacion" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99998; justify-content:center; align-items:center; overflow-y:auto;">
+  <div style="background:white; border-radius:16px; max-width:420px; width:92%; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#0F172A,#1E40AF); padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
+      <span style="color:white; font-weight:700; font-size:14px;" id="modalUbicacionTitulo">📍 Nueva Ubicación</span>
+      <button onclick="document.getElementById('modalUbicacion').style.display='none'" style="background:none; border:none; color:rgba(255,255,255,0.7); font-size:20px; cursor:pointer; width:auto; margin:0; padding:0;">✕</button>
+    </div>
+    <div style="padding:18px 20px;">
+      <input type="hidden" id="ubiEditId">
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:8px;">
+        <div>
+          <label style="font-size:11px; color:#64748B; font-weight:600;">Código Pasillo *</label>
+          <input type="text" id="ubiPasilloCode" placeholder="A" maxlength="6" style="margin-bottom:10px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#64748B; font-weight:600;">Nombre Pasillo</label>
+          <input type="text" id="ubiPasilloNom" placeholder="Pasillo A" style="margin-bottom:10px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#64748B; font-weight:600;">Código Estante *</label>
+          <input type="text" id="ubiEstanteCode" placeholder="1" maxlength="6" style="margin-bottom:10px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#64748B; font-weight:600;">Nombre Estante</label>
+          <input type="text" id="ubiEstanteNom" placeholder="Estante 1" style="margin-bottom:10px;">
+        </div>
+      </div>
+      <label style="font-size:11px; color:#64748B; font-weight:600;">Código Ubicación * (único)</label>
+      <input type="text" id="ubiCode" placeholder="A11" style="margin-bottom:10px; font-family:monospace; font-weight:700;">
+      <label style="font-size:11px; color:#64748B; font-weight:600;">Nombre / Descripción</label>
+      <input type="text" id="ubiNom" placeholder="Zona de vidrio 8mm" style="margin-bottom:10px;">
+      <label style="font-size:11px; color:#64748B; font-weight:600;">Estado</label>
+      <select id="ubiEstado" style="margin-bottom:16px;">
+        <option value="activo">✅ Activo</option>
+        <option value="inactivo">⛔ Inactivo</option>
+      </select>
+      <button onclick="guardarUbicacion()" style="width:100%; background:#059669; color:white; border:none; border-radius:10px; padding:13px; font-size:14px; font-weight:700; cursor:pointer; margin:0;">💾 Guardar Ubicación</button>
+    </div>
+  </div>
+</div>
+
 <div id="modalConfirmSalir" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
   <div style="background:white; border-radius:16px; padding:28px 24px; max-width:320px; width:90%; margin:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
     <div style="font-size:40px; margin-bottom:12px;">🔒</div>
@@ -1522,6 +1574,7 @@ let DB = {
     connexions:      _adminRaw.connexions     || [],
     backups:         _adminRaw.backups        || [],
     passwordChanges: _adminRaw.passwordChanges|| [],
+    ubicaciones:     _adminRaw.ubicaciones    || [],
   },
 };
 
@@ -4282,6 +4335,7 @@ function showAdminTab(tab) {
   if (tab === 'journal')    renderJournal();
   if (tab === 'backup')     renderBackups();
   if (tab === 'emails')     renderEmailArchive();
+  if (tab === 'ubicaciones') renderUbicaciones();
   if (tab === 'passwords')  renderPasswordHistory();
 }
 
@@ -4989,6 +5043,151 @@ function exportEmailsPDF() {
 // ═══════════════════════════════════════════════════════════
 // HISTORIQUE CHANGEMENTS DE MOT DE PASSE
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// MODULE UBICACIONES — Pasillos / Estantes / Ubicaciones
+// ═══════════════════════════════════════════════════════════
+function getUbicaciones() {
+  if (!DB.admin.ubicaciones) DB.admin.ubicaciones = [];
+  return DB.admin.ubicaciones;
+}
+
+function renderUbicaciones() {
+  const ubis = getUbicaciones();
+  const el = document.getElementById('listaUbicaciones');
+  if (!el) return;
+
+  if (ubis.length === 0) {
+    el.innerHTML = '<div style="text-align:center; padding:40px; color:#94A3B8;"><div style="font-size:40px; margin-bottom:12px;">📍</div><div>No hay ubicaciones registradas.<br>Pulse "+ Nueva Ubicación" para crear la primera.</div></div>';
+    return;
+  }
+
+  let html = '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:560px;">' +
+    '<thead><tr style="background:#1e293b; color:white;">' +
+    '<th style="padding:9px 8px; text-align:left;">🛣️ Pasillo</th>' +
+    '<th style="padding:9px 8px; text-align:left;">🗄️ Estante</th>' +
+    '<th style="padding:9px 8px; text-align:center;">📍 Código</th>' +
+    '<th style="padding:9px 8px; text-align:left;">Nombre</th>' +
+    '<th style="padding:9px 8px; text-align:center;">Estado</th>' +
+    '<th style="padding:9px 8px; text-align:center;">Acciones</th>' +
+    '</tr></thead><tbody>';
+
+  ubis.slice().sort((a,b) => (a.code||'').localeCompare(b.code||'')).forEach((u, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#F8FAFC';
+    const estadoBadge = u.estado === 'inactivo'
+      ? '<span style="background:#FEE2E2; color:#991B1B; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600;">⛔ Inactivo</span>'
+      : '<span style="background:#D1FAE5; color:#065F46; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600;">✅ Activo</span>';
+    html += '<tr style="background:' + bg + '; border-bottom:1px solid #F1F5F9;">' +
+      '<td style="padding:8px;"><strong>' + (u.pasilloCode || '—') + '</strong>' + (u.pasilloNom ? ' <span style="color:#94A3B8; font-size:11px;">· ' + u.pasilloNom + '</span>' : '') + '</td>' +
+      '<td style="padding:8px;"><strong>' + (u.estanteCode || '—') + '</strong>' + (u.estanteNom ? ' <span style="color:#94A3B8; font-size:11px;">· ' + u.estanteNom + '</span>' : '') + '</td>' +
+      '<td style="padding:8px; text-align:center;"><span style="font-family:monospace; font-weight:700; background:#EFF6FF; color:#1E40AF; padding:3px 10px; border-radius:8px;">' + u.code + '</span></td>' +
+      '<td style="padding:8px; color:#475569;">' + (u.nom || '—') + '</td>' +
+      '<td style="padding:8px; text-align:center;">' + estadoBadge + '</td>' +
+      '<td style="padding:8px; text-align:center;">' +
+        '<button onclick="editarUbicacion(\'' + u.id + '\')" style="background:#EFF6FF; color:#1E40AF; border:none; border-radius:5px; padding:4px 8px; font-size:11px; cursor:pointer; margin:0 2px; width:auto;" title="Modificar">✏️</button>' +
+        '<button onclick="eliminarUbicacion(\'' + u.id + '\')" style="background:#FEE2E2; color:#DC2626; border:none; border-radius:5px; padding:4px 8px; font-size:11px; cursor:pointer; margin:0 2px; width:auto;" title="Eliminar">🗑️</button>' +
+      '</td></tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function abrirModalUbicacion() {
+  document.getElementById('modalUbicacionTitulo').textContent = '📍 Nueva Ubicación';
+  document.getElementById('ubiEditId').value = '';
+  document.getElementById('ubiPasilloCode').value = '';
+  document.getElementById('ubiPasilloNom').value = '';
+  document.getElementById('ubiEstanteCode').value = '';
+  document.getElementById('ubiEstanteNom').value = '';
+  document.getElementById('ubiCode').value = '';
+  document.getElementById('ubiNom').value = '';
+  document.getElementById('ubiEstado').value = 'activo';
+  document.getElementById('modalUbicacion').style.display = 'flex';
+}
+
+function editarUbicacion(id) {
+  const u = getUbicaciones().find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('modalUbicacionTitulo').textContent = '✏️ Modificar Ubicación';
+  document.getElementById('ubiEditId').value = u.id;
+  document.getElementById('ubiPasilloCode').value = u.pasilloCode || '';
+  document.getElementById('ubiPasilloNom').value = u.pasilloNom || '';
+  document.getElementById('ubiEstanteCode').value = u.estanteCode || '';
+  document.getElementById('ubiEstanteNom').value = u.estanteNom || '';
+  document.getElementById('ubiCode').value = u.code || '';
+  document.getElementById('ubiNom').value = u.nom || '';
+  document.getElementById('ubiEstado').value = u.estado || 'activo';
+  document.getElementById('modalUbicacion').style.display = 'flex';
+}
+
+function guardarUbicacion() {
+  const editId = document.getElementById('ubiEditId').value;
+  const pasilloCode = document.getElementById('ubiPasilloCode').value.trim().toUpperCase();
+  const pasilloNom = document.getElementById('ubiPasilloNom').value.trim();
+  const estanteCode = document.getElementById('ubiEstanteCode').value.trim().toUpperCase();
+  const estanteNom = document.getElementById('ubiEstanteNom').value.trim();
+  const code = document.getElementById('ubiCode').value.trim().toUpperCase();
+  const nom = document.getElementById('ubiNom').value.trim();
+  const estado = document.getElementById('ubiEstado').value;
+
+  if (!pasilloCode || !estanteCode || !code) {
+    alert('⛔ Complete los campos obligatorios:\nCódigo Pasillo, Código Estante y Código Ubicación.');
+    return;
+  }
+
+  const ubis = getUbicaciones();
+
+  // ── Unicité du code ──
+  const duplicado = ubis.find(u => u.code === code && u.id !== editId);
+  if (duplicado) {
+    alert('⛔ CÓDIGO DUPLICADO\n\nLa ubicación "' + code + '" ya existe.\nCada código de ubicación debe ser único.');
+    return;
+  }
+
+  const usuario = currentUser ? currentUser.nom : 'Sistema';
+
+  if (editId) {
+    // Modification
+    const u = ubis.find(x => x.id === editId);
+    if (!u) return;
+    const oldCode = u.code;
+    u.pasilloCode = pasilloCode; u.pasilloNom = pasilloNom;
+    u.estanteCode = estanteCode; u.estanteNom = estanteNom;
+    u.code = code; u.nom = nom; u.estado = estado;
+    u.updatedAt = new Date().toISOString();
+    u.updatedBy = usuario;
+    logMouvement('Système', '—', 'UBICACIÓN modificada: ' + oldCode + (oldCode !== code ? ' → ' + code : '') + ' · Pasillo ' + pasilloCode + ' · Estante ' + estanteCode + ' · ' + estado + ' · por ' + usuario);
+  } else {
+    // Création
+    ubis.push({
+      id: 'UBI-' + Date.now(),
+      pasilloCode, pasilloNom, estanteCode, estanteNom,
+      code, nom, estado,
+      createdAt: new Date().toISOString(),
+      createdBy: usuario,
+    });
+    logMouvement('Système', '—', 'UBICACIÓN creada: ' + code + ' · Pasillo ' + pasilloCode + ' · Estante ' + estanteCode + ' · por ' + usuario);
+  }
+
+  saveDB();
+  document.getElementById('modalUbicacion').style.display = 'none';
+  renderUbicaciones();
+  alert('✅ Ubicación ' + code + ' guardada correctamente.');
+}
+
+function eliminarUbicacion(id) {
+  const u = getUbicaciones().find(x => x.id === id);
+  if (!u) return;
+  mostrarConfirm('¿Eliminar la ubicación "' + u.code + '"' + (u.nom ? ' (' + u.nom + ')' : '') + '?\n\nEsta acción es irreversible.', '🗑️', 'Eliminar', 'Cancelar').then(function(_ok) {
+    if (!_ok) return;
+    DB.admin.ubicaciones = getUbicaciones().filter(x => x.id !== id);
+    const usuario = currentUser ? currentUser.nom : 'Sistema';
+    logMouvement('Système', '—', 'UBICACIÓN eliminada: ' + u.code + ' · Pasillo ' + (u.pasilloCode||'—') + ' · por ' + usuario);
+    saveDB();
+    renderUbicaciones();
+    alert('✅ Ubicación ' + u.code + ' eliminada.');
+  });
+}
+
 function renderPasswordHistory() {
   const changes = DB.admin.passwordChanges || [];
   const el = document.getElementById('listaPasswords');

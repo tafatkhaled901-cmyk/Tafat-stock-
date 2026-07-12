@@ -1371,13 +1371,15 @@ function toggleSidebar() {
   sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
 }
 
-// USERS est chargé depuis DB.admin.usuarios (localStorage)
-// C'est la SOURCE DE VÉRITÉ — les PINs modifiés persistent après rechargement
-let USERS = DB.admin.usuarios;
+// USERS est initialisé APRÈS la déclaration de DB (voir plus bas)
+// Déclaré ici en variable vide pour éviter ReferenceError
+let USERS = [];
 
 // Synchronise USERS avec DB.admin.usuarios (appelé après chaque modification)
 function syncUsers() {
-  USERS = DB.admin.usuarios;
+  if (typeof DB !== 'undefined' && DB.admin && DB.admin.usuarios) {
+    USERS = DB.admin.usuarios;
+  }
 }
 
 // Table précise : hojas par caja selon la référence EXACTE (épaisseur + dimensions)
@@ -3144,7 +3146,7 @@ function renderStock() {
     const estSorti = DB.sorties.some(s => s.num === e.num);
     const sortie = DB.sorties.find(s => s.num === e.num);
     const estadoHtml = estSorti
-      ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">' + (sortie?.tipo || 'Salida') + '</span>'
+      ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">' + ((sortie||{}).tipo || 'Salida') + '</span>'
       : '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">En Stock</span>';
     const mvt = DB.mouvements.find(m => m.num === e.num && m.type === 'Entrée');
     const operador = mvt ? mvt.operateur : '—';
@@ -4731,12 +4733,12 @@ let emailPageActual = 0;
 
 function renderEmailArchive() {
   if (!DB.emailArchive) DB.emailArchive = [];
-  const search   = (document.getElementById('emailFiltroSearch')?.value || '').toLowerCase();
-  const fecha    = document.getElementById('emailFiltroFecha')?.value || '';
-  const estado   = document.getElementById('emailFiltroEstado')?.value || '';
-  const tipo     = document.getElementById('emailFiltroTipo')?.value || '';
-  const user     = document.getElementById('emailFiltroUser')?.value || '';
-  const perPag   = parseInt(document.getElementById('emailFiltroPag')?.value || '25');
+  const search   = ((document.getElementById('emailFiltroSearch')||{}).value || '').toLowerCase();
+  const fecha    = (document.getElementById('emailFiltroFecha')||{}).value || '';
+  const estado   = (document.getElementById('emailFiltroEstado')||{}).value || '';
+  const tipo     = (document.getElementById('emailFiltroTipo')||{}).value || '';
+  const user     = (document.getElementById('emailFiltroUser')||{}).value || '';
+  const perPag   = parseInt((document.getElementById('emailFiltroPag')||{}).value || '25');
 
   let emails = DB.emailArchive.slice();
 
@@ -4873,7 +4875,7 @@ function verEmailDetalle(id) {
     '</div>' +
     '<div style="background:#F8FAFC; border-radius:8px; padding:12px;">' +
     '<div style="font-size:11px; color:#888; margin-bottom:6px; font-weight:600; text-transform:uppercase;">Detalles técnicos</div>' +
-    '<div style="font-size:12px; color:#475569;">🖥️ Servidor: ' + (e.smtpInfo?.host || 'mailto://') + '<br>⏱️ Tiempo envío: ' + (e.smtpInfo?.tiempo || '<1s') + '<br>🕐 Timestamp: ' + e.fecha + '</div>' +
+    '<div style="font-size:12px; color:#475569;">🖥️ Servidor: ' + ((e.smtpInfo||{}).host || 'mailto://') + '<br>⏱️ Tiempo envío: ' + ((e.smtpInfo||{}).tiempo || '<1s') + '<br>🕐 Timestamp: ' + e.fecha + '</div>' +
     '</div>' +
     '</div>';
 

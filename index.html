@@ -2676,65 +2676,82 @@ function renderEntrees() {
 
 function saveRec() {
   const prod = document.getElementById('recProd').value.trim();
-  const nb = parseInt(document.getElementById('recNb').value) || 1;
-  const num = document.getElementById('recNum').value.trim();
-  const emp = document.getElementById('recEmp').value.trim();
-  const fpcSaisi = parseInt(document.getElementById('recFpc').value);
+  const nb   = parseInt(document.getElementById('recNb').value) || 1;
+  const num  = document.getElementById('recNum').value.trim();
+  const emp  = document.getElementById('recEmp').value.trim();
 
-  if (!prod || !num) {
-    alert('Por favor complete el producto y el N° de lote');
-    return;
-  }
+  // ── 1. Champs obligatoires ──
+  if (!prod) { alert('⛔ Indique la referencia del producto.'); return; }
+  if (!num)  { alert('⛔ Indique o escanee el N° de lote.'); return; }
 
+  // ── 2. Hojas : lit le champ OU récupère depuis FPC_TABLE si l'autofill n'a pas fonctionné ──
+  let fpcSaisi = parseInt(document.getElementById('recFpc').value);
   if (!fpcSaisi || fpcSaisi <= 0) {
-    alert('⚠️ Por favor indique el número de hojas por caja (visible en la etiqueta: CANTIDAD)');
-    return;
+    const parsed = parseProductCode(prod);
+    if (parsed && FPC_TABLE[parsed.key]) {
+      fpcSaisi = FPC_TABLE[parsed.key];
+      document.getElementById('recFpc').value = fpcSaisi; // réaffiche la valeur
+    } else {
+      alert('⚠️ Indique el número de hojas por caja (CANTIDAD en la etiqueta).\n\nEjemplo: FL12-300/200 = 11 hojas.');
+      document.getElementById('recFpc').focus();
+      return;
+    }
   }
 
-  // ANTI-DOUBLON : vérifier si ce N° contenant est déja en stock (reçu et pas encore sorti)
-  const dejaRecu = DB.entrees.some(e => e.num === num);
+  // ── 3. Anti-doublon ──
+  const dejaRecu  = DB.entrees.some(e => e.num === num);
   const dejaSorti = DB.sorties.some(s => s.num === num);
-  const isGestionnaire = currentUser && currentUser.role === 'Magasinero';
+  const isMagasinero = currentUser && currentUser.role === 'Magasinero';
 
   if (dejaRecu && !dejaSorti) {
-    alert('⛔ El N° de lote (' + num + ') ya está registrado en stock.\nNo se puede escanear dos veces.');
+    alert('⛔ El lote ' + num + ' ya está en stock.\n\nNo se puede registrar dos veces la misma caja.');
+    return;
+  }
+  if (dejaSorti && !isMagasinero) {
+    alert('⛔ El lote ' + num + ' ya fue retirado del stock.\n\nSolo el Magasinero puede autorizar una nueva recepción con este número.');
     return;
   }
 
-  if (dejaSorti && !isGestionnaire) {
-    alert('⛔ El N° de lote (' + num + ') ya fue RETIRADO del stock.\n' +
-          'Una nueva recepción con este número es imposible.\n' +
-          'Solo el Magasinero puede autorizar esta operación.');
-    return;
+  // ── 4. Enregistrement ──
+  try {
+    const feuilles = fpcSaisi * nb;
+
+    DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
+    logMouvement('Entrée', num, prod + ' · ' + nb + ' caja(s) · ' + feuilles + ' hojas' + (emp ? ' · 📍' + emp : ''));
+
+    if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
+    DB.stock[prod].f += feuilles;
+    DB.stock[prod].c += nb;
+
+    // Mémorise le FPC pour cette référence
+    const parsed2 = parseProductCode(prod);
+    if (parsed2 && FPC_TABLE[parsed2.key] !== fpcSaisi) {
+      FPC_TABLE[parsed2.key] = fpcSaisi;
+      saveFpcTable();
+    }
+
+    saveDB();
+    closeModal('modalRec');
+
+    // Réinitialise les champs
+    document.getElementById('recProd').value = '';
+    document.getElementById('recFpc').value  = '';
+    document.getElementById('recNb').value   = '1';
+    document.getElementById('recNum').value  = '';
+    document.getElementById('recEmp').value  = '';
+    try { document.getElementById('fpcStatus').textContent = ''; } catch(e) {}
+
+    renderEntrees();
+    try { renderDashboard(); } catch(e) {}
+
+    // ── 5. Confirmation succès ──
+    alert('✅ Stock actualizado con éxito\n\nProducto : ' + prod + '\nN° Lote  : ' + num + '\nHojas    : ' + feuilles + (emp ? '\nUbicación: ' + emp : ''));
+
+  } catch(err) {
+    // ── 6. Affiche l'erreur exacte en cas de problème ──
+    alert('❌ Error al guardar la recepción:\n\n' + err.message + '\n\nPor favor contacte al administrador.');
+    console.error('saveRec error:', err);
   }
-
-  // Mémoriser cette référence (épaisseur+dimensions) pour la prochaine fois
-  const parsed = parseProductCode(prod);
-  if (parsed && FPC_TABLE[parsed.key] !== fpcSaisi) {
-    FPC_TABLE[parsed.key] = fpcSaisi;
-    saveFpcTable();
-  }
-
-  const feuilles = fpcSaisi * nb;
-
-  DB.entrees.push({ prod, nb, num, emp, feuilles, date: new Date().toISOString() });
-  logMouvement('Entrée', num, prod + ' · ' + nb + ' caja(s) · ' + feuilles + ' hojas' + (emp ? ' · 📍' + emp : ''));
-
-  if (!DB.stock[prod]) DB.stock[prod] = { f: 0, c: 0 };
-  DB.stock[prod].f += feuilles;
-  DB.stock[prod].c += nb;
-
-  saveDB();
-  closeModal('modalRec');
-
-  document.getElementById('recProd').value = '';
-  document.getElementById('recFpc').value = '';
-  document.getElementById('recNb').value = '1';
-  document.getElementById('recNum').value = '';
-  document.getElementById('recEmp').value = '';
-
-  renderEntrees();
-  alert('✓ Recepción registrada : ' + feuilles + ' hojas');
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -1581,7 +1581,7 @@ let DB = {
 let currentUser = null;
 
 // URL du Google Apps Script de synchronisation
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwva6-Ugbh9icmKJOZVg5Dyj3NPgC0-Px-m0VO9lOW1E9Kd3r6p_CyZ77JY6pUUJmyJ/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbzrPOsUpi24hIrW_1q4AMZGgTpGrJ59z3hmDPx6co_jYZ3jZnY4JnpmfhrEsIY_nOJTHg/exec';
 
 // ═══════════════════════════════════════════════════════════
 // SAUVEGARDE — localStorage (fiable, local)
@@ -1653,6 +1653,17 @@ function loadFromSheets() {
     .then(r => r.json())
     .then(data => {
       if (!data) return;
+
+      // Serveur vide (premier lancement) : on envoie les données locales
+      // au lieu de les écraser, pour ne rien perdre.
+      var serverVide = !data.stock && !data.entrees && !data.sorties && !data.casses;
+      if (serverVide) {
+        var aDesDonnees = (DB.entrees && DB.entrees.length) || (DB.sorties && DB.sorties.length) ||
+                          (DB.casses && DB.casses.length) || (DB.stock && Object.keys(DB.stock).length);
+        if (aDesDonnees) syncToSheets();
+        setSyncStatus('synced');
+        return;
+      }
 
       // Charge toutes les données disponibles depuis Google Sheets
       if (data.stock)        DB.stock        = data.stock;
